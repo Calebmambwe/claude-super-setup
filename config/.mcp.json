@@ -3,6 +3,14 @@
     "code-review-graph": {
       "command": "uvx",
       "args": ["code-review-graph", "serve"]
+    },
+    "knowledge-rag": {
+      "command": "npx",
+      "args": ["-y", "knowledge-rag", "serve"],
+      "env": {
+        "KNOWLEDGE_RAG_DIR": "./docs:./agent_docs",
+        "KNOWLEDGE_RAG_EXTENSIONS": ".md,.mdx,.txt,.yaml,.yml"
+      }
     }
   }
 }

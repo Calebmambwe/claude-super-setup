@@ -1,0 +1,32 @@
+{
+  "name": "claude-super-setup",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    }
+  },
+  "postCreateCommand": "npm install -g pnpm && sudo apt-get update && sudo apt-get install -y jq shellcheck && ./install.sh --mode=copy",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "eamodio.gitlens",
+        "timonwong.shellcheck",
+        "usernamehw.errorlens",
+        "Gruntfuggly.todo-tree",
+        "bierner.markdown-mermaid"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true,
+        "shellcheck.enable": true
+      }
+    }
+  },
+  "remoteUser": "vscode"
+}
