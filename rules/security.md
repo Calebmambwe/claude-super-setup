@@ -1,0 +1,22 @@
+---
+paths:
+  - "**/auth/**"
+  - "**/middleware/**"
+  - "**/security/**"
+  - "**/login*"
+  - "**/signup*"
+  - "**/password*"
+  - "**/token*"
+  - "**/session*"
+---
+# Security Rules (Loaded for Auth/Middleware Files)
+
+- NEVER hardcode secrets, API keys, or credentials. Use environment variables via `process.env` or `os.environ`.
+- ALWAYS use parameterized queries. Example: `db.query('SELECT * FROM users WHERE id = $1', [id])`. NEVER interpolate.
+- Validate and sanitize ALL user input before processing. Use Zod (TS) or Pydantic (Python).
+- Hash passwords with bcrypt (cost factor 12+) or argon2. NEVER store plaintext passwords.
+- JWT tokens: validate signature, check expiration, verify issuer. Validate in middleware BEFORE route handlers.
+- Set HTTP security headers: HSTS, X-Content-Type-Options, X-Frame-Options, CSP.
+- Rate limit authentication endpoints. Implement account lockout after 5 failed attempts.
+- Log authentication events (login, logout, failed attempts) with timestamp and IP. Never log passwords or tokens.
+- Use HTTPS only. Reject HTTP in production.

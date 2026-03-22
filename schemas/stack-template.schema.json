@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stack Template",
+  "description": "Schema for claude-super-setup stack template YAML files",
+  "type": "object",
+  "required": ["name", "description", "short_label", "init_commands", "directories", "starter_files", "commands", "env_example", "claude_md", "agents_md"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Unique identifier, kebab-case"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 5,
+      "description": "Human-readable description of the stack"
+    },
+    "short_label": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Menu label for /new-app"
+    },
+    "init_commands": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Shell commands to scaffold the project"
+    },
+    "directories": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Directories to create"
+    },
+    "starter_files": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Map of filepath to file content"
+    },
+    "commands": {
+      "type": "object",
+      "required": ["dev", "test"],
+      "properties": {
+        "dev": { "type": "string" },
+        "test": { "type": "string" },
+        "build": { "type": "string" },
+        "lint": { "type": "string" },
+        "typecheck": { "type": "string" }
+      },
+      "additionalProperties": { "type": "string" }
+    },
+    "env_example": {
+      "type": "string",
+      "description": "Contents of .env.example"
+    },
+    "claude_md": {
+      "type": "string",
+      "description": "Contents of project CLAUDE.md"
+    },
+    "agents_md": {
+      "type": "string",
+      "description": "Contents of project AGENTS.md"
+    },
+    "package_json_scripts": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "gitignore_extra": {
+      "type": "string"
+    },
+    "devcontainer": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

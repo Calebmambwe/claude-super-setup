@@ -1,0 +1,182 @@
+# Mobile App Stack Template
+# React Native + Expo + TypeScript + Supabase
+
+name: mobile-app
+description: "React Native + Expo + TypeScript + Supabase"
+short_label: "mobile"
+
+init_commands:
+  - "npx create-expo-app@latest . --template blank-typescript"
+  - "npx expo install @supabase/supabase-js react-native-url-polyfill @react-native-async-storage/async-storage zod"
+  - "npx expo install expo-router expo-linking expo-constants expo-status-bar"
+  - "pnpm add -D jest @testing-library/react-native prettier eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser"
+
+directories:
+  - app
+  - src/components
+  - src/components/ui
+  - src/lib
+  - src/hooks
+  - src/types
+  - src/__tests__
+
+starter_files:
+  src/lib/env.ts: |
+    import { z } from "zod";
+
+    const envSchema = z.object({
+      EXPO_PUBLIC_SUPABASE_URL: z.string().url(),
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+    });
+
+    export const env = envSchema.parse({
+      EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    });
+
+  src/lib/supabase.ts: |
+    import "react-native-url-polyfill/auto";
+    import { createClient } from "@supabase/supabase-js";
+    import AsyncStorage from "@react-native-async-storage/async-storage";
+    import { env } from "./env";
+
+    export const supabase = createClient(env.EXPO_PUBLIC_SUPABASE_URL, env.EXPO_PUBLIC_SUPABASE_ANON_KEY, {
+      auth: {
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    });
+
+  src/types/database.ts: |
+    // Generate with: npx supabase gen types typescript --project-id <id> > src/types/database.ts
+    export type Database = Record<string, never>;
+
+  app/_layout.tsx: |
+    import { Stack } from "expo-router";
+
+    export default function RootLayout() {
+      return (
+        <Stack>
+          <Stack.Screen name="index" options={{ title: "Home" }} />
+        </Stack>
+      );
+    }
+
+  app/index.tsx: |
+    import { View, Text, StyleSheet } from "react-native";
+
+    export default function HomeScreen() {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.title}>Welcome</Text>
+        </View>
+      );
+    }
+
+    const styles = StyleSheet.create({
+      container: { flex: 1, justifyContent: "center", alignItems: "center" },
+      title: { fontSize: 24, fontWeight: "bold" },
+    });
+
+  eas.json: |
+    {
+      "cli": { "version": ">= 3.0.0" },
+      "build": {
+        "development": {
+          "developmentClient": true,
+          "distribution": "internal"
+        },
+        "preview": {
+          "distribution": "internal"
+        },
+        "production": {}
+      },
+      "submit": {
+        "production": {}
+      }
+    }
+
+  src/__tests__/smoke.test.tsx: |
+    import { describe, it, expect } from "@jest/globals";
+
+    describe("Smoke test", () => {
+      it("should pass", () => {
+        expect(true).toBe(true);
+      });
+    });
+
+commands:
+  dev: "npx expo start"
+  test: "npx jest"
+  build_ios: "npx expo run:ios"
+  build_android: "npx expo run:android"
+  lint: "npx expo lint"
+  typecheck: "npx tsc --noEmit"
+
+package_json_scripts:
+  test: "jest"
+  typecheck: "tsc --noEmit"
+  lint: "eslint src/"
+
+env_example: |
+  EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+gitignore_extra: |
+  .expo/
+  ios/
+  android/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: React Native + Expo + TypeScript + Supabase
+  - Navigation: Expo Router (file-based routing in app/ directory)
+
+  ## Commands
+  - Dev: `npx expo start`
+  - Test: `npx jest`
+  - Build iOS: `npx expo run:ios`
+  - Build Android: `npx expo run:android`
+  - Typecheck: `npx tsc --noEmit`
+
+  ## Architecture
+  - `app/` — Expo Router pages and layouts (file-based routing)
+  - `src/components/` — reusable React Native components
+  - `src/components/ui/` — primitive UI components
+  - `src/lib/` — utilities, Supabase client
+  - `src/hooks/` — custom hooks
+  - `src/types/` — TypeScript types
+
+  ## Conventions
+  - Use Expo Router for all navigation (file-based in app/ directory)
+  - Use StyleSheet.create for styles (not inline objects)
+  - Supabase client is a singleton (OK for mobile — single user per device)
+  - NEVER use `any` type
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: React Native + Expo (managed workflow)
+  - Language: TypeScript (strict)
+  - Navigation: Expo Router (file-based)
+  - Backend: Supabase (auth, database, storage)
+  - Testing: Jest + React Native Testing Library
+
+  ## Patterns & Conventions
+  - File-based routing in app/ directory
+  - StyleSheet.create for all styles
+  - Supabase singleton client is fine for mobile (one user per device)
+  - Use Expo's managed workflow — avoid ejecting
+
+  ## Gotchas
+  - Must import "react-native-url-polyfill/auto" before Supabase client
+  - AsyncStorage required for Supabase auth persistence on mobile
+  - Expo Router requires app/_layout.tsx as root layout
+  - Use EXPO_PUBLIC_ prefix for env vars (not NEXT_PUBLIC_)
+
+  ## Resolved Issues

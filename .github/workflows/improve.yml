@@ -1,0 +1,50 @@
+name: Weekly Improvement Proposals
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-existing-pr:
+    runs-on: ubuntu-latest
+    outputs:
+      has_open_pr: ${{ steps.check.outputs.has_open_pr }}
+    steps:
+      - id: check
+        run: |
+          OPEN_PRS=$(gh pr list --repo ${{ github.repository }} --label "autonomous-improvement" --state open --json number | jq length)
+          echo "has_open_pr=$([[ $OPEN_PRS -gt 0 ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  propose-improvements:
+    needs: check-existing-pr
+    if: needs.check-existing-pr.outputs.has_open_pr != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Analyze this Claude Code configuration repository and propose improvements.
+
+            Focus areas:
+            1. AGENT CATALOG: Check agents/catalog.json for agents missing capability tags,
+               agents on wrong model tier, or opportunities for new community agent imports.
+            2. TEMPLATE FRESHNESS: Check config/stacks/*.yaml for outdated framework versions.
+            3. RULE COVERAGE: Check rules/ for gaps in framework coverage.
+            4. HOOK IMPROVEMENTS: Review hooks/ for error handling or optimization opportunities.
+
+            Create a single PR with all proposed changes. Title format:
+            "chore: weekly improvement proposal"
+
+            Only propose changes you are confident improve the setup.
+            Do NOT propose changes that are purely cosmetic.
+          allowed_tools: "Read,Write,Edit,Grep,Glob,Bash(git *),Bash(jq *)"
+          max_turns: 30

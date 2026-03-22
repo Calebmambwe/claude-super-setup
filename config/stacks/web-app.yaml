@@ -1,0 +1,182 @@
+# Web App Stack Template — "Lovable Clone"
+# Next.js 15 + TypeScript + Tailwind + shadcn/ui + Supabase
+
+name: web-app
+description: "Next.js 15 + TypeScript + Tailwind + shadcn/ui + Supabase"
+short_label: "web"
+
+init_commands:
+  - "pnpm create next-app . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*' --yes"
+  - "pnpm add @supabase/supabase-js @supabase/ssr zod"
+  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom prettier"
+  - "pnpm dlx shadcn@latest init -y"
+
+directories:
+  - src/app
+  - src/components/ui
+  - src/components/shared
+  - src/lib
+  - src/hooks
+  - src/types
+  - src/actions
+  - src/__tests__
+
+starter_files:
+  src/lib/env.ts: |
+    import { z } from "zod";
+
+    const envSchema = z.object({
+      NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+    });
+
+    export const env = envSchema.parse({
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    });
+
+  src/lib/supabase/client.ts: |
+    import { createBrowserClient } from "@supabase/ssr";
+    import { env } from "../env";
+
+    export function createClient() {
+      return createBrowserClient(
+        env.NEXT_PUBLIC_SUPABASE_URL,
+        env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      );
+    }
+
+  src/lib/supabase/server.ts: |
+    import { createServerClient } from "@supabase/ssr";
+    import { cookies } from "next/headers";
+    import { env } from "../env";
+
+    export async function createClient() {
+      const cookieStore = await cookies();
+      return createServerClient(
+        env.NEXT_PUBLIC_SUPABASE_URL,
+        env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+              for (const { name, value, options } of cookiesToSet) {
+                cookieStore.set(name, value, options);
+              }
+            },
+          },
+        },
+      );
+    }
+
+  src/types/database.ts: |
+    // Generate with: pnpm supabase gen types typescript --project-id <id> > src/types/database.ts
+    export type Database = Record<string, never>;
+
+  vitest.config.ts: |
+    import { defineConfig } from "vitest/config";
+    import react from "@vitejs/plugin-react";
+    import path from "path";
+
+    export default defineConfig({
+      plugins: [react()],
+      test: {
+        environment: "jsdom",
+        setupFiles: ["./src/__tests__/setup.ts"],
+        include: ["src/**/*.{test,spec}.{ts,tsx}"],
+      },
+      resolve: {
+        alias: {
+          "@": path.resolve(__dirname, "./src"),
+        },
+      },
+    });
+
+  src/__tests__/setup.ts: |
+    import "@testing-library/jest-dom/vitest";
+
+  src/__tests__/smoke.test.tsx: |
+    import { describe, it, expect } from "vitest";
+
+    describe("Smoke test", () => {
+      it("should pass", () => {
+        expect(true).toBe(true);
+      });
+    });
+
+commands:
+  dev: "pnpm dev"
+  test: "pnpm exec vitest run"
+  build: "pnpm build"
+  lint: "pnpm lint"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+
+package_json_scripts:
+  test: "vitest run"
+  typecheck: "tsc --noEmit"
+
+env_example: |
+  NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+gitignore_extra: |
+  .env
+  .env*.local
+  .vercel
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Next.js 15 + TypeScript + Tailwind CSS + shadcn/ui + Supabase
+  - Styling: Tailwind CSS utility classes only. Use shadcn/ui components from src/components/ui.
+
+  ## Commands
+  - Dev: `pnpm dev`
+  - Test: `pnpm exec vitest run`
+  - Single test: `pnpm exec vitest run src/__tests__/file.test.tsx`
+  - Build: `pnpm build`
+  - Lint: `pnpm lint`
+  - Typecheck: `pnpm exec tsc --noEmit`
+
+  ## Architecture
+  - `src/app/` — Next.js App Router pages and layouts (server components by default)
+  - `src/components/ui/` — shadcn/ui primitives (do not edit directly)
+  - `src/components/shared/` — reusable app components
+  - `src/lib/` — utilities, Supabase clients, helpers
+  - `src/hooks/` — custom React hooks
+  - `src/types/` — TypeScript types and database types
+  - `src/actions/` — Next.js Server Actions
+
+  ## Conventions
+  - Server components by default; add "use client" only when needed (state, effects, browser APIs)
+  - Use Server Actions for mutations, not API routes
+  - Supabase client: use `src/lib/supabase/server.ts` in server components, `src/lib/supabase/client.ts` in client components
+  - NEVER use `any` type — use `unknown` + type guard
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: Next.js 15 (App Router)
+  - Language: TypeScript (strict)
+  - Styling: Tailwind CSS + shadcn/ui
+  - Backend: Supabase (auth, database, storage)
+  - Testing: Vitest + React Testing Library
+
+  ## Patterns & Conventions
+  - Server components are default; "use client" only for interactivity
+  - Use Server Actions for data mutations
+  - Supabase server client: create per-request in server components
+  - shadcn/ui components live in src/components/ui/ — don't modify them directly
+  - Server Actions live in src/actions/ — use for data mutations
+
+  ## Gotchas
+  - cookies() is async in Next.js 15 — must await it
+  - Supabase client MUST be created per-request in server components (no module-level singleton)
+  - shadcn/ui init may modify tailwind.config.ts — commit before running
+
+  ## Resolved Issues

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Catalog",
+  "description": "Schema for the agent catalog registry",
+  "type": "object",
+  "required": ["version", "agents", "model_tiers", "teams"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string" },
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "file", "source", "department", "description", "model_tier", "capabilities"],
+        "properties": {
+          "name": { "type": "string" },
+          "file": { "type": "string" },
+          "source": { "type": "string", "enum": ["core", "community", "project"] },
+          "source_repo": { "type": "string" },
+          "department": { "type": "string" },
+          "description": { "type": "string" },
+          "model_tier": { "type": "string", "enum": ["haiku", "sonnet", "opus", "custom"] },
+          "capabilities": { "type": "array", "items": { "type": "string" } },
+          "teams": { "type": "array", "items": { "type": "string" } },
+          "tools": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "model_tiers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "model": { "type": "string" },
+          "use_for": { "type": "string" }
+        }
+      }
+    },
+    "teams": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "agents": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

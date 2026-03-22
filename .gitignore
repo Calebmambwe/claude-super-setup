@@ -1,0 +1,32 @@
+# Personal config (never tracked)
+settings.local.json
+ghost-config.json
+ghost-stop
+command-audit.log
+command-audit.log.tmp
+stats-cache.json
+metrics.jsonl
+history.jsonl
+mcp-needs-auth-cache.json
+
+# Personal directories
+logs/
+sessions/
+plans/
+telemetry/
+cache/
+file-history/
+paste-cache/
+shell-snapshots/
+plugins/
+agent-memory/
+projects/
+
+# Runtime
+node_modules/
+.env*
+*.lock
+
+# OS
+.DS_Store
+Thumbs.db

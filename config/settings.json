@@ -1,0 +1,330 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "65",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-4-6",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "NotebookEdit",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(pnpm *)",
+      "Bash(bun *)",
+      "Bash(uv *)",
+      "Bash(python -m pytest *)",
+      "Bash(pytest *)",
+      "Bash(node *)",
+      "Bash(brew *)",
+      "Bash(which *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(echo *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(docker *)",
+      "Bash(docker-compose *)",
+      "Bash(gh *)",
+      "Bash(claude *)",
+      "Bash(cd *)",
+      "Bash(pwd)",
+      "Bash(open *)",
+      "Bash(curl *)",
+      "Bash(tar *)",
+      "Bash(unzip *)",
+      "Bash(mv *)",
+      "Bash(rm -r *)",
+      "Bash(rm -f *)",
+      "Bash(rm -- *)",
+      "Bash(ruff *)",
+      "Bash(mypy *)",
+      "Bash(find *)",
+      "Bash(jq *)",
+      "Bash(wc *)",
+      "Bash(diff *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(sort *)",
+      "Bash(actionlint *)",
+      "Bash(screen *)",
+      "Bash(caffeinate *)",
+      "Bash(kill $*)"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Read(./secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*credential*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.docker/config.json)",
+      "Read(**/*secret*)",
+      "Bash(rm -rf *)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf .)",
+      "Bash(rm -rf /*)",
+      "Bash(sudo *)",
+      "Bash(chmod 777 *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(*> /dev/sd*)",
+      "Bash(pkill *)",
+      "Bash(killall *)",
+      "Bash(curl * | sh)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(eval *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/session-start.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/rotate-audit-log.sh 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/session-end.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/auto-learn.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write(**/*.{ts,tsx,js,jsx})|Edit(**/*.{ts,tsx,js,jsx})",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "(prettier --write -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || npx prettier --write -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || true) && bash ~/.claude/hooks/auto-fix-loop.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(**/*.{json,css,md})|Edit(**/*.{json,css,md})",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "prettier --write -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || npx prettier --write -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(**/*.py)|Edit(**/*.py)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "(ruff format -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || true; ruff check --fix -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || true; python3 -m py_compile \"$CLAUDE_FILE_PATH\" 2>&1 || true) && bash ~/.claude/hooks/auto-fix-loop.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '\"[\" + (now | todate) + \"] \" + .tool_input.command' >> ~/.claude/command-audit.log 2>/dev/null; tail -500 ~/.claude/command-audit.log > ~/.claude/command-audit.log.tmp && mv ~/.claude/command-audit.log.tmp ~/.claude/command-audit.log 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(**/*.test.*)|Write(**/*.spec.*)|Write(**/*_test.*)|Write(**/test_*.py)|Edit(**/*.test.*)|Edit(**/*.spec.*)|Edit(**/*_test.*)|Edit(**/test_*.py)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/test-after-impl.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(**/research.md)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "timeout": 45,
+            "prompt": "A research brief was just created. Respond with {\"decision\": \"block\", \"reason\": \"Research complete. Tell the user: review the findings, then proceed with /plan or /full-pipeline. Architecture decisions must reference this research.\"}."
+          }
+        ]
+      },
+      {
+        "matcher": "Write(**/brief.md)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "timeout": 45,
+            "prompt": "A feature brief was just created. Respond with {\"decision\": \"block\", \"reason\": \"Feature brief created. Tell the user: run /design-doc {feature-name} to create the design document next. The feature name is the folder name inside docs/. Do not proceed until user acknowledges.\"}."
+          }
+        ]
+      },
+      {
+        "matcher": "Write(**/design-doc.md)|Write(**/reverse-doc.md)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "timeout": 45,
+            "prompt": "An SDLC artifact was just written. Check which file it is:\n\n- If it is a reverse-doc: respond with {\"decision\": \"block\", \"reason\": \"reverse-doc created. You must now tell the user the next step: run /design-doc to create a full design document from this, or run /implement-design if the reverse-doc alone is sufficient. Do not proceed until the user acknowledges the next step.\"}\n- If it is a design-doc: count the milestones in the document. If 4 or more milestones, respond with {\"decision\": \"block\", \"reason\": \"Design doc created with N milestones. Tell the user: run /milestone-prompts to generate per-milestone implementation prompts for multi-session execution. Do not proceed until user acknowledges.\"}. If 1-3 milestones, respond with {\"decision\": \"block\", \"reason\": \"Design doc created. Tell the user: run /implement-design for a single-session implementation prompt. Do not proceed until user acknowledges.\"}."
+          }
+        ]
+      },
+      {
+        "matcher": "Write(**/prompts/milestone-*.md)|Write(**/prompts/implementation-prompt.md)|Write(**/prompts/sdlc-prompt-*.md)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "timeout": 45,
+            "prompt": "An implementation prompt file was just created. Respond with {\"decision\": \"block\", \"reason\": \"Implementation prompt ready. Tell the user: run /implement-meta-prompt <path> to execute this prompt in a new session. The prompt is self-contained and can also be copy-pasted into any LLM. Do not proceed until user acknowledges.\"}."
+          }
+        ]
+      },
+      {
+        "matcher": "Write(**/prd.md)|Write(**/architecture.md)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "timeout": 45,
+            "prompt": "A PRD or architecture doc was just written. Check if BOTH docs/*/prd.md AND docs/*/architecture.md now exist for this project. If both exist and no design-doc.md exists yet, respond with {\"decision\": \"block\", \"reason\": \"PRD and architecture are both ready. Tell the user: run /design-doc to create the implementation-ready design document. Do not proceed until user acknowledges.\"}. If only one exists, respond with {\"decision\": \"allow\"}."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write(**/prompts/milestone-*.md)|Write(**/prompts/implementation-prompt.md)|Write(**/prompts/sdlc-prompt-*.md)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/version-prompt.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git commit*)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "timeout": 45,
+            "prompt": "Before committing, verify: 1) Have tests been run and do they pass? 2) Has linting been run? 3) Is the commit message using conventional format (feat:, fix:, test:, etc.)? If tests or lint haven't been run in this session, respond with {\"decision\": \"block\", \"reason\": \"Run tests and lint before committing.\"}. Otherwise {\"decision\": \"allow\"}."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git push*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/branch-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit(**/*.lock)|Write(**/*.lock)|Edit(**/package-lock.json)|Write(**/package-lock.json)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"decision\": \"block\", \"reason\": \"Lock files should not be manually edited. Use the package manager.\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/protect-files.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/read-before-write.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'CRITICAL CONTEXT TO PRESERVE: Review the current task list, key files being modified, and any in-progress decisions. Carry these forward after compaction.'"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f ~/.claude/ghost-config.json ] && jq -e '.status | test(\"running|starting\")' ~/.claude/ghost-config.json >/dev/null 2>&1; then bash ~/.claude/hooks/ghost-notify.sh phase \"Claude Code needs attention\"; else osascript -e 'display notification \"Claude Code needs your attention\" with title \"Claude Code\"'; fi"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "timeout": 45,
+            "prompt": "A subagent just finished. Verify: 1) Did it complete all assigned tasks? 2) If it wrote code, did it run tests? 3) Are there any TODO/FIXME left in files it modified? If incomplete, respond with {\"decision\": \"block\", \"reason\": \"Subagent incomplete: [details]\"}. Otherwise {\"decision\": \"allow\"}."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f ~/.claude/ghost-config.json ] && jq -e '.status | test(\"running|starting\")' ~/.claude/ghost-config.json >/dev/null 2>&1; then echo '{\"decision\": \"allow\"}'; else osascript -e 'display notification \"Claude finished\" with title \"Claude Code\"' 2>/dev/null; fi",
+            "async": false
+          },
+          {
+            "type": "prompt",
+            "timeout": 60,
+            "prompt": "Before stopping, verify ALL of the following:\n\n1. TASK COMPLETION: All tasks from the task list are completed or explicitly deferred with a reason.\n2. NO LOOSE ENDS: No TODO items remain in modified files without a linked issue.\n3. TESTS RAN: If code was written or modified, tests were run and pass.\n4. NO RATIONALIZATION: Check your last response — did you say 'we can address this later', 'this is good enough for now', 'we can defer this to a follow-up', or similar? If so, STOP. Either fix the issue now or explicitly flag it as a known limitation.\n5. VERIFICATION: If implementation was done, were the verification commands run? (test, lint, typecheck)\n6. AGENTS.MD: If you discovered a pattern, gotcha, or resolved a non-trivial error during this session, did you update AGENTS.md? If AGENTS.md exists and you learned something new, update it before stopping.\n\nIf anything is incomplete, respond with {\"decision\": \"block\", \"reason\": \"Incomplete: [what remains]\"}.\nOtherwise respond with {\"decision\": \"allow\"}.\nAlso remind the user to run /reflect."
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "ralph-loop@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true
+  },
+  "companyAnnouncements": [
+    "Workflow: /plan -> /build -> /check -> /ship -> /reflect",
+    "Run /consolidate weekly to clean up learnings."
+  ]
+}
