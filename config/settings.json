@@ -214,7 +214,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Write(**/prompts/milestone-*.md)|Write(**/prompts/implementation-prompt.md)|Write(**/prompts/sdlc-prompt-*.md)",
+        "matcher": "Write(**/brief.md)|Write(**/product-brief.md)|Write(**/research.md)|Write(**/prd.md)|Write(**/architecture.md)|Write(**/design-doc.md)|Write(**/reverse-doc.md)|Write(**/prompts/milestone-*.md)|Write(**/prompts/implementation-prompt.md)|Write(**/prompts/sdlc-prompt-*.md)|Write(**/prompts/README.md)",
         "hooks": [
           {
             "type": "command",
