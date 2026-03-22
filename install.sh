@@ -259,6 +259,14 @@ if should_install "config"; then
   # Stack templates
   mkdir -p "$CLAUDE_DIR/config/stacks" 2>/dev/null || true
   install_module "config/stacks" "$CLAUDE_DIR/config/stacks" "stack templates"
+
+  # BMAD configuration
+  mkdir -p "$CLAUDE_DIR/config/bmad" 2>/dev/null || true
+  install_module "config/bmad" "$CLAUDE_DIR/config/bmad" "BMAD config"
+
+  # SDLC prompt templates
+  mkdir -p "$CLAUDE_DIR/config/prompts" 2>/dev/null || true
+  install_module "config/prompts" "$CLAUDE_DIR/config/prompts" "SDLC prompt templates"
 fi
 
 # Step 6: Set up user override files (if they don't exist)
