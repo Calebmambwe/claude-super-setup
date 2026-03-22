@@ -1,0 +1,163 @@
+# claude-super-setup
+
+A portable, self-improving Claude Code configuration with 80+ commands, 60+ agents, 16 stack templates, and autonomous CI/CD.
+
+## Quick Install
+
+```bash
+git clone https://github.com/calebmambwe/claude-super-setup.git ~/.claude-super-setup
+~/.claude-super-setup/install.sh
+```
+
+Or preview first:
+```bash
+~/.claude-super-setup/install.sh --dry-run
+```
+
+## What's Included
+
+### Commands (80+)
+
+| Category | Commands | Purpose |
+|----------|----------|---------|
+| Core Workflow | /plan, /build, /check, /ship, /dev | Manual development pipeline |
+| Autonomous | /auto-dev, /auto-ship, /auto-build-all | Fully autonomous pipelines |
+| Ghost Mode | /ghost, /ghost-status, /ghost-run | Overnight autonomous work |
+| Scaffolding | /new-app, /new-project, /new-agent-app | Project creation |
+| Quality | /code-review, /security-check, /test-plan | Code quality gates |
+| BMAD | /bmad:prd, /bmad:architecture, /bmad:sprint-planning | Product lifecycle |
+| Documentation | /design-doc, /spec, /api-docs, /adr | Technical documentation |
+| Observability | /pipeline-status, /metrics, /learning-dashboard | Pipeline monitoring |
+
+### Stack Templates (16)
+
+| Category | Template | Stack |
+|----------|----------|-------|
+| Web | web-nextjs | Next.js 15 + Supabase |
+| Web | web-astro | Astro 5 + Cloudflare Pages |
+| Web | web-t3 | Next.js + tRPC + Prisma + NextAuth |
+| Web | web-sveltekit | SvelteKit 2 + Lucia + Drizzle |
+| Web | web-remix | Remix + Vite + Cloudflare Workers |
+| Backend | api-hono | Hono + Drizzle + PostgreSQL |
+| Backend | api-fastapi | FastAPI + SQLAlchemy + PostgreSQL |
+| Backend | api-hono-edge | Hono + Cloudflare Workers + D1 |
+| Mobile | mobile-expo | Expo + TypeScript + Supabase |
+| Mobile | mobile-nativewind | Expo + NativeWind + Supabase |
+| Mobile | mobile-flutter | Flutter 3 + Supabase + Riverpod |
+| Mobile | mobile-expo-revenucat | Expo + RevenueCat + IAP |
+| Specialized | saas-starter | Next.js + Stripe + Supabase Auth |
+| Specialized | ai-ml-app | Next.js + AI SDK + pgvector |
+| Specialized | chrome-extension | TypeScript + Vite + Manifest V3 |
+| Specialized | cli-tool | TypeScript + Commander.js + tsup |
+
+### Agents (60+)
+
+Core agents across 8 departments plus community agents for language specialists, data/AI, infrastructure, and mobile.
+
+| Department | Example Agents |
+|------------|---------------|
+| Engineering | architect, backend-dev, frontend-dev, mobile-app-builder |
+| Testing | tdd-test-writer, test-writer-fixer, visual-tester |
+| Design | ui-designer, whimsy-injector, brand-guardian |
+| Security | security-auditor, code-reviewer |
+| Product | sprint-prioritizer, feedback-synthesizer |
+| Community | go-specialist, rust-specialist, ml-pipeline-builder, kubernetes-specialist |
+
+### Model Routing (4-tier)
+
+| Tier | Model | Use For |
+|------|-------|---------|
+| haiku | claude-haiku-4-5 | Simple tasks: formatting, lookups |
+| sonnet | claude-sonnet-4-6 | Standard: implementation, testing |
+| opus | claude-opus-4-6 | Critical: architecture, security review |
+| custom | varies | Specialized tasks |
+
+### Preset Agent Teams
+
+| Team | Agents | Use Case |
+|------|--------|----------|
+| review | code-reviewer + security-auditor + silent-failure-hunter | Code quality gate |
+| frontend | frontend-dev + ui-designer + tdd-test-writer | Frontend sprint |
+| backend | backend-dev + architect + security-auditor | API development |
+| fullstack | architect + backend-dev + frontend-dev + test-writer-fixer | Full feature |
+| mobile | mobile-app-builder + ui-designer + test-writer-fixer | Mobile dev |
+
+### Lifecycle Hooks (12)
+
+Auto-formatting, auto-testing, branch protection, SDLC gate enforcement, Ghost Mode supervision, and more.
+
+### CI/CD (3 workflows)
+
+- **ci.yml** — Validates every PR: shellcheck, markdownlint, YAML schema, actionlint, inventory
+- **release.yml** — Automated semver releases via release-please
+- **improve.yml** — Weekly: Claude Code Action proposes improvements as PRs
+
+## Install Options
+
+```bash
+# Symlink mode (default) — git pull updates instantly
+./install.sh
+
+# Copy mode — independent copy
+./install.sh --mode=copy
+
+# Selective modules
+./install.sh --modules=commands,agents,hooks
+
+# Custom location
+./install.sh --prefix=/path/to/claude-config
+```
+
+## Updating
+
+```bash
+cd ~/.claude-super-setup && git pull
+```
+
+With symlink mode, pulling updates the live config instantly.
+
+## Uninstalling
+
+```bash
+~/.claude-super-setup/uninstall.sh
+
+# Restore from backup
+~/.claude-super-setup/uninstall.sh --restore
+```
+
+## Architecture
+
+```
+~/.claude-super-setup/          (git repo)
+├── config/                     (CLAUDE.md, settings.json, stack templates)
+├── commands/                   (80+ slash commands)
+├── agents/core/                (50 core agents)
+├── agents/community/           (18+ community agents)
+├── agents/catalog.json         (agent registry + teams)
+├── hooks/                      (12 lifecycle hooks)
+├── rules/                      (13 path-scoped rules)
+├── skills/                     (6 skill modules)
+├── schemas/                    (JSON Schema for validation)
+├── scripts/                    (CI validation scripts)
+├── .github/workflows/          (CI + release + improvement)
+├── install.sh                  (one-command installer)
+└── uninstall.sh                (clean removal)
+```
+
+## Configuration
+
+### Shared (tracked in git)
+Commands, agents, hooks, rules, templates, skills, settings.json
+
+### Personal (gitignored)
+settings.local.json, ghost-config.json, logs, learning database, session history
+
+Override shared settings by editing `~/.claude/settings.local.json`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+MIT
