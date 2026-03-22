@@ -1,0 +1,11 @@
+# Default owner for everything
+* @calebmambwe
+
+# CI workflows require extra review
+.github/workflows/ @calebmambwe
+
+# Hooks are security-sensitive
+hooks/ @calebmambwe
+
+# Settings changes affect all users
+config/settings.json @calebmambwe

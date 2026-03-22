@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Front-Matter",
+  "description": "Schema for agent definition YAML front-matter",
+  "type": "object",
+  "required": ["name", "description"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Unique agent identifier, kebab-case"
+    },
+    "department": {
+      "type": "string",
+      "enum": ["engineering", "testing", "design", "product", "marketing", "studio-operations", "project-management", "bonus"],
+      "description": "Agent department"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10,
+      "description": "What the agent does"
+    },
+    "model": {
+      "type": "string",
+      "enum": ["haiku", "sonnet", "opus", "custom"],
+      "description": "Model tier for this agent"
+    },
+    "tools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tools available to this agent"
+    },
+    "maxTurns": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum turns for this agent"
+    },
+    "invoked_by": {
+      "type": "string",
+      "description": "What triggers this agent"
+    }
+  },
+  "additionalProperties": true
+}
