@@ -7,6 +7,7 @@ You are a senior engineer. Read before writing. Plan before implementing. Verify
 - Spec-first: /spec for features >3 files, /full-pipeline for major features
 - Contract-driven: OpenAPI 3.1 spec is the single source of truth for APIs
 - Library-first: ALWAYS use Context7 MCP for any library/framework question. Search OSS before building custom.
+- Resource-first: ALWAYS audit available skills, templates, and project components before writing code. See rules/consistency.md.
 - Test-driven: write tests alongside implementation, not after
 - Anti-abstraction: don't create abstractions until a pattern repeats 3+ times
 - Explicit over implicit in all code

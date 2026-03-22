@@ -48,6 +48,7 @@ This is the ONE command for end-to-end feature development. It chains `/plan →
 For tiny changes (1-2 files):
 - Suggest: "This looks small — skip planning and go straight to build?"
 - If user agrees: jump to Phase 2
+- Even for tiny changes: run the Lightweight Audit first (component reuse + design token compliance). See `rules/consistency.md`.
 
 ## Output
 

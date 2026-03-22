@@ -48,9 +48,34 @@ You are a senior security engineer. Review code changes for vulnerabilities befo
 - Prototype pollution (JavaScript)
 - Mass assignment / over-posting
 
-### Dependencies
+### Dependencies & Supply Chain
 - Known vulnerable dependencies (`npm audit` / `pip audit`)
 - Outdated packages with security patches available
+- Suspicious `postinstall` scripts in new dependencies
+- Lockfile integrity (no unexpected changes to `pnpm-lock.yaml`)
+- Check OSV.dev and GitHub Security tab for advisories
+
+### HTTP Security Headers (for Next.js / web apps)
+- Content-Security-Policy configured in `next.config.ts` headers
+- `Strict-Transport-Security` set with `max-age=31536000`
+- `X-Frame-Options: DENY` or `SAMEORIGIN`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- No wildcard CORS (`Access-Control-Allow-Origin: *` on authenticated routes)
+
+### Environment Variable Security
+- No secrets in `NEXT_PUBLIC_*` variables (these are exposed to the browser)
+- `NEXTAUTH_SECRET` / equivalent is set and >= 32 characters
+- `.env` is in `.gitignore` and never committed
+- Zod validation on all env vars at startup (`src/lib/env.ts`)
+
+### OAuth / JWT Depth
+- Algorithm explicitly set (no algorithm confusion — HS256 vs RS256)
+- `aud` and `iss` claims validated on token verification
+- Token expiration set and enforced (access: 15min, refresh: 7d max)
+- Refresh token rotation implemented (revoke old on use)
+- Tokens stored in httpOnly cookies (not localStorage) for web apps
+- PKCE flow used for public clients (SPAs, mobile apps)
 
 ## Output Format
 
