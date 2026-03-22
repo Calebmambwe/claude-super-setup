@@ -1,0 +1,256 @@
+# Mobile NativeWind Stack Template
+# Expo SDK 52 + NativeWind v4 (Tailwind for RN) + Expo Router + Supabase
+
+name: mobile-nativewind
+description: "Expo SDK 52 + NativeWind v4 + Expo Router + Supabase"
+short_label: "nativewind"
+
+init_commands:
+  - "npx create-expo-app@latest . --template blank-typescript"
+  - "npx expo install nativewind tailwindcss react-native-reanimated react-native-safe-area-context"
+  - "npx expo install @supabase/supabase-js react-native-url-polyfill @react-native-async-storage/async-storage zod"
+  - "npx expo install expo-router expo-linking expo-constants expo-status-bar"
+  - "pnpm add -D prettier eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser"
+
+directories:
+  - app
+  - src/components
+  - src/components/ui
+  - src/lib
+  - src/hooks
+  - src/types
+  - src/__tests__
+
+starter_files:
+  global.css: |
+    @import "tailwindcss/theme.css" layer(theme);
+    @import "tailwindcss/preflight.css" layer(base);
+    @import "tailwindcss/utilities.css";
+    @import "nativewind/theme";
+
+  tailwind.config.js: |
+    import nativewind from "nativewind/plugin";
+
+    export default {
+      content: [
+        "./app/**/*.{js,jsx,ts,tsx}",
+        "./src/components/**/*.{js,jsx,ts,tsx}",
+      ],
+      plugins: [nativewind],
+    };
+
+  metro.config.js: |
+    const { getDefaultConfig } = require("expo/metro-config");
+    const { withNativeWind } = require("nativewind/metro");
+
+    const config = getDefaultConfig(__dirname);
+
+    module.exports = withNativeWind(config, { input: "./global.css" });
+
+  babel.config.js: |
+    module.exports = function (api) {
+      api.cache(true);
+      return {
+        presets: [
+          ["babel-preset-expo", { jsxImportSource: "nativewind" }],
+          "nativewind/babel",
+        ],
+      };
+    };
+
+  nativewind-env.d.ts: |
+    /// <reference types="nativewind/types" />
+
+  src/lib/env.ts: |
+    import { z } from "zod";
+
+    const envSchema = z.object({
+      EXPO_PUBLIC_SUPABASE_URL: z.string().url(),
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+    });
+
+    export const env = envSchema.parse({
+      EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    });
+
+  src/lib/supabase.ts: |
+    import "react-native-url-polyfill/auto";
+    import { createClient } from "@supabase/supabase-js";
+    import AsyncStorage from "@react-native-async-storage/async-storage";
+    import { env } from "./env";
+
+    export const supabase = createClient(env.EXPO_PUBLIC_SUPABASE_URL, env.EXPO_PUBLIC_SUPABASE_ANON_KEY, {
+      auth: {
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    });
+
+  src/types/database.ts: |
+    // Generate with: npx supabase gen types typescript --project-id <id> > src/types/database.ts
+    export type Database = Record<string, never>;
+
+  src/components/ui/Button.tsx: |
+    import { TouchableOpacity, Text } from "react-native";
+
+    interface ButtonProps {
+      onPress: () => void;
+      label: string;
+      variant?: "primary" | "secondary";
+      disabled?: boolean;
+    }
+
+    export function Button({ onPress, label, variant = "primary", disabled = false }: ButtonProps) {
+      const base = "rounded-lg px-4 py-3 items-center justify-center";
+      const variants = {
+        primary: "bg-blue-600 active:bg-blue-700",
+        secondary: "bg-gray-200 active:bg-gray-300",
+      };
+      const labelVariants = {
+        primary: "text-white font-semibold text-base",
+        secondary: "text-gray-900 font-semibold text-base",
+      };
+
+      return (
+        <TouchableOpacity
+          onPress={onPress}
+          disabled={disabled}
+          className={`${base} ${variants[variant]} ${disabled ? "opacity-50" : ""}`}
+        >
+          <Text className={labelVariants[variant]}>{label}</Text>
+        </TouchableOpacity>
+      );
+    }
+
+  app/_layout.tsx: |
+    import "./global.css";
+    import { Stack } from "expo-router";
+
+    export default function RootLayout() {
+      return (
+        <Stack>
+          <Stack.Screen name="index" options={{ title: "Home" }} />
+        </Stack>
+      );
+    }
+
+  app/index.tsx: |
+    import { View, Text } from "react-native";
+
+    export default function HomeScreen() {
+      return (
+        <View className="flex-1 items-center justify-center bg-white">
+          <Text className="text-2xl font-bold text-gray-900">Welcome</Text>
+          <Text className="mt-2 text-base text-gray-500">NativeWind + Expo Router</Text>
+        </View>
+      );
+    }
+
+  eas.json: |
+    {
+      "cli": { "version": ">= 3.0.0" },
+      "build": {
+        "development": {
+          "developmentClient": true,
+          "distribution": "internal"
+        },
+        "preview": {
+          "distribution": "internal"
+        },
+        "production": {}
+      },
+      "submit": {
+        "production": {}
+      }
+    }
+
+  src/__tests__/smoke.test.tsx: |
+    import { describe, it, expect } from "@jest/globals";
+
+    describe("Smoke test", () => {
+      it("should pass", () => {
+        expect(true).toBe(true);
+      });
+    });
+
+commands:
+  dev: "npx expo start"
+  test: "npx jest"
+  build_ios: "npx expo run:ios"
+  build_android: "npx expo run:android"
+  lint: "npx expo lint"
+  typecheck: "npx tsc --noEmit"
+
+package_json_scripts:
+  test: "jest"
+  typecheck: "tsc --noEmit"
+  lint: "eslint src/"
+
+env_example: |
+  EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+gitignore_extra: |
+  .expo/
+  ios/
+  android/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Expo SDK 52 + NativeWind v4 + Expo Router + Supabase
+  - Styling: NativeWind (Tailwind CSS for React Native via className prop)
+  - Navigation: Expo Router (file-based routing in app/ directory)
+
+  ## Commands
+  - Dev: `npx expo start`
+  - Test: `npx jest`
+  - Build iOS: `npx expo run:ios`
+  - Build Android: `npx expo run:android`
+  - Typecheck: `npx tsc --noEmit`
+
+  ## Architecture
+  - `app/` — Expo Router pages and layouts (file-based routing)
+  - `src/components/` — reusable React Native components
+  - `src/components/ui/` — primitive UI components (Button, Input, etc.)
+  - `src/lib/` — utilities, Supabase client
+  - `src/hooks/` — custom hooks
+  - `src/types/` — TypeScript types
+
+  ## Conventions
+  - Use className prop (NativeWind) for ALL styling — no StyleSheet.create
+  - global.css must be imported in app/_layout.tsx (not app/index.tsx)
+  - Supabase client is a singleton (OK for mobile — single user per device)
+  - NEVER use `any` type
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: React Native + Expo SDK 52 (managed workflow)
+  - Styling: NativeWind v4 (Tailwind CSS via className prop)
+  - Language: TypeScript (strict)
+  - Navigation: Expo Router (file-based)
+  - Backend: Supabase (auth, database, storage)
+  - Testing: Jest + React Native Testing Library
+
+  ## Patterns & Conventions
+  - Use className prop for styles — NativeWind processes at build time
+  - File-based routing in app/ directory
+  - Import global.css in root _layout.tsx only
+  - Supabase singleton client is fine for mobile (one user per device)
+
+  ## Gotchas
+  - NativeWind uses className prop, NOT style prop — they are separate
+  - Not all Tailwind utilities work in React Native: no `display: grid`, no `position: fixed`, limited box-shadow
+  - Must import "react-native-url-polyfill/auto" before Supabase client
+  - AsyncStorage required for Supabase auth persistence on mobile
+  - global.css must be imported before any component that uses className
+  - babel.config.js jsxImportSource must be "nativewind" — not "react"
+  - Metro config must wrap with withNativeWind pointing to global.css
+
+  ## Resolved Issues

@@ -1,0 +1,351 @@
+# FastAPI Stack Template
+# FastAPI + Python + SQLAlchemy + Alembic + PostgreSQL
+
+name: api-fastapi
+description: "FastAPI + Python + SQLAlchemy 2 + Alembic + PostgreSQL"
+short_label: "fastapi"
+
+init_commands:
+  - "uv init --no-readme"
+  - "uv add fastapi[standard] sqlalchemy[asyncio] asyncpg alembic pydantic-settings python-dotenv"
+  - "uv add --dev pytest pytest-asyncio httpx ruff mypy"
+  - "uv sync"
+
+directories:
+  - src/routes
+  - src/services
+  - src/repositories
+  - src/models
+  - src/schemas
+  - src/middleware
+  - src/db
+  - tests/unit
+  - tests/integration
+  - alembic/versions
+
+starter_files:
+  pyproject.toml: |
+    [project]
+    name = "api"
+    version = "0.1.0"
+    requires-python = ">=3.12"
+    dependencies = [
+      "fastapi[standard]",
+      "sqlalchemy[asyncio]",
+      "asyncpg",
+      "alembic",
+      "pydantic-settings",
+      "python-dotenv",
+    ]
+
+    [tool.ruff]
+    target-version = "py312"
+    line-length = 100
+
+    [tool.ruff.lint]
+    select = ["E", "F", "I", "UP", "B", "SIM"]
+
+    [tool.mypy]
+    strict = true
+    python_version = "3.12"
+    ignore_missing_imports = true
+
+    [tool.pytest.ini_options]
+    asyncio_mode = "auto"
+    testpaths = ["tests"]
+
+  src/__init__.py: ""
+
+  src/config.py: |
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+        database_url: str
+        debug: bool = False
+        cors_origins: list[str] = ["http://localhost:3000"]
+
+
+    settings = Settings()
+
+  src/main.py: |
+    from contextlib import asynccontextmanager
+    from collections.abc import AsyncGenerator
+
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+
+    from src.config import settings
+    from src.db.session import engine, Base
+    from src.routes.health import router as health_router
+
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+        # Startup: create tables (use Alembic in production)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        yield
+        # Shutdown
+        await engine.dispose()
+
+
+    app = FastAPI(
+        title="API",
+        version="0.1.0",
+        debug=settings.debug,
+        lifespan=lifespan,
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    app.include_router(health_router)
+
+  src/schemas/response.py: |
+    from typing import Generic, TypeVar
+    from pydantic import BaseModel
+
+    T = TypeVar("T")
+
+
+    class ApiResponse(BaseModel, Generic[T]):
+        success: bool
+        data: T | None
+        error: str | None
+        meta: dict[str, object] | None = None
+
+
+    def ok(data: T, meta: dict[str, object] | None = None) -> ApiResponse[T]:
+        return ApiResponse(success=True, data=data, error=None, meta=meta)
+
+
+    def err(error: str) -> ApiResponse[None]:
+        return ApiResponse(success=False, data=None, error=error, meta=None)
+
+  src/routes/health.py: |
+    from fastapi import APIRouter
+    from src.schemas.response import ApiResponse, ok
+
+    router = APIRouter(prefix="/health", tags=["health"])
+
+
+    @router.get("/", response_model=ApiResponse[dict[str, str]])
+    async def health_check() -> ApiResponse[dict[str, str]]:
+        return ok({"status": "ok"})
+
+  src/db/session.py: |
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+    from sqlalchemy.orm import DeclarativeBase
+
+    from src.config import settings
+
+    engine = create_async_engine(
+        settings.database_url,
+        echo=settings.debug,
+        pool_pre_ping=True,
+    )
+
+    AsyncSessionLocal = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+
+
+    class Base(DeclarativeBase):
+        pass
+
+
+    async def get_session() -> AsyncSession:
+        async with AsyncSessionLocal() as session:
+            yield session
+
+  src/models/base.py: |
+    import uuid
+    from datetime import datetime
+
+    from sqlalchemy import func
+    from sqlalchemy.orm import Mapped, mapped_column
+
+    from src.db.session import Base
+
+
+    class TimestampedBase(Base):
+        """Abstract base for models with id + timestamps."""
+        __abstract__ = True
+
+        id: Mapped[uuid.UUID] = mapped_column(
+            primary_key=True,
+            default=uuid.uuid4,
+        )
+        created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+        updated_at: Mapped[datetime] = mapped_column(
+            server_default=func.now(),
+            onupdate=func.now(),
+        )
+
+  alembic.ini: |
+    [alembic]
+    script_location = alembic
+    sqlalchemy.url = %(DATABASE_URL)s
+
+    [loggers]
+    keys = root,sqlalchemy,alembic
+
+    [handlers]
+    keys = console
+
+    [formatters]
+    keys = generic
+
+    [logger_root]
+    level = WARN
+    handlers = console
+    qualname =
+
+    [logger_sqlalchemy]
+    level = WARN
+    handlers =
+    qualname = sqlalchemy.engine
+
+    [logger_alembic]
+    level = INFO
+    handlers =
+    qualname = alembic
+
+    [handler_console]
+    class = StreamHandler
+    args = (sys.stderr,)
+    level = NOTSET
+    formatter = generic
+
+    [formatter_generic]
+    format = %(levelname)-5.5s [%(name)s] %(message)s
+    datefmt = %H:%M:%S
+
+  Dockerfile: |
+    FROM python:3.12-slim AS builder
+    RUN pip install uv
+    WORKDIR /app
+    COPY pyproject.toml uv.lock ./
+    RUN uv sync --frozen --no-dev
+
+    FROM python:3.12-slim
+    WORKDIR /app
+    COPY --from=builder /app/.venv /app/.venv
+    COPY . .
+    ENV PATH="/app/.venv/bin:$PATH"
+    EXPOSE 8000
+    CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  tests/__init__.py: ""
+
+  tests/integration/test_health.py: |
+    import pytest
+    from httpx import AsyncClient, ASGITransport
+
+    from src.main import app
+
+
+    @pytest.mark.asyncio
+    async def test_health_check() -> None:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/health/")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["success"] is True
+        assert body["data"]["status"] == "ok"
+
+commands:
+  dev: "uv run uvicorn src.main:app --reload --port 8000"
+  test: "uv run pytest"
+  lint: "uv run ruff check src/ tests/"
+  format: "uv run ruff format src/ tests/"
+  typecheck: "uv run mypy src/"
+  db_revision: "uv run alembic revision --autogenerate -m"
+  db_upgrade: "uv run alembic upgrade head"
+  db_downgrade: "uv run alembic downgrade -1"
+
+env_example: |
+  DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/dbname
+  DEBUG=false
+  CORS_ORIGINS=["http://localhost:3000"]
+
+gitignore_extra: |
+  __pycache__/
+  *.pyc
+  .venv/
+  .mypy_cache/
+  .ruff_cache/
+  dist/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: FastAPI + Python 3.12 + SQLAlchemy 2 (async) + Alembic + PostgreSQL
+  - Package manager: uv (not pip, not poetry)
+  - Architecture: Route → Service → Repository → Database
+
+  ## Commands
+  - Dev: `uv run uvicorn src.main:app --reload --port 8000`
+  - Test: `uv run pytest`
+  - Lint: `uv run ruff check src/ tests/`
+  - Format: `uv run ruff format src/ tests/`
+  - Typecheck: `uv run mypy src/`
+  - DB migration: `uv run alembic revision --autogenerate -m "description"`
+  - DB upgrade: `uv run alembic upgrade head`
+
+  ## Architecture
+  - `src/routes/` — FastAPI routers (thin, delegate to services)
+  - `src/services/` — business logic (no HTTP awareness)
+  - `src/repositories/` — SQLAlchemy queries
+  - `src/models/` — SQLAlchemy ORM models
+  - `src/schemas/` — Pydantic request/response schemas
+  - `src/db/` — engine, session, Base
+  - `alembic/` — database migrations
+
+  ## Conventions
+  - All API responses use ApiResponse envelope: `{ success, data, error, meta }`
+  - Use async SQLAlchemy sessions — never synchronous in route handlers
+  - DATABASE_URL must use postgresql+asyncpg:// (not postgresql://)
+  - Input validated with Pydantic schemas at route level
+  - NEVER use `Any` type from typing
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: FastAPI (latest)
+  - Language: Python 3.12 (type hints, strict mypy)
+  - ORM: SQLAlchemy 2.0 async
+  - Migrations: Alembic
+  - Package manager: uv
+  - Testing: pytest + pytest-asyncio + httpx
+
+  ## Patterns & Conventions
+  - Route → Service → Repository layering
+  - All responses use ApiResponse[T] generic envelope
+  - async/await throughout — no sync database calls
+  - Files: snake_case (Python convention)
+
+  ## Gotchas
+  - DATABASE_URL must use postgresql+asyncpg:// not postgresql:// for async
+  - AsyncSession must be yielded from a dependency (get_session) — not a global
+  - Alembic autogenerate detects model changes — always review before applying
+  - Use ASGITransport for testing FastAPI (not httpx.Client directly)
+  - pydantic-settings reads from .env automatically when model_config has env_file set
+  - pytest-asyncio requires asyncio_mode = "auto" in pyproject.toml or per-test marks
+
+  ## Resolved Issues

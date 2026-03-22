@@ -1,0 +1,349 @@
+# Hono Edge Stack Template
+# Hono + Cloudflare Workers + D1 (SQLite) + Drizzle
+
+name: api-hono-edge
+description: "Hono + Cloudflare Workers + D1 (SQLite) + Drizzle"
+short_label: "hono-edge"
+
+init_commands:
+  - "pnpm create cloudflare@latest . --type hello-world --framework none --lang ts --no-git --no-deploy"
+  - "pnpm add hono drizzle-orm zod"
+  - "pnpm add -D drizzle-kit wrangler vitest @cloudflare/vitest-pool-workers prettier eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser"
+  - "pnpm install"
+
+directories:
+  - src/routes
+  - src/services
+  - src/db
+  - src/middleware
+  - src/types
+  - src/__tests__
+  - migrations
+
+starter_files:
+  wrangler.toml: |
+    name = "api-hono-edge"
+    main = "src/index.ts"
+    compatibility_date = "2025-01-01"
+    compatibility_flags = ["nodejs_compat"]
+
+    [[d1_databases]]
+    binding = "DB"
+    database_name = "api-db"
+    database_id = "placeholder-replace-after-wrangler-d1-create"
+    migrations_dir = "migrations"
+
+  tsconfig.json: |
+    {
+      "compilerOptions": {
+        "target": "esnext",
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "lib": ["esnext"],
+        "types": ["@cloudflare/workers-types"],
+        "strict": true,
+        "noUncheckedIndexedAccess": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "jsx": "react-jsx"
+      },
+      "include": ["src"],
+      "exclude": ["node_modules", "dist"]
+    }
+
+  src/types/bindings.ts: |
+    // D1 is SQLite, not PostgreSQL. Queries use SQLite syntax.
+    // Workers have 128MB memory limit and no Node.js APIs.
+    export interface Bindings {
+      DB: D1Database;
+    }
+
+  src/db/schema.ts: |
+    import { sql } from "drizzle-orm";
+    import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+
+    // D1 uses SQLite — use sqliteTable (not pgTable).
+    // No UUID type in SQLite — use text() for IDs.
+    export const users = sqliteTable("users", {
+      id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+      email: text("email").notNull().unique(),
+      name: text("name").notNull(),
+      createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(unixepoch())`),
+    });
+
+    export type User = typeof users.$inferSelect;
+    export type NewUser = typeof users.$inferInsert;
+
+  src/db/index.ts: |
+    import { drizzle } from "drizzle-orm/d1";
+    import type { Bindings } from "../types/bindings";
+
+    export function createDb(env: Bindings) {
+      return drizzle(env.DB);
+    }
+
+  drizzle.config.ts: |
+    import { defineConfig } from "drizzle-kit";
+
+    export default defineConfig({
+      schema: "./src/db/schema.ts",
+      out: "./migrations",
+      dialect: "sqlite",
+      driver: "d1-http",
+      dbCredentials: {
+        accountId: process.env.CLOUDFLARE_ACCOUNT_ID ?? "",
+        databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID ?? "",
+        token: process.env.CLOUDFLARE_D1_TOKEN ?? "",
+      },
+    });
+
+  src/types/api.ts: |
+    export interface ApiResponse<T> {
+      success: boolean;
+      data: T | null;
+      error: string | null;
+      meta?: Record<string, unknown>;
+    }
+
+    export function ok<T>(data: T, meta?: Record<string, unknown>): ApiResponse<T> {
+      return { success: true, data, error: null, meta };
+    }
+
+    export function err(error: string): ApiResponse<null> {
+      return { success: false, data: null, error };
+    }
+
+  src/middleware/error.ts: |
+    import type { Context, Next } from "hono";
+    import { err } from "../types/api";
+
+    export async function errorMiddleware(c: Context, next: Next) {
+      try {
+        await next();
+      } catch (e) {
+        console.error(e);
+        const message = e instanceof Error ? e.message : "Internal server error";
+        return c.json(err(message), 500);
+      }
+    }
+
+  src/routes/health.ts: |
+    import { Hono } from "hono";
+    import type { Bindings } from "../types/bindings";
+    import { ok } from "../types/api";
+
+    export const healthRoute = new Hono<{ Bindings: Bindings }>();
+
+    healthRoute.get("/", (c) => {
+      return c.json(ok({ status: "ok" }));
+    });
+
+  src/routes/users.ts: |
+    import { Hono } from "hono";
+    import { zValidator } from "@hono/zod-validator";
+    import { z } from "zod";
+    import { eq } from "drizzle-orm";
+    import type { Bindings } from "../types/bindings";
+    import { createDb } from "../db";
+    import { users } from "../db/schema";
+    import { ok, err } from "../types/api";
+
+    export const usersRoute = new Hono<{ Bindings: Bindings }>();
+
+    const createUserSchema = z.object({
+      email: z.string().email(),
+      name: z.string().min(2),
+    });
+
+    usersRoute.get("/", async (c) => {
+      const db = createDb(c.env);
+      const all = await db.select().from(users).all();
+      return c.json(ok(all));
+    });
+
+    usersRoute.post("/", zValidator("json", createUserSchema), async (c) => {
+      const body = c.req.valid("json");
+      const db = createDb(c.env);
+      const [user] = await db.insert(users).values(body).returning();
+      return c.json(ok(user), 201);
+    });
+
+    usersRoute.get("/:id", async (c) => {
+      const { id } = c.req.param();
+      const db = createDb(c.env);
+      const user = await db.select().from(users).where(eq(users.id, id)).get();
+      if (!user) return c.json(err("User not found"), 404);
+      return c.json(ok(user));
+    });
+
+  src/index.ts: |
+    import { Hono } from "hono";
+    import { cors } from "hono/cors";
+    import { logger } from "hono/logger";
+    import type { Bindings } from "./types/bindings";
+    import { errorMiddleware } from "./middleware/error";
+    import { healthRoute } from "./routes/health";
+    import { usersRoute } from "./routes/users";
+
+    const app = new Hono<{ Bindings: Bindings }>();
+
+    app.use("*", logger());
+    app.use("*", cors({
+      origin: "*",
+      allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      allowHeaders: ["Content-Type", "Authorization"],
+    }));
+    app.use("*", errorMiddleware);
+
+    app.route("/health", healthRoute);
+    app.route("/users", usersRoute);
+
+    export default app;
+
+  src/__tests__/health.test.ts: |
+    import { describe, it, expect } from "vitest";
+    import app from "../index";
+
+    describe("GET /health", () => {
+      it("returns ok status", async () => {
+        const env = { DB: {} as D1Database };
+        const res = await app.request("/health", {}, env);
+        expect(res.status).toBe(200);
+        const body = await res.json() as { success: boolean; data: { status: string } };
+        expect(body.success).toBe(true);
+        expect(body.data.status).toBe("ok");
+      });
+    });
+
+  openapi.yaml: |
+    openapi: "3.1.0"
+    info:
+      title: Hono Edge API
+      version: "0.1.0"
+    servers:
+      - url: http://localhost:8787
+    paths:
+      /health:
+        get:
+          summary: Health check
+          responses:
+            "200":
+              description: Service is healthy
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/HealthResponse"
+    components:
+      schemas:
+        ApiResponse:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              nullable: true
+            error:
+              type: string
+              nullable: true
+        HealthResponse:
+          allOf:
+            - $ref: "#/components/schemas/ApiResponse"
+
+commands:
+  dev: "pnpm exec wrangler dev"
+  test: "pnpm exec vitest run"
+  build: "pnpm exec wrangler deploy --dry-run"
+  deploy: "pnpm exec wrangler deploy"
+  lint: "pnpm exec eslint src/"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+  db_create: "pnpm exec wrangler d1 create api-db"
+  db_generate: "pnpm exec drizzle-kit generate"
+  db_migrate_local: "pnpm exec wrangler d1 migrations apply api-db --local"
+  db_migrate_remote: "pnpm exec wrangler d1 migrations apply api-db --remote"
+
+package_json_scripts:
+  dev: "wrangler dev"
+  build: "wrangler deploy --dry-run"
+  deploy: "wrangler deploy"
+  test: "vitest run"
+  lint: "eslint src/"
+  typecheck: "tsc --noEmit"
+
+env_example: |
+  # Wrangler reads secrets from .dev.vars (not .env) for local development.
+  # Create a .dev.vars file (gitignored) with:
+  # MY_SECRET=value
+  #
+  # For D1 migrations via drizzle-kit push:
+  CLOUDFLARE_ACCOUNT_ID=your-account-id
+  CLOUDFLARE_D1_DATABASE_ID=your-d1-database-id
+  CLOUDFLARE_D1_TOKEN=your-api-token
+
+gitignore_extra: |
+  dist/
+  .dev.vars
+  .wrangler/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Hono + Cloudflare Workers + D1 (SQLite) + Drizzle ORM
+  - Runtime: Cloudflare Workers (edge, no Node.js APIs)
+  - Database: D1 (SQLite) accessed via Drizzle ORM
+
+  ## Commands
+  - Dev: `pnpm exec wrangler dev` (starts local Worker with D1 local replica)
+  - Test: `pnpm exec vitest run`
+  - Deploy: `pnpm exec wrangler deploy`
+  - Typecheck: `pnpm exec tsc --noEmit`
+  - DB generate: `pnpm exec drizzle-kit generate`
+  - DB migrate local: `pnpm exec wrangler d1 migrations apply api-db --local`
+  - DB migrate remote: `pnpm exec wrangler d1 migrations apply api-db --remote`
+
+  ## Architecture
+  - `src/index.ts` — Hono app entry (default export for Workers)
+  - `src/routes/` — Hono routers, typed with Bindings
+  - `src/db/` — Drizzle schema (sqliteTable) + createDb factory
+  - `src/middleware/` — error handler
+  - `src/types/bindings.ts` — Cloudflare environment bindings interface
+  - `migrations/` — SQL migrations generated by drizzle-kit
+
+  ## Conventions
+  - All API responses use envelope: `{ success, data, error, meta }`
+  - D1 binding accessed via c.env.DB — pass to createDb()
+  - Validate input at route level with zod + @hono/zod-validator
+  - NEVER use `any` type
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: Hono (ultrafast, Web Standards)
+  - Runtime: Cloudflare Workers
+  - Database: D1 (Cloudflare's managed SQLite)
+  - ORM: Drizzle (sqlite-core dialect)
+  - Testing: Vitest + @cloudflare/vitest-pool-workers
+
+  ## Patterns & Conventions
+  - App exports default — Workers runtime calls app.fetch
+  - Bindings typed via Hono generic: new Hono<{ Bindings: Bindings }>()
+  - createDb(c.env) factory creates Drizzle instance per request
+  - Routes registered in src/index.ts via app.route()
+
+  ## Gotchas
+  - D1 is SQLite NOT PostgreSQL — use sqliteTable, integer, text from drizzle-orm/sqlite-core
+  - No UUID type in SQLite — store as text, generate with crypto.randomUUID()
+  - Workers have 128MB memory limit — no in-memory caches, no large data structures
+  - No Node.js APIs available — no fs, no net, no child_process (use nodejs_compat for some)
+  - Secrets go in .dev.vars for local dev (not .env) — wrangler reads .dev.vars
+  - D1 database_id in wrangler.toml must be real — run wrangler d1 create first
+  - Migrations: drizzle-kit generate creates SQL, wrangler d1 migrations apply executes it
+  - Hono app.request() works for testing without HTTP server
+
+  ## Resolved Issues

@@ -1,0 +1,218 @@
+# CLI Tool Stack Template
+# TypeScript + Commander.js + tsup + chalk
+
+name: cli-tool
+description: "TypeScript + Commander.js + tsup + chalk"
+short_label: "cli"
+
+init_commands:
+  - "pnpm init"
+  - "pnpm add commander chalk ora"
+  - "pnpm add -D typescript tsup vitest prettier eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser @types/node"
+  - "pnpm install"
+
+directories:
+  - src/commands
+  - src/lib
+  - src/types
+  - src/__tests__
+
+starter_files:
+  tsconfig.json: |
+    {
+      "compilerOptions": {
+        "target": "es2022",
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "outDir": "dist",
+        "rootDir": "src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "declaration": true
+      },
+      "include": ["src"],
+      "exclude": ["node_modules", "dist"]
+    }
+
+  tsup.config.ts: |
+    import { defineConfig } from "tsup";
+
+    export default defineConfig({
+      entry: ["src/index.ts"],
+      format: ["esm"],
+      target: "node22",
+      clean: true,
+      dts: true,
+      banner: {
+        js: "#!/usr/bin/env node",
+      },
+    });
+
+  src/index.ts: |
+    import { program } from "commander";
+    import { readFileSync } from "node:fs";
+    import { fileURLToPath } from "node:url";
+    import { dirname, join } from "node:path";
+    import { greetCommand } from "./commands/greet";
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+
+    const pkg = JSON.parse(
+      readFileSync(join(__dirname, "..", "package.json"), "utf8")
+    ) as { version: string; description: string };
+
+    program
+      .name("mycli")
+      .description(pkg.description)
+      .version(pkg.version);
+
+    program.addCommand(greetCommand);
+
+    program.parse(process.argv);
+
+  src/commands/greet.ts: |
+    import { Command } from "commander";
+    import chalk from "chalk";
+    import ora from "ora";
+
+    export const greetCommand = new Command("greet")
+      .description("Greet a user by name")
+      .argument("<name>", "Name to greet")
+      .option("-l, --loud", "Shout the greeting", false)
+      .action(async (name: string, options: { loud: boolean }) => {
+        const spinner = ora("Preparing greeting...").start();
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        spinner.stop();
+
+        const greeting = `Hello, ${name}!`;
+        const output = options.loud ? greeting.toUpperCase() : greeting;
+
+        console.log(chalk.green(output));
+      });
+
+  src/lib/errors.ts: |
+    import chalk from "chalk";
+
+    export function fatal(message: string, code = 1): never {
+      console.error(chalk.red(`Error: ${message}`));
+      process.exit(code);
+    }
+
+    export function warn(message: string): void {
+      console.warn(chalk.yellow(`Warning: ${message}`));
+    }
+
+  src/types/index.ts: |
+    export interface CliConfig {
+      verbose: boolean;
+    }
+
+  src/__tests__/greet.test.ts: |
+    import { describe, it, expect } from "vitest";
+
+    describe("greet command", () => {
+      it("should format greeting correctly", () => {
+        const name = "World";
+        const greeting = `Hello, ${name}!`;
+        expect(greeting).toBe("Hello, World!");
+      });
+    });
+
+  .npmignore: |
+    src/
+    tsup.config.ts
+    tsconfig.json
+    vitest.config.ts
+    .eslintrc*
+    .prettierrc*
+    __tests__/
+
+commands:
+  dev: "pnpm exec tsup --watch"
+  build: "pnpm exec tsup"
+  test: "pnpm exec vitest run"
+  lint: "pnpm exec eslint src/"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+
+package_json_scripts:
+  dev: "tsup --watch"
+  build: "tsup"
+  test: "vitest run"
+  lint: "eslint src/"
+  typecheck: "tsc --noEmit"
+  prepublishOnly: "pnpm build && pnpm test"
+
+package_json_extra:
+  bin:
+    mycli: "./dist/index.js"
+  type: "module"
+  engines:
+    node: ">=22"
+  files:
+    - dist
+
+env_example: |
+  # CLI tools typically do not need .env files.
+  # Use OS environment variables or a config file (~/.config/mycli/config.json).
+
+gitignore_extra: |
+  dist/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: TypeScript + Commander.js + tsup + chalk
+  - Output: ESM CLI binary with shebang injected by tsup
+
+  ## Commands
+  - Dev (watch): `pnpm exec tsup --watch`
+  - Build: `pnpm exec tsup`
+  - Test: `pnpm exec vitest run`
+  - Typecheck: `pnpm exec tsc --noEmit`
+  - Run locally: `node dist/index.js` or `pnpm link --global`
+
+  ## Architecture
+  - `src/index.ts` — root: creates Commander program, registers subcommands
+  - `src/commands/` — one file per subcommand (each exports a Command)
+  - `src/lib/` — shared utilities (errors, config, http)
+  - `src/types/` — shared TypeScript types
+
+  ## Conventions
+  - package.json must have "bin" field pointing to dist/index.js
+  - package.json must have "type": "module" (ESM output)
+  - tsup config injects #!/usr/bin/env node shebang automatically
+  - Use ora for spinners, chalk for colored output, commander for parsing
+  - NEVER use `any` type
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Language: TypeScript
+  - CLI Framework: Commander.js
+  - Bundler: tsup (ESM output, shebang injection)
+  - Output: chalk (colors), ora (spinners)
+  - Testing: Vitest
+
+  ## Patterns & Conventions
+  - Each subcommand is a separate file in src/commands/
+  - Commands export a Commander Command instance — main index.ts registers them
+  - Errors use fatal() from src/lib/errors.ts — exits with non-zero code
+  - package.json "bin" field required for global install
+  - "type": "module" required for ESM
+
+  ## Gotchas
+  - tsup's banner adds the shebang — do NOT add it manually to src/index.ts
+  - After build: chmod +x dist/index.js may be needed on Linux/Mac
+  - ESM modules cannot use __dirname — use fileURLToPath + import.meta.url
+  - Commander exits process on --help and --version — not suitable for unit testing the program object directly
+  - Use pnpm link --global during development to test as a real CLI
+
+  ## Resolved Issues

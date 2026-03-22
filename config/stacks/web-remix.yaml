@@ -1,0 +1,480 @@
+# Web Stack Template — Remix
+# Remix + Vite + TypeScript + Tailwind CSS + Cloudflare Workers
+
+name: web-remix
+description: "Remix + Vite + TypeScript + Tailwind CSS + Cloudflare Workers"
+short_label: "remix"
+
+init_commands:
+  - "pnpm create cloudflare@latest . --framework=remix --no-git"
+  - "pnpm add zod"
+  - "pnpm add -D vitest @vitest/ui prettier tailwindcss autoprefixer postcss"
+  - "pnpm exec tailwindcss init -p"
+
+directories:
+  - app
+  - app/components
+  - app/lib
+  - app/routes
+  - app/__tests__
+
+starter_files:
+  app/lib/env.server.ts: |
+    import { z } from 'zod';
+
+    // Cloudflare Workers exposes bindings via context.cloudflare.env (in loaders/actions),
+    // not via process.env. This module validates the shape of those bindings.
+    const envSchema = z.object({
+      ENVIRONMENT: z.enum(['development', 'staging', 'production']).default('development'),
+      SESSION_SECRET: z.string().min(32),
+    });
+
+    export type CloudflareEnv = z.infer<typeof envSchema>;
+
+    export function parseEnv(rawEnv: Record<string, unknown>): CloudflareEnv {
+      return envSchema.parse(rawEnv);
+    }
+
+  app/lib/utils.ts: |
+    import { type ClassValue, clsx } from 'clsx';
+    import { twMerge } from 'tailwind-merge';
+
+    export function cn(...inputs: ClassValue[]) {
+      return twMerge(clsx(inputs));
+    }
+
+  vite.config.ts: |
+    import {
+      vitePlugin as remix,
+      cloudflareDevProxyVitePlugin as remixCloudflareDevProxy,
+    } from '@remix-run/dev';
+    import { defineConfig } from 'vite';
+    import tsconfigPaths from 'vite-tsconfig-paths';
+
+    export default defineConfig({
+      plugins: [
+        remixCloudflareDevProxy(),
+        remix({
+          future: {
+            v3_fetcherPersist: true,
+            v3_relativeSplatPath: true,
+            v3_throwAbortReason: true,
+          },
+        }),
+        tsconfigPaths(),
+      ],
+    });
+
+  app/root.tsx: |
+    import {
+      Links,
+      Meta,
+      Outlet,
+      Scripts,
+      ScrollRestoration,
+      isRouteErrorResponse,
+      useRouteError,
+    } from '@remix-run/react';
+    import type { LinksFunction } from '@remix-run/cloudflare';
+    import stylesheet from './tailwind.css?url';
+
+    export const links: LinksFunction = () => [
+      { rel: 'stylesheet', href: stylesheet },
+    ];
+
+    export function Layout({ children }: { children: React.ReactNode }) {
+      return (
+        <html lang="en" className="h-full">
+          <head>
+            <meta charSet="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <Meta />
+            <Links />
+          </head>
+          <body className="h-full bg-white text-gray-900 antialiased">
+            <header className="border-b border-gray-200 px-6 py-4">
+              <nav className="mx-auto flex max-w-4xl items-center justify-between">
+                <a href="/" className="text-xl font-bold">My App</a>
+              </nav>
+            </header>
+            <main className="mx-auto max-w-4xl px-6 py-10">
+              {children}
+            </main>
+            <ScrollRestoration />
+            <Scripts />
+          </body>
+        </html>
+      );
+    }
+
+    export default function App() {
+      return <Outlet />;
+    }
+
+    export function ErrorBoundary() {
+      const error = useRouteError();
+
+      if (isRouteErrorResponse(error)) {
+        return (
+          <div className="flex min-h-screen flex-col items-center justify-center">
+            <h1 className="text-4xl font-bold">{error.status}</h1>
+            <p className="mt-2 text-gray-600">{error.statusText}</p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center">
+          <h1 className="text-4xl font-bold">Error</h1>
+          <p className="mt-2 text-gray-600">Something went wrong.</p>
+        </div>
+      );
+    }
+
+  app/routes/_index.tsx: |
+    import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/cloudflare';
+    import { json } from '@remix-run/cloudflare';
+    import { useLoaderData } from '@remix-run/react';
+
+    export const meta: MetaFunction = () => [
+      { title: 'My Remix App' },
+      { name: 'description', content: 'A Remix app deployed on Cloudflare Workers' },
+    ];
+
+    export async function loader({ context }: LoaderFunctionArgs) {
+      // Access Cloudflare bindings via context.cloudflare.env
+      const env = context.cloudflare.env as Record<string, string>;
+      return json({
+        environment: env.ENVIRONMENT ?? 'development',
+        message: 'Hello from the loader!',
+      });
+    }
+
+    export default function Index() {
+      const { environment, message } = useLoaderData<typeof loader>();
+
+      return (
+        <div>
+          <h1 className="mb-4 text-4xl font-bold">Welcome to Remix</h1>
+          <p className="mb-4 text-lg text-gray-600">{message}</p>
+          <p className="text-sm text-gray-400">Environment: {environment}</p>
+        </div>
+      );
+    }
+
+  app/routes/posts.tsx: |
+    import type {
+      ActionFunctionArgs,
+      LoaderFunctionArgs,
+      MetaFunction,
+    } from '@remix-run/cloudflare';
+    import { json, redirect } from '@remix-run/cloudflare';
+    import { Form, useActionData, useLoaderData } from '@remix-run/react';
+    import { z } from 'zod';
+
+    export const meta: MetaFunction = () => [{ title: 'Posts' }];
+
+    // --- Types ---
+    interface Post {
+      id: string;
+      title: string;
+      body: string;
+    }
+
+    // In a real app, this would be a D1 query or KV lookup.
+    const posts: Post[] = [
+      { id: '1', title: 'Hello World', body: 'This is the first post.' },
+    ];
+
+    // --- Loader: runs on every GET request to this route ---
+    export async function loader({ request }: LoaderFunctionArgs) {
+      // Example: read a search param
+      const url = new URL(request.url);
+      const q = url.searchParams.get('q') ?? '';
+      const filtered = posts.filter(
+        (p) => !q || p.title.toLowerCase().includes(q.toLowerCase()),
+      );
+      return json({ posts: filtered, q });
+    }
+
+    // --- Action: runs on POST/PUT/DELETE form submissions ---
+    const createPostSchema = z.object({
+      title: z.string().min(1, 'Title is required').max(256),
+      body: z.string().min(1, 'Body is required'),
+    });
+
+    export async function action({ request }: ActionFunctionArgs) {
+      const formData = await request.formData();
+
+      const parsed = createPostSchema.safeParse({
+        title: formData.get('title'),
+        body: formData.get('body'),
+      });
+
+      if (!parsed.success) {
+        return json(
+          { errors: parsed.error.flatten().fieldErrors },
+          { status: 400 },
+        );
+      }
+
+      const newPost: Post = {
+        id: String(Date.now()),
+        title: parsed.data.title,
+        body: parsed.data.body,
+      };
+      posts.push(newPost);
+
+      return redirect(`/posts`);
+    }
+
+    // --- Component ---
+    export default function Posts() {
+      const { posts, q } = useLoaderData<typeof loader>();
+      const actionData = useActionData<typeof action>();
+
+      return (
+        <div className="space-y-8">
+          <h1 className="text-3xl font-bold">Posts</h1>
+
+          {/* Search */}
+          <Form method="get" className="flex gap-2">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Search posts..."
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <button type="submit" className="rounded-md bg-gray-100 px-4 py-2 text-sm">
+              Search
+            </button>
+          </Form>
+
+          {/* Post list */}
+          <ul className="space-y-4">
+            {posts.map((post) => (
+              <li key={post.id} className="rounded-lg border border-gray-200 p-4">
+                <h2 className="font-semibold">{post.title}</h2>
+                <p className="mt-1 text-sm text-gray-600">{post.body}</p>
+              </li>
+            ))}
+          </ul>
+
+          {/* Create form */}
+          <section className="rounded-lg border border-gray-200 p-6">
+            <h2 className="mb-4 text-xl font-semibold">New Post</h2>
+            <Form method="post" className="space-y-4">
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                  Title
+                </label>
+                <input
+                  id="title"
+                  name="title"
+                  type="text"
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                />
+                {actionData?.errors?.title && (
+                  <p className="mt-1 text-sm text-red-600">{actionData.errors.title[0]}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="body" className="block text-sm font-medium text-gray-700">
+                  Body
+                </label>
+                <textarea
+                  id="body"
+                  name="body"
+                  rows={4}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                />
+                {actionData?.errors?.body && (
+                  <p className="mt-1 text-sm text-red-600">{actionData.errors.body[0]}</p>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
+              >
+                Create Post
+              </button>
+            </Form>
+          </section>
+        </div>
+      );
+    }
+
+  app/tailwind.css: |
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+
+  tailwind.config.ts: |
+    import type { Config } from 'tailwindcss';
+
+    export default {
+      content: ['./app/**/*.{ts,tsx}'],
+      theme: {
+        extend: {},
+      },
+      plugins: [],
+    } satisfies Config;
+
+  wrangler.toml: |
+    name = "my-remix-app"
+    compatibility_date = "2024-11-01"
+    compatibility_flags = ["nodejs_compat"]
+
+    [vars]
+    ENVIRONMENT = "production"
+
+    # Uncomment to add KV, D1, R2, etc:
+    # [[kv_namespaces]]
+    # binding = "MY_KV"
+    # id = "your-kv-namespace-id"
+
+    # [[d1_databases]]
+    # binding = "DB"
+    # database_name = "my-database"
+    # database_id = "your-d1-database-id"
+
+  vitest.config.ts: |
+    import { defineConfig } from 'vitest/config';
+    import tsconfigPaths from 'vite-tsconfig-paths';
+
+    export default defineConfig({
+      plugins: [tsconfigPaths()],
+      test: {
+        include: ['app/__tests__/**/*.{test,spec}.{ts,tsx}'],
+        environment: 'node',
+      },
+    });
+
+  app/__tests__/smoke.test.ts: |
+    import { describe, it, expect } from 'vitest';
+    import { z } from 'zod';
+
+    describe('Smoke test', () => {
+      it('should pass', () => {
+        expect(true).toBe(true);
+      });
+    });
+
+    describe('Post schema validation', () => {
+      const createPostSchema = z.object({
+        title: z.string().min(1).max(256),
+        body: z.string().min(1),
+      });
+
+      it('accepts valid post data', () => {
+        const result = createPostSchema.safeParse({ title: 'Hello', body: 'World' });
+        expect(result.success).toBe(true);
+      });
+
+      it('rejects empty title', () => {
+        const result = createPostSchema.safeParse({ title: '', body: 'World' });
+        expect(result.success).toBe(false);
+      });
+
+      it('rejects missing body', () => {
+        const result = createPostSchema.safeParse({ title: 'Hello' });
+        expect(result.success).toBe(false);
+      });
+    });
+
+    describe('Env validation', () => {
+      it('allows valid environments', () => {
+        const schema = z.enum(['development', 'staging', 'production']);
+        expect(schema.safeParse('production').success).toBe(true);
+        expect(schema.safeParse('unknown').success).toBe(false);
+      });
+    });
+
+commands:
+  dev: "pnpm dev"
+  test: "pnpm exec vitest run"
+  build: "pnpm build"
+  lint: "pnpm exec tsc --noEmit"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+  deploy: "pnpm exec wrangler deploy"
+  cf:types: "pnpm exec wrangler types"
+
+package_json_scripts:
+  test: "vitest run"
+  typecheck: "tsc --noEmit"
+  deploy: "wrangler deploy"
+  cf:types: "wrangler types"
+
+env_example: |
+  # Cloudflare Workers bindings are NOT process.env vars.
+  # Set secrets with: wrangler secret put SESSION_SECRET
+  # Set vars in wrangler.toml [vars] section.
+  #
+  # For local dev only (.dev.vars — git-ignored by Wrangler):
+  SESSION_SECRET=generate-with-openssl-rand-base64-32
+  ENVIRONMENT=development
+
+gitignore_extra: |
+  .env
+  .env*.local
+  .dev.vars
+  .wrangler
+  worker-configuration.d.ts
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Remix + Vite + TypeScript + Tailwind CSS + Cloudflare Workers
+  - Deploy target: Cloudflare Workers (edge runtime). Not Node.js.
+
+  ## Commands
+  - Dev: `pnpm dev`
+  - Test: `pnpm exec vitest run`
+  - Build: `pnpm build`
+  - Typecheck: `pnpm exec tsc --noEmit`
+  - Deploy: `pnpm exec wrangler deploy`
+  - Generate CF types: `pnpm exec wrangler types`
+
+  ## Architecture
+  - `app/routes/` — File-based routing. Each route file exports `loader`, `action`, and a default component.
+  - `app/root.tsx` — Root layout, global stylesheet, ErrorBoundary.
+  - `app/lib/` — Shared utilities, server-side helpers.
+  - `wrangler.toml` — Cloudflare Workers config (KV, D1, R2 bindings declared here).
+
+  ## Conventions
+  - **Loader**: runs on every GET to a route. Fetch data here.
+  - **Action**: runs on POST/PUT/DELETE form submissions. Mutate data here.
+  - Cloudflare bindings come from `context.cloudflare.env` in loaders/actions, NOT `process.env`.
+  - Always `return json(...)` from loaders; use `redirect(...)` after successful mutations.
+  - Validate all form data with Zod in actions before processing.
+  - NEVER use `any` type — use `unknown` + type guard.
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: Remix (Vite-based, v2)
+  - Runtime: Cloudflare Workers (edge, NOT Node.js)
+  - Language: TypeScript (strict)
+  - Styling: Tailwind CSS
+  - Testing: Vitest
+
+  ## Patterns & Conventions
+  - Every route file can export: `loader` (GET), `action` (mutations), `meta` (head tags), and a default React component
+  - `useLoaderData<typeof loader>()` — typed by the exported `loader` function signature
+  - `useActionData<typeof action>()` — typed by the action; returns `undefined` on initial load
+  - `<Form method="post">` submits to the current route's action; use `action="/other"` to target another route
+  - Zod validation in actions: `safeParse()` → `fail 400 + errors` if invalid, proceed on success
+
+  ## Gotchas
+  - Remix uses loader/action pattern, NOT `getServerSideProps` / `getStaticProps` (Next.js). There is no `getServerSideProps` in Remix — data fetching is always in `loader`.
+  - Cloudflare Workers runtime does NOT have `process.env`. Environment variables and secrets are in `context.cloudflare.env` (loaders/actions) or `wrangler.toml` [vars]. Never use `process.env` in route code.
+  - Local dev secrets go in `.dev.vars` (git-ignored by Wrangler), NOT `.env`. Wrangler reads `.dev.vars` automatically during `wrangler dev`.
+  - After form submission, always `return redirect(...)` on success — this prevents the browser from re-submitting on refresh (Post/Redirect/Get pattern).
+  - `json()` and `redirect()` are imported from `@remix-run/cloudflare`, NOT `@remix-run/node`. Using the wrong import causes runtime errors on Cloudflare.
+  - `useActionData()` is `undefined` on the initial page load (no action has run yet) — always guard: `actionData?.errors?.field`.
+  - Remix v2 future flags in `vite.config.ts` prepare for Remix v3 breaking changes. Do not remove them.
+
+  ## Resolved Issues

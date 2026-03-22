@@ -1,0 +1,450 @@
+# Web Stack Template — T3
+# Next.js 15 + tRPC v11 + Prisma + NextAuth.js v5 + Tailwind CSS
+
+name: web-t3
+description: "Next.js 15 + tRPC v11 + Prisma + NextAuth.js v5 + Tailwind CSS"
+short_label: "t3"
+
+init_commands:
+  - "pnpm create t3-app@latest . --CI --nextAuth --prisma --tailwind --trpc --appRouter --noGit --importAlias '@/*'"
+  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom prettier"
+
+directories:
+  - src/app
+  - src/app/api/trpc
+  - src/components
+  - src/server/api/routers
+  - src/server/db
+  - src/trpc
+  - src/__tests__
+  - prisma
+
+starter_files:
+  src/server/api/trpc.ts: |
+    import { initTRPC, TRPCError } from '@trpc/server';
+    import { cache } from 'react';
+    import { auth } from '~/server/auth';
+
+    export const createTRPCContext = cache(async (opts: { headers: Headers }) => {
+      const session = await auth();
+      return {
+        session,
+        headers: opts.headers,
+      };
+    });
+
+    type Context = Awaited<ReturnType<typeof createTRPCContext>>;
+
+    const t = initTRPC.context<Context>().create();
+
+    export const createTRPCRouter = t.router;
+    export const createCallerFactory = t.createCallerFactory;
+
+    export const publicProcedure = t.procedure;
+
+    export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+      if (!ctx.session?.user) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+      }
+      return next({
+        ctx: {
+          ...ctx,
+          session: ctx.session,
+        },
+      });
+    });
+
+  src/server/api/routers/post.ts: |
+    import { z } from 'zod';
+    import { createTRPCRouter, protectedProcedure, publicProcedure } from '~/server/api/trpc';
+    import { db } from '~/server/db';
+
+    export const postRouter = createTRPCRouter({
+      hello: publicProcedure
+        .input(z.object({ text: z.string() }))
+        .query(({ input }) => {
+          return { greeting: `Hello ${input.text}` };
+        }),
+
+      getAll: publicProcedure.query(async () => {
+        return db.post.findMany({ orderBy: { createdAt: 'desc' } });
+      }),
+
+      getById: publicProcedure
+        .input(z.object({ id: z.string().cuid() }))
+        .query(async ({ input }) => {
+          return db.post.findUnique({ where: { id: input.id } });
+        }),
+
+      create: protectedProcedure
+        .input(
+          z.object({
+            title: z.string().min(1).max(256),
+            content: z.string().min(1),
+          }),
+        )
+        .mutation(async ({ ctx, input }) => {
+          return db.post.create({
+            data: {
+              ...input,
+              authorId: ctx.session.user.id,
+            },
+          });
+        }),
+
+      delete: protectedProcedure
+        .input(z.object({ id: z.string().cuid() }))
+        .mutation(async ({ ctx, input }) => {
+          const post = await db.post.findUnique({ where: { id: input.id } });
+          if (post?.authorId !== ctx.session.user.id) {
+            throw new Error('Not authorized');
+          }
+          return db.post.delete({ where: { id: input.id } });
+        }),
+    });
+
+  src/server/api/root.ts: |
+    import { createCallerFactory, createTRPCRouter } from '~/server/api/trpc';
+    import { postRouter } from '~/server/api/routers/post';
+
+    export const appRouter = createTRPCRouter({
+      post: postRouter,
+    });
+
+    export type AppRouter = typeof appRouter;
+
+    export const createCaller = createCallerFactory(appRouter);
+
+  src/app/api/trpc/[trpc]/route.ts: |
+    import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
+    import { type NextRequest } from 'next/server';
+    import { appRouter } from '~/server/api/root';
+    import { createTRPCContext } from '~/server/api/trpc';
+
+    const handler = (req: NextRequest) =>
+      fetchRequestHandler({
+        endpoint: '/api/trpc',
+        req,
+        router: appRouter,
+        createContext: () =>
+          createTRPCContext({ headers: req.headers }),
+      });
+
+    export { handler as GET, handler as POST };
+
+  src/trpc/server.ts: |
+    import 'server-only';
+    import { createHydrationHelpers } from '@trpc/react-query/rsc';
+    import { cache } from 'react';
+    import { createCaller, type AppRouter } from '~/server/api/root';
+    import { createTRPCContext } from '~/server/api/trpc';
+    import { makeQueryClient } from './query-client';
+
+    export const getQueryClient = cache(makeQueryClient);
+
+    const caller = createCaller(
+      cache(() => createTRPCContext({ headers: new Headers() }))
+    );
+
+    export const { trpc: api, HydrateClient } = createHydrationHelpers<AppRouter>(
+      caller,
+      getQueryClient,
+    );
+
+  src/trpc/query-client.ts: |
+    import {
+      defaultShouldDehydrateQuery,
+      QueryClient,
+    } from '@tanstack/react-query';
+    import SuperJSON from 'superjson';
+
+    export function makeQueryClient() {
+      return new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30 * 1000,
+          },
+          dehydrate: {
+            serializeData: SuperJSON.serialize,
+            shouldDehydrateQuery: (query) =>
+              defaultShouldDehydrateQuery(query) ||
+              query.state.status === 'pending',
+          },
+          hydrate: {
+            deserializeData: SuperJSON.deserialize,
+          },
+        },
+      });
+    }
+
+  src/trpc/react.tsx: |
+    'use client';
+
+    import type { QueryClient } from '@tanstack/react-query';
+    import { QueryClientProvider } from '@tanstack/react-query';
+    import { createTRPCClient, httpBatchLink } from '@trpc/client';
+    import { createTRPCContext } from '@trpc/tanstack-react-query';
+    import { useState } from 'react';
+    import SuperJSON from 'superjson';
+    import type { AppRouter } from '~/server/api/root';
+    import { makeQueryClient } from './query-client';
+
+    export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
+
+    let browserQueryClient: QueryClient | undefined;
+    function getQueryClient() {
+      if (typeof window === 'undefined') return makeQueryClient();
+      browserQueryClient ??= makeQueryClient();
+      return browserQueryClient;
+    }
+
+    function getBaseUrl() {
+      if (typeof window !== 'undefined') return '';
+      if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+      return `http://localhost:${process.env.PORT ?? 3000}`;
+    }
+
+    export function TRPCReactProvider({ children }: { children: React.ReactNode }) {
+      const queryClient = getQueryClient();
+      const [trpcClient] = useState(() =>
+        createTRPCClient<AppRouter>({
+          links: [
+            httpBatchLink({
+              url: `${getBaseUrl()}/api/trpc`,
+              transformer: SuperJSON,
+            }),
+          ],
+        }),
+      );
+
+      return (
+        <QueryClientProvider client={queryClient}>
+          <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+            {children}
+          </TRPCProvider>
+        </QueryClientProvider>
+      );
+    }
+
+  prisma/schema.prisma: |
+    generator client {
+      provider = "prisma-client-js"
+    }
+
+    datasource db {
+      provider = "sqlite"
+      url      = env("DATABASE_URL")
+    }
+
+    model Account {
+      id                String  @id @default(cuid())
+      userId            String
+      type              String
+      provider          String
+      providerAccountId String
+      refresh_token     String?
+      access_token      String?
+      expires_at        Int?
+      token_type        String?
+      scope             String?
+      id_token          String?
+      session_state     String?
+      user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+      @@unique([provider, providerAccountId])
+    }
+
+    model Session {
+      id           String   @id @default(cuid())
+      sessionToken String   @unique
+      userId       String
+      expires      DateTime
+      user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    }
+
+    model User {
+      id            String    @id @default(cuid())
+      name          String?
+      email         String?   @unique
+      emailVerified DateTime?
+      image         String?
+      accounts      Account[]
+      sessions      Session[]
+      posts         Post[]
+    }
+
+    model VerificationToken {
+      identifier String
+      token      String   @unique
+      expires    DateTime
+
+      @@unique([identifier, token])
+    }
+
+    model Post {
+      id        String   @id @default(cuid())
+      title     String
+      content   String
+      authorId  String
+      author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+    }
+
+  src/lib/env.ts: |
+    import { z } from 'zod';
+
+    const envSchema = z.object({
+      DATABASE_URL: z.string().url(),
+      NEXTAUTH_SECRET: z.string().min(32),
+      NEXTAUTH_URL: z.string().url().optional(),
+      DISCORD_CLIENT_ID: z.string().optional(),
+      DISCORD_CLIENT_SECRET: z.string().optional(),
+    });
+
+    export const env = envSchema.parse(process.env);
+
+  vitest.config.ts: |
+    import { defineConfig } from 'vitest/config';
+    import react from '@vitejs/plugin-react';
+    import path from 'path';
+
+    export default defineConfig({
+      plugins: [react()],
+      test: {
+        environment: 'jsdom',
+        setupFiles: ['./src/__tests__/setup.ts'],
+        include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      },
+      resolve: {
+        alias: {
+          '~': path.resolve(__dirname, './src'),
+        },
+      },
+    });
+
+  src/__tests__/setup.ts: |
+    import '@testing-library/jest-dom/vitest';
+
+  src/__tests__/smoke.test.ts: |
+    import { describe, it, expect } from 'vitest';
+    import { z } from 'zod';
+
+    describe('Smoke test', () => {
+      it('should pass', () => {
+        expect(true).toBe(true);
+      });
+    });
+
+    describe('Post input schema', () => {
+      const createPostSchema = z.object({
+        title: z.string().min(1).max(256),
+        content: z.string().min(1),
+      });
+
+      it('accepts valid post data', () => {
+        const result = createPostSchema.safeParse({
+          title: 'Hello World',
+          content: 'Some content here',
+        });
+        expect(result.success).toBe(true);
+      });
+
+      it('rejects empty title', () => {
+        const result = createPostSchema.safeParse({ title: '', content: 'x' });
+        expect(result.success).toBe(false);
+      });
+    });
+
+commands:
+  dev: "pnpm dev"
+  test: "pnpm exec vitest run"
+  build: "pnpm build"
+  lint: "pnpm lint"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+  db:push: "pnpm exec prisma db push"
+  db:studio: "pnpm exec prisma studio"
+
+package_json_scripts:
+  test: "vitest run"
+  typecheck: "tsc --noEmit"
+  db:push: "prisma db push"
+  db:generate: "prisma generate"
+  db:studio: "prisma studio"
+
+env_example: |
+  DATABASE_URL="file:./dev.db"
+  NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
+  NEXTAUTH_URL="http://localhost:3000"
+  # Optional OAuth providers:
+  # DISCORD_CLIENT_ID=
+  # DISCORD_CLIENT_SECRET=
+
+gitignore_extra: |
+  .env
+  .env*.local
+  .vercel
+  dev.db
+  dev.db-journal
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Next.js 15 + tRPC v11 + Prisma + NextAuth.js v5 + Tailwind CSS
+  - Architecture: Full-stack typesafe — tRPC routers share types end-to-end, no REST boundaries.
+
+  ## Commands
+  - Dev: `pnpm dev`
+  - Test: `pnpm exec vitest run`
+  - Build: `pnpm build`
+  - Lint: `pnpm lint`
+  - Typecheck: `pnpm exec tsc --noEmit`
+  - DB push: `pnpm exec prisma db push`
+  - DB studio: `pnpm exec prisma studio`
+
+  ## Architecture
+  - `src/server/api/trpc.ts` — tRPC init, context, `publicProcedure`, `protectedProcedure`
+  - `src/server/api/routers/` — one router file per domain (e.g. `post.ts`, `user.ts`)
+  - `src/server/api/root.ts` — merges all routers into `appRouter`, exports `AppRouter` type
+  - `src/app/api/trpc/[trpc]/route.ts` — Next.js route handler that serves tRPC
+  - `src/trpc/server.ts` — server-side caller for React Server Components
+  - `src/trpc/react.tsx` — `TRPCReactProvider` and `useTRPC` for client components
+  - `prisma/schema.prisma` — database schema (Prisma)
+
+  ## Conventions
+  - tRPC procedures: `publicProcedure` for public, `protectedProcedure` for auth-gated
+  - Server components: call `api.post.getAll()` directly (no fetch overhead)
+  - Client components: use `useTRPC()` hook from `~/trpc/react`
+  - Add new domains: create `src/server/api/routers/thing.ts`, register in `root.ts`
+  - NEVER use `any` type — use `unknown` + type guard
+  - ALWAYS validate procedure inputs with Zod
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: Next.js 15 (App Router)
+  - API: tRPC v11 (end-to-end type safety)
+  - ORM: Prisma
+  - Auth: NextAuth.js v5 (Auth.js)
+  - Styling: Tailwind CSS
+  - Testing: Vitest + React Testing Library
+
+  ## Patterns & Conventions
+  - tRPC routers live in `src/server/api/routers/` — one file per domain
+  - Merge routers in `src/server/api/root.ts` via `createTRPCRouter({ post: postRouter })`
+  - `protectedProcedure` throws UNAUTHORIZED if session is absent — use for all auth-gated mutations
+  - Server components import from `~/trpc/server`; client components import from `~/trpc/react`
+  - Prisma `db` singleton lives in `src/server/db.ts` — never create new PrismaClient elsewhere
+
+  ## Gotchas
+  - tRPC routers share TypeScript types end-to-end — they are NOT REST endpoints. Do not fetch `/api/trpc` manually with `fetch()`. Always use the `api` object or `useTRPC()` hook.
+  - `protectedProcedure` accesses `ctx.session.user` — it is narrowed (not null) by the middleware. You do not need to null-check it in the procedure body.
+  - `create-t3-app` generates `src/server/auth.ts` for NextAuth config — do not recreate this file.
+  - Prisma `db push` (dev) vs `db migrate` (prod) — use `migrate dev` before shipping to production.
+  - SuperJSON transformer is required for `Date`, `Map`, `Set` to survive serialization over tRPC. It is pre-configured in `TRPCReactProvider`.
+  - Next.js 15: `cookies()` and `headers()` are async — always `await` them in Server Components.
+
+  ## Resolved Issues

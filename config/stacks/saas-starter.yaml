@@ -1,0 +1,326 @@
+# SaaS Starter Stack Template
+# Next.js 15 + Supabase Auth + Stripe + Resend + shadcn/ui
+
+name: saas-starter
+description: "Next.js 15 + Supabase Auth + Stripe + Resend + shadcn/ui"
+short_label: "saas"
+
+init_commands:
+  - "pnpm create next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*'"
+  - "pnpm add @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js resend zod"
+  - "pnpm add class-variance-authority clsx tailwind-merge lucide-react"
+  - "pnpm add -D @types/node vitest @vitejs/plugin-react"
+  - "pnpm dlx shadcn@latest init --defaults"
+
+directories:
+  - src/app/(auth)
+  - src/app/(dashboard)
+  - src/app/api/stripe
+  - src/app/api/webhooks
+  - src/components/ui
+  - src/components/billing
+  - src/lib
+  - src/services
+  - src/types
+  - src/__tests__
+
+starter_files:
+  src/lib/env.ts: |
+    import { z } from "zod";
+
+    const envSchema = z.object({
+      NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_"),
+      STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
+      STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
+      RESEND_API_KEY: z.string().startsWith("re_"),
+      NEXT_PUBLIC_APP_URL: z.string().url(),
+    });
+
+    export const env = envSchema.parse(process.env);
+
+  src/lib/supabase/server.ts: |
+    import { createServerClient } from "@supabase/ssr";
+    import { cookies } from "next/headers";
+
+    export async function createClient() {
+      const cookieStore = await cookies();
+      return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() { return cookieStore.getAll(); },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {}
+            },
+          },
+        }
+      );
+    }
+
+  src/lib/supabase/client.ts: |
+    import { createBrowserClient } from "@supabase/ssr";
+
+    export function createClient() {
+      return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+    }
+
+  src/lib/stripe.ts: |
+    import Stripe from "stripe";
+    import { env } from "./env";
+
+    export const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-01-27.acacia",
+      typescript: true,
+    });
+
+  src/lib/resend.ts: |
+    import { Resend } from "resend";
+    import { env } from "./env";
+
+    export const resend = new Resend(env.RESEND_API_KEY);
+
+  src/types/api.ts: |
+    export interface ApiResponse<T> {
+      success: boolean;
+      data: T | null;
+      error: string | null;
+      meta?: Record<string, unknown>;
+    }
+
+    export function ok<T>(data: T, meta?: Record<string, unknown>): ApiResponse<T> {
+      return { success: true, data, error: null, meta };
+    }
+
+    export function err(error: string): ApiResponse<null> {
+      return { success: false, data: null, error };
+    }
+
+  src/app/api/webhooks/stripe/route.ts: |
+    import { type NextRequest, NextResponse } from "next/server";
+    import { stripe } from "@/lib/stripe";
+    import { env } from "@/lib/env";
+
+    // SECURITY: Stripe webhook signature verification is critical.
+    // Never skip verifyWebhook — it prevents replay attacks and forged events.
+    export async function POST(req: NextRequest) {
+      const body = await req.text();
+      const signature = req.headers.get("stripe-signature");
+
+      if (!signature) {
+        return NextResponse.json({ error: "No signature" }, { status: 400 });
+      }
+
+      let event;
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET);
+      } catch (err) {
+        console.error("Webhook signature verification failed:", err);
+        return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+      }
+
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object;
+          // TODO: provision access for session.customer
+          console.log("Checkout completed:", session.id);
+          break;
+        }
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object;
+          // TODO: revoke access for subscription.customer
+          console.log("Subscription cancelled:", subscription.id);
+          break;
+        }
+        default:
+          console.log("Unhandled event type:", event.type);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+  src/components/billing/PricingCard.tsx: |
+    "use client";
+    import { useState } from "react";
+
+    interface PricingCardProps {
+      name: string;
+      price: number;
+      description: string;
+      features: string[];
+      priceId: string;
+      isPopular?: boolean;
+    }
+
+    export function PricingCard({ name, price, description, features, priceId, isPopular = false }: PricingCardProps) {
+      const [isLoading, setIsLoading] = useState(false);
+
+      async function handleSubscribe() {
+        setIsLoading(true);
+        try {
+          const res = await fetch("/api/stripe/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ priceId }),
+          });
+          const data = await res.json() as { url?: string };
+          if (data.url) window.location.href = data.url;
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      return (
+        <div className={`rounded-2xl border p-8 ${isPopular ? "border-blue-600 shadow-lg" : "border-gray-200"}`}>
+          {isPopular && (
+            <span className="mb-4 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
+              Most Popular
+            </span>
+          )}
+          <h3 className="text-xl font-bold text-gray-900">{name}</h3>
+          <p className="mt-1 text-sm text-gray-500">{description}</p>
+          <p className="mt-4 text-4xl font-bold text-gray-900">
+            ${price}<span className="text-base font-normal text-gray-500">/mo</span>
+          </p>
+          <ul className="mt-6 space-y-3">
+            {features.map((f) => (
+              <li key={f} className="flex items-center gap-2 text-sm text-gray-700">
+                <span className="text-green-500">&#10003;</span> {f}
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={handleSubscribe}
+            disabled={isLoading}
+            className={`mt-8 w-full rounded-lg py-3 font-semibold transition ${
+              isPopular
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "border border-gray-300 text-gray-900 hover:bg-gray-50"
+            } disabled:opacity-50`}
+          >
+            {isLoading ? "Redirecting..." : "Get started"}
+          </button>
+        </div>
+      );
+    }
+
+  src/app/(dashboard)/dashboard/page.tsx: |
+    import { createClient } from "@/lib/supabase/server";
+    import { redirect } from "next/navigation";
+
+    export default async function DashboardPage() {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) redirect("/login");
+
+      return (
+        <main className="p-8">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="mt-2 text-gray-600">Welcome, {user.email}</p>
+        </main>
+      );
+    }
+
+  src/__tests__/smoke.test.ts: |
+    import { describe, it, expect } from "vitest";
+
+    describe("Smoke test", () => {
+      it("should pass", () => {
+        expect(true).toBe(true);
+      });
+    });
+
+commands:
+  dev: "pnpm exec next dev"
+  test: "pnpm exec vitest run"
+  build: "pnpm exec next build"
+  lint: "pnpm exec next lint"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+
+package_json_scripts:
+  dev: "next dev"
+  build: "next build"
+  test: "vitest run"
+  lint: "next lint"
+  typecheck: "tsc --noEmit"
+
+env_example: |
+  NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxx
+  STRIPE_SECRET_KEY=sk_test_xxxx
+  STRIPE_WEBHOOK_SECRET=whsec_xxxx
+  RESEND_API_KEY=re_xxxx
+  NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+gitignore_extra: |
+  .next/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Next.js 15 + Supabase Auth + Stripe + Resend + shadcn/ui
+  - Auth: Supabase (@supabase/ssr for server/client split)
+  - Billing: Stripe subscriptions with webhook verification
+  - Email: Resend
+
+  ## Commands
+  - Dev: `pnpm exec next dev`
+  - Test: `pnpm exec vitest run`
+  - Build: `pnpm exec next build`
+  - Lint: `pnpm exec next lint`
+  - Typecheck: `pnpm exec tsc --noEmit`
+
+  ## Architecture
+  - `src/app/(auth)/` — login, signup, callback pages
+  - `src/app/(dashboard)/` — protected app pages
+  - `src/app/api/webhooks/stripe/` — Stripe webhook handler
+  - `src/app/api/stripe/` — checkout session creation
+  - `src/components/billing/` — pricing, paywall components
+  - `src/lib/` — Supabase client (server + browser), Stripe, Resend
+  - `src/services/` — business logic
+
+  ## Conventions
+  - All API responses use envelope: `{ success, data, error, meta }`
+  - Use createClient() from @/lib/supabase/server in Server Components
+  - Use createClient() from @/lib/supabase/client in Client Components
+  - SECURITY: NEVER skip Stripe webhook signature verification
+  - NEVER use `any` type
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: Next.js 15 (App Router)
+  - Auth: Supabase Auth (@supabase/ssr)
+  - Billing: Stripe (subscriptions, webhooks)
+  - Email: Resend
+  - UI: shadcn/ui + Tailwind CSS
+  - Testing: Vitest
+
+  ## Patterns & Conventions
+  - Server Components fetch data directly from Supabase server client
+  - Client Components use Supabase browser client
+  - Route groups: (auth) for public, (dashboard) for protected
+  - Stripe webhook route must be excluded from middleware auth check
+
+  ## Gotchas
+  - Stripe webhook signature verification is security-critical — never bypass
+  - Webhook route needs raw body (not parsed JSON) — use req.text() not req.json()
+  - Supabase server client requires await cookies() in Next.js 15
+  - Set up webhook endpoint in Stripe dashboard before testing locally (use stripe CLI)
+  - stripe listen --forward-to localhost:3000/api/webhooks/stripe
+
+  ## Resolved Issues

@@ -1,0 +1,353 @@
+# Mobile Expo + RevenueCat Stack Template
+# Expo SDK 52 + RevenueCat + Expo Router + Supabase
+
+name: mobile-expo-revenucat
+description: "Expo SDK 52 + RevenueCat + Expo Router + Supabase"
+short_label: "revenucat"
+
+init_commands:
+  - "npx create-expo-app@latest . --template blank-typescript"
+  - "npx expo install react-native-purchases expo-router expo-linking expo-constants expo-status-bar"
+  - "npx expo install @supabase/supabase-js react-native-url-polyfill @react-native-async-storage/async-storage zod"
+  - "pnpm add -D jest @testing-library/react-native prettier eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser"
+
+directories:
+  - app
+  - src/components
+  - src/components/ui
+  - src/lib
+  - src/hooks
+  - src/types
+  - src/__tests__
+
+starter_files:
+  src/lib/env.ts: |
+    import { z } from "zod";
+
+    const envSchema = z.object({
+      EXPO_PUBLIC_SUPABASE_URL: z.string().url(),
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+      EXPO_PUBLIC_REVENUECAT_API_KEY_IOS: z.string().min(1),
+      EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID: z.string().min(1),
+    });
+
+    export const env = envSchema.parse({
+      EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      EXPO_PUBLIC_REVENUECAT_API_KEY_IOS: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS,
+      EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID,
+    });
+
+  src/lib/supabase.ts: |
+    import "react-native-url-polyfill/auto";
+    import { createClient } from "@supabase/supabase-js";
+    import AsyncStorage from "@react-native-async-storage/async-storage";
+    import { env } from "./env";
+
+    export const supabase = createClient(env.EXPO_PUBLIC_SUPABASE_URL, env.EXPO_PUBLIC_SUPABASE_ANON_KEY, {
+      auth: {
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    });
+
+  src/lib/purchases.ts: |
+    import Purchases, { LOG_LEVEL } from "react-native-purchases";
+    import { Platform } from "react-native";
+    import { env } from "./env";
+
+    export function initializePurchases(): void {
+      if (__DEV__) {
+        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      }
+
+      const apiKey =
+        Platform.OS === "ios"
+          ? env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS
+          : env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID;
+
+      Purchases.configure({ apiKey });
+    }
+
+  src/hooks/useEntitlement.ts: |
+    import { useEffect, useState } from "react";
+    import Purchases, { type CustomerInfo } from "react-native-purchases";
+
+    interface EntitlementState {
+      isActive: boolean;
+      isLoading: boolean;
+      error: string | null;
+    }
+
+    export function useEntitlement(entitlementId: string): EntitlementState {
+      const [state, setState] = useState<EntitlementState>({
+        isActive: false,
+        isLoading: true,
+        error: null,
+      });
+
+      useEffect(() => {
+        let cancelled = false;
+
+        async function checkEntitlement() {
+          try {
+            const customerInfo: CustomerInfo = await Purchases.getCustomerInfo();
+            if (!cancelled) {
+              setState({
+                isActive: customerInfo.entitlements.active[entitlementId] !== undefined,
+                isLoading: false,
+                error: null,
+              });
+            }
+          } catch (err) {
+            if (!cancelled) {
+              setState({
+                isActive: false,
+                isLoading: false,
+                error: err instanceof Error ? err.message : "Unknown error",
+              });
+            }
+          }
+        }
+
+        checkEntitlement();
+        return () => { cancelled = true; };
+      }, [entitlementId]);
+
+      return state;
+    }
+
+  src/components/Paywall.tsx: |
+    import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+    import { useState } from "react";
+    import Purchases, { type Package } from "react-native-purchases";
+
+    interface PaywallProps {
+      onDismiss: () => void;
+      onPurchaseSuccess: () => void;
+    }
+
+    export function Paywall({ onDismiss, onPurchaseSuccess }: PaywallProps) {
+      const [isLoading, setIsLoading] = useState(false);
+      const [error, setError] = useState<string | null>(null);
+
+      async function handlePurchase(pkg: Package) {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const { customerInfo } = await Purchases.purchasePackage(pkg);
+          if (Object.keys(customerInfo.entitlements.active).length > 0) {
+            onPurchaseSuccess();
+          }
+        } catch (err) {
+          if (err instanceof Error && !err.message.includes("cancelled")) {
+            setError(err.message);
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      async function handleRestore() {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const customerInfo = await Purchases.restorePurchases();
+          if (Object.keys(customerInfo.entitlements.active).length > 0) {
+            onPurchaseSuccess();
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Restore failed");
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      return (
+        <View style={styles.container}>
+          <Text style={styles.title}>Upgrade to Pro</Text>
+          <Text style={styles.subtitle}>Unlock all features with a subscription.</Text>
+
+          {error && <Text style={styles.error}>{error}</Text>}
+
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#3b82f6" />
+          ) : (
+            <>
+              <TouchableOpacity style={styles.primaryButton} onPress={() => handleRestore()}>
+                <Text style={styles.primaryButtonText}>Subscribe</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.secondaryButton} onPress={handleRestore}>
+                <Text style={styles.secondaryButtonText}>Restore Purchases</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          <TouchableOpacity onPress={onDismiss}>
+            <Text style={styles.dismiss}>Not now</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    const styles = StyleSheet.create({
+      container: { flex: 1, padding: 24, alignItems: "center", justifyContent: "center" },
+      title: { fontSize: 28, fontWeight: "bold", marginBottom: 8, textAlign: "center" },
+      subtitle: { fontSize: 16, color: "#6b7280", marginBottom: 32, textAlign: "center" },
+      error: { color: "#ef4444", marginBottom: 16, textAlign: "center" },
+      primaryButton: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12, width: "100%" },
+      primaryButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16, textAlign: "center" },
+      secondaryButton: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 24, width: "100%" },
+      secondaryButtonText: { color: "#374151", fontSize: 16, textAlign: "center" },
+      dismiss: { color: "#9ca3af", fontSize: 14 },
+    });
+
+  src/types/database.ts: |
+    // Generate with: npx supabase gen types typescript --project-id <id> > src/types/database.ts
+    export type Database = Record<string, never>;
+
+  app/_layout.tsx: |
+    import { useEffect } from "react";
+    import { Stack } from "expo-router";
+    import { initializePurchases } from "../src/lib/purchases";
+
+    export default function RootLayout() {
+      useEffect(() => {
+        initializePurchases();
+      }, []);
+
+      return (
+        <Stack>
+          <Stack.Screen name="index" options={{ title: "Home" }} />
+        </Stack>
+      );
+    }
+
+  app/index.tsx: |
+    import { View, Text, StyleSheet } from "react-native";
+    import { useEntitlement } from "../src/hooks/useEntitlement";
+
+    export default function HomeScreen() {
+      const { isActive, isLoading } = useEntitlement("pro");
+
+      return (
+        <View style={styles.container}>
+          <Text style={styles.title}>Welcome</Text>
+          {!isLoading && (
+            <Text style={styles.badge}>{isActive ? "Pro" : "Free"}</Text>
+          )}
+        </View>
+      );
+    }
+
+    const styles = StyleSheet.create({
+      container: { flex: 1, justifyContent: "center", alignItems: "center" },
+      title: { fontSize: 24, fontWeight: "bold" },
+      badge: { marginTop: 8, fontSize: 16, color: "#3b82f6" },
+    });
+
+  eas.json: |
+    {
+      "cli": { "version": ">= 3.0.0" },
+      "build": {
+        "development": {
+          "developmentClient": true,
+          "distribution": "internal"
+        },
+        "preview": {
+          "distribution": "internal"
+        },
+        "production": {}
+      },
+      "submit": {
+        "production": {}
+      }
+    }
+
+  src/__tests__/smoke.test.tsx: |
+    import { describe, it, expect } from "@jest/globals";
+
+    describe("Smoke test", () => {
+      it("should pass", () => {
+        expect(true).toBe(true);
+      });
+    });
+
+commands:
+  dev: "npx expo start"
+  test: "npx jest"
+  build_ios: "npx expo run:ios"
+  build_android: "npx expo run:android"
+  lint: "npx expo lint"
+  typecheck: "npx tsc --noEmit"
+
+package_json_scripts:
+  test: "jest"
+  typecheck: "tsc --noEmit"
+  lint: "eslint src/"
+
+env_example: |
+  EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+  EXPO_PUBLIC_REVENUECAT_API_KEY_IOS=appl_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID=goog_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+gitignore_extra: |
+  .expo/
+  ios/
+  android/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Expo SDK 52 + RevenueCat + Expo Router + Supabase
+  - IAP: RevenueCat (react-native-purchases) for subscriptions and entitlements
+
+  ## Commands
+  - Dev: `npx expo start`
+  - Test: `npx jest`
+  - Build iOS: `npx expo run:ios`
+  - Build Android: `npx expo run:android`
+  - Typecheck: `npx tsc --noEmit`
+
+  ## Architecture
+  - `app/` — Expo Router pages and layouts
+  - `src/lib/purchases.ts` — RevenueCat initialization (call once in _layout.tsx)
+  - `src/hooks/useEntitlement.ts` — check active entitlements
+  - `src/components/Paywall.tsx` — subscription UI
+  - `src/lib/supabase.ts` — Supabase client singleton
+
+  ## Conventions
+  - Call initializePurchases() in root _layout.tsx useEffect — only once
+  - Entitlement IDs must match what you configure in RevenueCat dashboard
+  - Always handle "purchase cancelled" separately from real errors
+  - NEVER use `any` type
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: React Native + Expo SDK 52 (managed workflow)
+  - IAP: RevenueCat (react-native-purchases)
+  - Navigation: Expo Router (file-based)
+  - Backend: Supabase (auth, database)
+  - Testing: Jest + React Native Testing Library
+
+  ## Patterns & Conventions
+  - RevenueCat configured once in root layout
+  - useEntitlement hook pattern for gating features
+  - Always check entitlements from CustomerInfo, not local state
+  - Paywall component handles purchase + restore flow
+
+  ## Gotchas
+  - Must use react-native-purchases (not a web SDK) — requires native build
+  - Expo Go does NOT support react-native-purchases — use development build
+  - Entitlement IDs are case-sensitive — match RevenueCat dashboard exactly
+  - Purchase cancellation throws an error — check message before showing to user
+  - iOS and Android have separate RevenueCat API keys
+  - Must import "react-native-url-polyfill/auto" before Supabase client
+
+  ## Resolved Issues

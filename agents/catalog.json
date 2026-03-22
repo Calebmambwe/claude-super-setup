@@ -1,0 +1,809 @@
+{
+  "$schema": "../schemas/catalog.schema.json",
+  "version": "1.0.0",
+  "model_tiers": {
+    "haiku": {
+      "model": "claude-haiku-3-5",
+      "use_for": "Fast, lightweight tasks: content generation, simple queries, high-volume repetitive work"
+    },
+    "sonnet": {
+      "model": "claude-sonnet-4-6",
+      "use_for": "General engineering and analysis tasks: coding, debugging, research, standard reviews"
+    },
+    "opus": {
+      "model": "claude-opus-4",
+      "use_for": "Complex reasoning tasks: architecture decisions, security audits, legal review, ML design"
+    },
+    "custom": {
+      "model": "user-defined",
+      "use_for": "Agents that override the model per-invocation or use a fine-tuned model"
+    }
+  },
+  "teams": {
+    "review": {
+      "description": "Code quality, security, and documentation review pipeline",
+      "agents": ["code-reviewer", "security-auditor", "doc-verifier", "tdd-test-writer"]
+    },
+    "frontend": {
+      "description": "Frontend and UI development team",
+      "agents": ["frontend-dev", "frontend-developer", "ui-designer", "ux-researcher", "visual-tester", "whimsy-injector"]
+    },
+    "backend": {
+      "description": "Backend and API development team",
+      "agents": ["backend-dev", "backend-architect", "api-architect", "security-auditor", "tdd-test-writer"]
+    },
+    "fullstack": {
+      "description": "Full-stack feature development team",
+      "agents": ["architect", "backend-dev", "frontend-dev", "api-architect", "tdd-test-writer", "code-reviewer", "security-auditor"]
+    },
+    "mobile": {
+      "description": "Mobile application development team",
+      "agents": ["mobile-app-builder", "rn-accessibility", "rn-performance", "rn-security", "visual-tester"]
+    },
+    "research": {
+      "description": "Technical research and trend analysis team",
+      "agents": ["researcher", "trend-researcher", "doc-verifier", "prompt-engineer"]
+    },
+    "security": {
+      "description": "Security review and compliance team",
+      "agents": ["security-auditor", "legal-compliance-checker", "rn-security", "code-reviewer"]
+    }
+  },
+  "agents": [
+    {
+      "name": "api-architect",
+      "file": "agents/core/api-architect.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Designs robust, consistent API contracts using OpenAPI 3.1 specifications",
+      "model_tier": "opus",
+      "capabilities": ["openapi-design", "rest-api", "api-versioning", "authentication-schemes", "schema-design"],
+      "tools": ["Read", "Write", "Grep", "Glob"],
+      "teams": ["backend", "fullstack", "review"]
+    },
+    {
+      "name": "architect",
+      "file": "agents/core/architect.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Plans architecture for multi-file changes. Use before any task spanning 3+ files.",
+      "model_tier": "opus",
+      "capabilities": ["system-design", "architecture-planning", "dependency-analysis", "multi-file-coordination"],
+      "tools": ["Read", "Grep", "Glob"],
+      "teams": ["fullstack", "backend"]
+    },
+    {
+      "name": "backend-dev",
+      "file": "agents/core/backend-dev.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Implements backend services following Route/Service/Repository architecture",
+      "model_tier": "opus",
+      "capabilities": ["backend-implementation", "service-layer", "repository-pattern", "api-routes", "database-integration"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend", "fullstack"]
+    },
+    {
+      "name": "code-reviewer",
+      "file": "agents/core/code-reviewer.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Provides thorough code reviews for correctness, security, and maintainability",
+      "model_tier": "opus",
+      "capabilities": ["code-review", "correctness-analysis", "maintainability", "best-practices"],
+      "tools": ["Read", "Grep", "Glob"],
+      "teams": ["review", "fullstack"]
+    },
+    {
+      "name": "doc-verifier",
+      "file": "agents/core/doc-verifier.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Verifies code uses current library APIs by checking documentation. Use when working with external libraries.",
+      "model_tier": "haiku",
+      "capabilities": ["documentation-lookup", "api-verification", "library-validation", "context7-integration"],
+      "tools": ["Read", "Grep", "Glob"],
+      "teams": ["review", "research"]
+    },
+    {
+      "name": "env-doctor",
+      "file": "agents/core/env-doctor.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Audits Claude Code setup health — hooks, MCP servers, settings, and CLAUDE.md freshness",
+      "model_tier": "sonnet",
+      "capabilities": ["environment-audit", "mcp-health", "hook-validation", "setup-verification"],
+      "tools": ["Read", "Bash", "Grep", "Glob"],
+      "teams": []
+    },
+    {
+      "name": "frontend-dev",
+      "file": "agents/core/frontend-dev.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Builds frontend components with design system tokens and accessibility",
+      "model_tier": "sonnet",
+      "capabilities": ["frontend-components", "design-tokens", "accessibility", "responsive-design"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["frontend", "fullstack"]
+    },
+    {
+      "name": "orchestrator",
+      "file": "agents/core/orchestrator.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Meta-orchestrator that oversees multi-agent workflows, validates outputs, and tracks quality metrics",
+      "model_tier": "opus",
+      "capabilities": ["workflow-orchestration", "agent-coordination", "quality-tracking", "multi-agent-management"],
+      "tools": ["Read", "Grep", "Glob"],
+      "teams": []
+    },
+    {
+      "name": "researcher",
+      "file": "agents/core/researcher.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Technical research — Context7 for library docs, WebSearch for comparisons, codebase Grep for patterns",
+      "model_tier": "opus",
+      "capabilities": ["technical-research", "library-docs", "web-search", "codebase-analysis", "pattern-discovery"],
+      "tools": ["Read", "Grep", "Glob"],
+      "teams": ["research"]
+    },
+    {
+      "name": "security-auditor",
+      "file": "agents/core/security-auditor.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Reviews code for security vulnerabilities. Use before merging any PR.",
+      "model_tier": "opus",
+      "capabilities": ["security-review", "owasp-top-10", "vulnerability-detection", "dependency-audit"],
+      "tools": ["Read", "Grep", "Glob", "Bash"],
+      "teams": ["review", "security", "fullstack"]
+    },
+    {
+      "name": "tdd-test-writer",
+      "file": "agents/core/tdd-test-writer.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Writes failing tests first (RED phase of TDD). Use before implementing any feature.",
+      "model_tier": "sonnet",
+      "capabilities": ["tdd", "test-writing", "red-phase", "unit-tests", "integration-tests"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["review", "backend", "fullstack"]
+    },
+    {
+      "name": "visual-tester",
+      "file": "agents/core/visual-tester.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Uses Playwright to visually verify a running web app — navigates pages, interacts with UI, checks for errors",
+      "model_tier": "sonnet",
+      "capabilities": ["visual-testing", "playwright", "e2e-testing", "ui-verification"],
+      "tools": ["Bash", "Read"],
+      "teams": ["frontend", "mobile"]
+    },
+    {
+      "name": "ai-engineer",
+      "file": "agents/core/engineering/ai-engineer.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Implements AI/ML features, LLM integrations, recommendation systems, and intelligent automation",
+      "model_tier": "sonnet",
+      "capabilities": ["llm-integration", "prompt-engineering", "ml-implementation", "recommendation-systems", "computer-vision"],
+      "tools": ["Write", "Read", "Edit", "Bash"],
+      "teams": ["backend", "fullstack"]
+    },
+    {
+      "name": "backend-architect",
+      "file": "agents/core/engineering/backend-architect.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Designs scalable APIs, server-side logic, and database architectures",
+      "model_tier": "opus",
+      "capabilities": ["api-design", "database-design", "authentication", "scalability", "backend-architecture"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend", "fullstack"]
+    },
+    {
+      "name": "devops-automator",
+      "file": "agents/core/engineering/devops-automator.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Sets up CI/CD pipelines, cloud infrastructure, monitoring, and deployment automation",
+      "model_tier": "sonnet",
+      "capabilities": ["ci-cd", "cloud-infrastructure", "monitoring", "deployment-automation", "devops"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "frontend-developer",
+      "file": "agents/core/engineering/frontend-developer.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Builds responsive, accessible, and performant web UIs with React/Vue/Angular",
+      "model_tier": "sonnet",
+      "capabilities": ["react", "vue", "angular", "state-management", "responsive-design", "frontend-performance"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["frontend", "fullstack"]
+    },
+    {
+      "name": "mobile-app-builder",
+      "file": "agents/core/engineering/mobile-app-builder.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Develops native iOS, Android, and React Native mobile applications",
+      "model_tier": "sonnet",
+      "capabilities": ["react-native", "ios", "android", "push-notifications", "biometric-auth", "mobile-performance"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["mobile"]
+    },
+    {
+      "name": "rapid-prototyper",
+      "file": "agents/core/engineering/rapid-prototyper.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Scaffolds MVPs, prototypes, and proof-of-concepts rapidly for validation",
+      "model_tier": "sonnet",
+      "capabilities": ["scaffolding", "prototyping", "mvp-development", "rapid-development"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["fullstack"]
+    },
+    {
+      "name": "test-writer-fixer",
+      "file": "agents/core/engineering/test-writer-fixer.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Writes new tests, runs existing tests, analyzes failures, and fixes them after code changes",
+      "model_tier": "sonnet",
+      "capabilities": ["test-writing", "test-fixing", "test-analysis", "coverage-improvement"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["review"]
+    },
+    {
+      "name": "joker",
+      "file": "agents/core/bonus/joker.md",
+      "source": "core",
+      "department": "bonus",
+      "description": "Lightens the mood with programming humor, dad jokes, and startup comedy",
+      "model_tier": "haiku",
+      "capabilities": ["humor", "morale-boost", "funny-error-messages", "team-engagement"],
+      "tools": [],
+      "teams": []
+    },
+    {
+      "name": "studio-coach",
+      "file": "agents/core/bonus/studio-coach.md",
+      "source": "core",
+      "department": "bonus",
+      "description": "Elite performance coach for agent teams — coordination, motivation, and clarity during complex projects",
+      "model_tier": "sonnet",
+      "capabilities": ["team-coaching", "agent-coordination", "performance-optimization", "sprint-kickoff"],
+      "tools": [],
+      "teams": []
+    },
+    {
+      "name": "brand-guardian",
+      "file": "agents/core/design/brand-guardian.md",
+      "source": "core",
+      "department": "design",
+      "description": "Establishes and enforces brand guidelines, visual consistency, and identity across touchpoints",
+      "model_tier": "opus",
+      "capabilities": ["brand-guidelines", "visual-consistency", "brand-assets", "identity-design"],
+      "tools": ["Read", "Write", "Grep", "Glob"],
+      "teams": ["frontend"]
+    },
+    {
+      "name": "ui-designer",
+      "file": "agents/core/design/ui-designer.md",
+      "source": "core",
+      "department": "design",
+      "description": "Creates beautiful, functional UIs, component libraries, and design systems",
+      "model_tier": "sonnet",
+      "capabilities": ["ui-design", "component-design", "design-systems", "visual-aesthetics"],
+      "tools": ["Read", "Write", "Grep", "Glob"],
+      "teams": ["frontend"]
+    },
+    {
+      "name": "ux-researcher",
+      "file": "agents/core/design/ux-researcher.md",
+      "source": "core",
+      "department": "design",
+      "description": "Conducts user research, journey mapping, and design validation through usability testing",
+      "model_tier": "opus",
+      "capabilities": ["user-research", "journey-mapping", "usability-testing", "persona-development"],
+      "tools": ["Read", "Write", "Grep", "Glob"],
+      "teams": ["frontend", "research"]
+    },
+    {
+      "name": "visual-storyteller",
+      "file": "agents/core/design/visual-storyteller.md",
+      "source": "core",
+      "department": "design",
+      "description": "Transforms data and concepts into compelling visual narratives, infographics, and presentations",
+      "model_tier": "sonnet",
+      "capabilities": ["visual-narrative", "infographics", "presentations", "data-visualization"],
+      "tools": ["Read", "Write", "Grep", "Glob"],
+      "teams": []
+    },
+    {
+      "name": "whimsy-injector",
+      "file": "agents/core/design/whimsy-injector.md",
+      "source": "core",
+      "department": "design",
+      "description": "Adds delight, playfulness, and memorable moments to user interfaces after UI changes",
+      "model_tier": "haiku",
+      "capabilities": ["delight-design", "micro-interactions", "playful-ui", "error-state-design"],
+      "tools": ["Read", "Write", "Edit"],
+      "teams": ["frontend"]
+    },
+    {
+      "name": "app-store-optimizer",
+      "file": "agents/core/marketing/app-store-optimizer.md",
+      "source": "core",
+      "department": "marketing",
+      "description": "Optimizes app store listings, keywords, metadata, and conversion rates for organic growth",
+      "model_tier": "sonnet",
+      "capabilities": ["aso", "keyword-research", "app-metadata", "conversion-optimization"],
+      "tools": ["Read", "Write", "Grep"],
+      "teams": []
+    },
+    {
+      "name": "content-creator",
+      "file": "agents/core/marketing/content-creator.md",
+      "source": "core",
+      "department": "marketing",
+      "description": "Cross-platform content generation from blog posts to video scripts",
+      "model_tier": "sonnet",
+      "capabilities": ["content-writing", "blog-posts", "video-scripts", "social-copy"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "growth-hacker",
+      "file": "agents/core/marketing/growth-hacker.md",
+      "source": "core",
+      "department": "marketing",
+      "description": "Rapid user acquisition, viral loops, and data-driven growth experiments",
+      "model_tier": "sonnet",
+      "capabilities": ["growth-strategy", "viral-loops", "user-acquisition", "a-b-testing"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "instagram-curator",
+      "file": "agents/core/marketing/instagram-curator.md",
+      "source": "core",
+      "department": "marketing",
+      "description": "Visual content strategy, Stories, Reels, and Instagram growth",
+      "model_tier": "haiku",
+      "capabilities": ["instagram-strategy", "visual-content", "stories", "reels", "growth"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "reddit-community-builder",
+      "file": "agents/core/marketing/reddit-community-builder.md",
+      "source": "core",
+      "department": "marketing",
+      "description": "Authentic Reddit community engagement and organic growth",
+      "model_tier": "sonnet",
+      "capabilities": ["reddit-strategy", "community-engagement", "organic-growth", "subreddit-management"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "tiktok-strategist",
+      "file": "agents/core/marketing/tiktok-strategist.md",
+      "source": "core",
+      "department": "marketing",
+      "description": "TikTok marketing strategy, viral content, campaign planning, and algorithm optimization",
+      "model_tier": "sonnet",
+      "capabilities": ["tiktok-strategy", "viral-content", "trend-analysis", "influencer-partnerships"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "twitter-engager",
+      "file": "agents/core/marketing/twitter-engager.md",
+      "source": "core",
+      "department": "marketing",
+      "description": "Real-time Twitter/X engagement, trending topics, and viral tweets",
+      "model_tier": "haiku",
+      "capabilities": ["twitter-strategy", "real-time-engagement", "trending-topics", "viral-tweets"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "feedback-synthesizer",
+      "file": "agents/core/product/feedback-synthesizer.md",
+      "source": "core",
+      "department": "product",
+      "description": "Analyzes user feedback across sources, identifies patterns, and synthesizes actionable product insights",
+      "model_tier": "sonnet",
+      "capabilities": ["feedback-analysis", "pattern-identification", "insight-synthesis", "feature-prioritization"],
+      "tools": ["Read", "Write", "Grep"],
+      "teams": []
+    },
+    {
+      "name": "sprint-prioritizer",
+      "file": "agents/core/product/sprint-prioritizer.md",
+      "source": "core",
+      "department": "product",
+      "description": "Plans 6-day development cycles, prioritizes features, and manages trade-off decisions",
+      "model_tier": "sonnet",
+      "capabilities": ["sprint-planning", "feature-prioritization", "roadmap-management", "trade-off-analysis"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "trend-researcher",
+      "file": "agents/core/product/trend-researcher.md",
+      "source": "core",
+      "department": "product",
+      "description": "Identifies market opportunities, trending topics, and viral content for product positioning",
+      "model_tier": "sonnet",
+      "capabilities": ["trend-analysis", "market-research", "viral-content-analysis", "competitive-intelligence"],
+      "tools": ["Read", "Write"],
+      "teams": ["research"]
+    },
+    {
+      "name": "experiment-tracker",
+      "file": "agents/core/project-management/experiment-tracker.md",
+      "source": "core",
+      "department": "project-management",
+      "description": "Tracks A/B tests, feature experiments, and iterative improvements with data-driven analysis",
+      "model_tier": "sonnet",
+      "capabilities": ["a-b-testing", "experiment-tracking", "feature-flags", "results-analysis"],
+      "tools": ["Read", "Write", "Grep"],
+      "teams": []
+    },
+    {
+      "name": "project-shipper",
+      "file": "agents/core/project-management/project-shipper.md",
+      "source": "core",
+      "department": "project-management",
+      "description": "Coordinates launches, manages release processes, and executes go-to-market strategies",
+      "model_tier": "sonnet",
+      "capabilities": ["launch-coordination", "release-management", "go-to-market", "milestone-tracking"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "studio-producer",
+      "file": "agents/core/project-management/studio-producer.md",
+      "source": "core",
+      "department": "project-management",
+      "description": "Cross-functional coordination, resource management, and workflow optimization for studio teams",
+      "model_tier": "sonnet",
+      "capabilities": ["cross-team-coordination", "resource-management", "workflow-optimization", "sprint-coordination"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "analytics-reporter",
+      "file": "agents/core/studio-operations/analytics-reporter.md",
+      "source": "core",
+      "department": "studio-operations",
+      "description": "Analyzes metrics, generates insights, and creates performance reports for data-driven decisions",
+      "model_tier": "sonnet",
+      "capabilities": ["metrics-analysis", "reporting", "data-insights", "performance-tracking"],
+      "tools": ["Read", "Write", "Bash"],
+      "teams": []
+    },
+    {
+      "name": "finance-tracker",
+      "file": "agents/core/studio-operations/finance-tracker.md",
+      "source": "core",
+      "department": "studio-operations",
+      "description": "Manages budgets, optimizes costs, forecasts revenue, and analyzes financial performance",
+      "model_tier": "sonnet",
+      "capabilities": ["budget-management", "cost-optimization", "revenue-forecasting", "financial-analysis"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "infrastructure-maintainer",
+      "file": "agents/core/studio-operations/infrastructure-maintainer.md",
+      "source": "core",
+      "department": "studio-operations",
+      "description": "Monitors system health, optimizes performance, manages scaling, and ensures infrastructure reliability",
+      "model_tier": "sonnet",
+      "capabilities": ["system-monitoring", "performance-optimization", "scaling", "reliability-engineering"],
+      "tools": ["Read", "Write", "Bash", "Grep"],
+      "teams": []
+    },
+    {
+      "name": "legal-compliance-checker",
+      "file": "agents/core/studio-operations/legal-compliance-checker.md",
+      "source": "core",
+      "department": "studio-operations",
+      "description": "Reviews terms of service, privacy policies, and ensures regulatory compliance",
+      "model_tier": "opus",
+      "capabilities": ["legal-review", "privacy-policy", "gdpr-compliance", "app-store-compliance", "regulatory-review"],
+      "tools": ["Read", "Write", "Grep"],
+      "teams": ["security"]
+    },
+    {
+      "name": "support-responder",
+      "file": "agents/core/studio-operations/support-responder.md",
+      "source": "core",
+      "department": "studio-operations",
+      "description": "Handles customer support inquiries, creates documentation, and identifies product improvement opportunities",
+      "model_tier": "sonnet",
+      "capabilities": ["support-responses", "documentation", "ticket-analysis", "user-communication"],
+      "tools": ["Read", "Write"],
+      "teams": []
+    },
+    {
+      "name": "api-tester",
+      "file": "agents/core/testing/api-tester.md",
+      "source": "core",
+      "department": "testing",
+      "description": "Comprehensive API testing including performance, load, and contract testing",
+      "model_tier": "sonnet",
+      "capabilities": ["api-testing", "load-testing", "contract-testing", "performance-testing"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["review", "backend"]
+    },
+    {
+      "name": "performance-benchmarker",
+      "file": "agents/core/testing/performance-benchmarker.md",
+      "source": "core",
+      "department": "testing",
+      "description": "Performance testing, profiling, and actionable optimization recommendations",
+      "model_tier": "sonnet",
+      "capabilities": ["performance-testing", "profiling", "benchmarking", "optimization-recommendations"],
+      "tools": ["Read", "Write", "Bash", "Grep", "Glob"],
+      "teams": ["review"]
+    },
+    {
+      "name": "test-results-analyzer",
+      "file": "agents/core/testing/test-results-analyzer.md",
+      "source": "core",
+      "department": "testing",
+      "description": "Analyzes test results, synthesizes trends, and generates quality metrics reports",
+      "model_tier": "sonnet",
+      "capabilities": ["test-analysis", "trend-identification", "quality-metrics", "reporting"],
+      "tools": ["Read", "Write", "Bash", "Grep"],
+      "teams": ["review"]
+    },
+    {
+      "name": "tool-evaluator",
+      "file": "agents/core/testing/tool-evaluator.md",
+      "source": "core",
+      "department": "testing",
+      "description": "Evaluates new development tools, frameworks, and services with rapid assessment and comparison",
+      "model_tier": "sonnet",
+      "capabilities": ["tool-evaluation", "framework-comparison", "technology-assessment", "recommendation"],
+      "tools": ["Read", "Write", "Bash", "Grep", "Glob"],
+      "teams": ["research"]
+    },
+    {
+      "name": "workflow-optimizer",
+      "file": "agents/core/testing/workflow-optimizer.md",
+      "source": "core",
+      "department": "testing",
+      "description": "Optimizes human-agent collaboration workflows, identifies bottlenecks, and streamlines handoffs",
+      "model_tier": "sonnet",
+      "capabilities": ["workflow-analysis", "bottleneck-detection", "process-improvement", "handoff-optimization"],
+      "tools": ["Read", "Write", "Grep"],
+      "teams": []
+    },
+    {
+      "name": "go-specialist",
+      "file": "agents/community/language-specialists/go-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Go language expert covering idioms, goroutines, channels, error handling, and testing",
+      "model_tier": "sonnet",
+      "capabilities": ["go", "goroutines", "channels", "error-handling", "go-testing", "concurrent-systems"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "rust-specialist",
+      "file": "agents/community/language-specialists/rust-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Rust expert covering ownership, lifetimes, cargo, unsafe review, and systems programming",
+      "model_tier": "sonnet",
+      "capabilities": ["rust", "ownership", "lifetimes", "unsafe-review", "systems-programming", "async-rust"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "java-specialist",
+      "file": "agents/community/language-specialists/java-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Java expert covering Spring Boot, Maven/Gradle, JUnit 5, and enterprise patterns",
+      "model_tier": "sonnet",
+      "capabilities": ["java", "spring-boot", "maven", "gradle", "junit", "enterprise-patterns"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "swift-specialist",
+      "file": "agents/community/language-specialists/swift-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Swift and iOS expert covering SwiftUI, UIKit, iOS patterns, and App Store deployment",
+      "model_tier": "sonnet",
+      "capabilities": ["swift", "swiftui", "uikit", "ios-development", "xcode", "app-store"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["mobile"]
+    },
+    {
+      "name": "kotlin-specialist",
+      "file": "agents/community/language-specialists/kotlin-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Kotlin and Android expert covering Jetpack Compose, coroutines, and Android architecture",
+      "model_tier": "sonnet",
+      "capabilities": ["kotlin", "android", "jetpack-compose", "coroutines", "flow", "hilt"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["mobile"]
+    },
+    {
+      "name": "ruby-specialist",
+      "file": "agents/community/language-specialists/ruby-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Ruby expert covering Rails, RSpec, gems, metaprogramming, and Ruby idioms",
+      "model_tier": "sonnet",
+      "capabilities": ["ruby", "rails", "rspec", "activerecord", "metaprogramming", "gems"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "php-specialist",
+      "file": "agents/community/language-specialists/php-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "PHP expert covering Laravel, Composer, PHPUnit, and modern PHP 8+ features",
+      "model_tier": "sonnet",
+      "capabilities": ["php", "laravel", "composer", "phpunit", "eloquent", "php8"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "elixir-specialist",
+      "file": "agents/community/language-specialists/elixir-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Elixir expert covering Phoenix, OTP, LiveView, Ecto, and functional patterns",
+      "model_tier": "sonnet",
+      "capabilities": ["elixir", "phoenix", "otp", "liveview", "ecto", "functional-programming"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "ml-pipeline-builder",
+      "file": "agents/community/data-ai/ml-pipeline-builder.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "ML pipeline expert covering feature engineering, model training, evaluation, and MLOps",
+      "model_tier": "opus",
+      "capabilities": ["ml-pipelines", "feature-engineering", "model-training", "mlops", "experiment-tracking", "model-monitoring"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["research"]
+    },
+    {
+      "name": "data-engineer",
+      "file": "agents/community/data-ai/data-engineer.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Data engineering expert covering ETL pipelines, data modeling, SQL optimization, and dbt",
+      "model_tier": "sonnet",
+      "capabilities": ["etl", "data-modeling", "sql-optimization", "dbt", "airflow", "bigquery"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend", "research"]
+    },
+    {
+      "name": "prompt-engineer",
+      "file": "agents/community/data-ai/prompt-engineer.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Prompt design expert covering few-shot examples, chain-of-thought, evaluation, and LLM reliability",
+      "model_tier": "opus",
+      "capabilities": ["prompt-design", "few-shot-examples", "chain-of-thought", "prompt-evaluation", "llm-reliability"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["research"]
+    },
+    {
+      "name": "kubernetes-specialist",
+      "file": "agents/community/infrastructure/kubernetes-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Kubernetes expert covering manifests, Helm charts, operators, and cluster troubleshooting",
+      "model_tier": "sonnet",
+      "capabilities": ["kubernetes", "helm", "k8s-networking", "rbac", "autoscaling", "gitops"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "terraform-specialist",
+      "file": "agents/community/infrastructure/terraform-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "Terraform expert covering IaC modules, state management, and multi-cloud provisioning",
+      "model_tier": "sonnet",
+      "capabilities": ["terraform", "iac", "modules", "state-management", "aws", "gcp", "azure"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "aws-architect",
+      "file": "agents/community/infrastructure/aws-architect.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "AWS solutions architect covering services, CDK, Well-Architected Framework, and cost optimization",
+      "model_tier": "opus",
+      "capabilities": ["aws", "cdk", "well-architected", "cost-optimization", "iam", "serverless"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "gcp-specialist",
+      "file": "agents/community/infrastructure/gcp-specialist.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "GCP specialist covering Cloud Run, Firestore, BigQuery, and GCP infrastructure patterns",
+      "model_tier": "sonnet",
+      "capabilities": ["gcp", "cloud-run", "firestore", "bigquery", "pub-sub", "gcp-iam"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["backend"]
+    },
+    {
+      "name": "rn-accessibility",
+      "file": "agents/community/mobile/rn-accessibility.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "React Native accessibility expert covering WCAG 2.2, VoiceOver, TalkBack, and inclusive design",
+      "model_tier": "sonnet",
+      "capabilities": ["accessibility", "wcag", "voiceover", "talkback", "inclusive-design", "screen-readers"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["mobile"]
+    },
+    {
+      "name": "rn-performance",
+      "file": "agents/community/mobile/rn-performance.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "React Native performance expert covering FPS optimization, memory management, and render cycles",
+      "model_tier": "sonnet",
+      "capabilities": ["rn-performance", "fps-optimization", "memory-management", "render-optimization", "new-architecture"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["mobile"]
+    },
+    {
+      "name": "rn-security",
+      "file": "agents/community/mobile/rn-security.md",
+      "source": "community",
+      "source_repo": "https://github.com/anthropics/claude-code-community-agents",
+      "department": "engineering",
+      "description": "React Native security expert covering OWASP Mobile Top 10, secure storage, and certificate pinning",
+      "model_tier": "sonnet",
+      "capabilities": ["mobile-security", "owasp-mobile", "secure-storage", "cert-pinning", "biometric-auth"],
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+      "teams": ["mobile", "security"]
+    }
+  ]
+}

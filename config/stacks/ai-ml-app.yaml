@@ -1,0 +1,353 @@
+# AI/ML App Stack Template
+# Next.js 15 + Vercel AI SDK + Supabase + pgvector
+
+name: ai-ml-app
+description: "Next.js 15 + Vercel AI SDK + Supabase + pgvector"
+short_label: "ai"
+
+init_commands:
+  - "pnpm create next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*'"
+  - "pnpm add ai @ai-sdk/openai @ai-sdk/react @supabase/supabase-js @supabase/ssr zod"
+  - "pnpm add -D @types/node vitest @vitejs/plugin-react"
+
+directories:
+  - src/app/api/chat
+  - src/app/api/embed
+  - src/app/(chat)
+  - src/components/chat
+  - src/lib
+  - src/services
+  - src/types
+  - src/__tests__
+
+starter_files:
+  src/lib/env.ts: |
+    import { z } from "zod";
+
+    const envSchema = z.object({
+      NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+      OPENAI_API_KEY: z.string().startsWith("sk-"),
+      OPENAI_EMBEDDING_MODEL: z.string().default("text-embedding-3-small"),
+      OPENAI_CHAT_MODEL: z.string().default("gpt-4o"),
+    });
+
+    export const env = envSchema.parse(process.env);
+
+  src/lib/supabase/server.ts: |
+    import { createServerClient } from "@supabase/ssr";
+    import { cookies } from "next/headers";
+
+    export async function createClient() {
+      const cookieStore = await cookies();
+      return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() { return cookieStore.getAll(); },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {}
+            },
+          },
+        }
+      );
+    }
+
+  src/lib/supabase/client.ts: |
+    import { createBrowserClient } from "@supabase/ssr";
+
+    export function createClient() {
+      return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+    }
+
+  src/lib/embeddings.ts: |
+    import { openai } from "@ai-sdk/openai";
+    import { embed, embedMany } from "ai";
+    import { env } from "./env";
+
+    const embeddingModel = openai.embedding(env.OPENAI_EMBEDDING_MODEL);
+
+    // IMPORTANT: embedding dimensions must match the model:
+    //   text-embedding-3-small → 1536 dims
+    //   text-embedding-3-large → 3072 dims
+    // Change your pgvector column definition if you switch models.
+
+    export async function generateEmbedding(text: string): Promise<number[]> {
+      const { embedding } = await embed({
+        model: embeddingModel,
+        value: text,
+      });
+      return embedding;
+    }
+
+    export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+      const { embeddings } = await embedMany({
+        model: embeddingModel,
+        values: texts,
+      });
+      return embeddings;
+    }
+
+  src/services/vector-store.ts: |
+    import { createClient } from "@/lib/supabase/server";
+    import { generateEmbedding } from "@/lib/embeddings";
+
+    interface SearchResult {
+      id: string;
+      content: string;
+      similarity: number;
+    }
+
+    // Requires pgvector extension + a documents table with:
+    //   id uuid, content text, embedding vector(1536), metadata jsonb
+    // Run in Supabase SQL editor:
+    //   CREATE EXTENSION IF NOT EXISTS vector;
+    //   CREATE TABLE documents (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, content text NOT NULL, embedding vector(1536), metadata jsonb DEFAULT '{}'::jsonb);
+    //   CREATE INDEX ON documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+    export async function semanticSearch(
+      query: string,
+      matchCount = 5,
+      threshold = 0.7
+    ): Promise<SearchResult[]> {
+      const supabase = await createClient();
+      const queryEmbedding = await generateEmbedding(query);
+
+      const { data, error } = await supabase.rpc("match_documents", {
+        query_embedding: queryEmbedding,
+        match_threshold: threshold,
+        match_count: matchCount,
+      });
+
+      if (error) throw new Error(`Vector search failed: ${error.message}`);
+      return (data ?? []) as SearchResult[];
+    }
+
+    export async function insertDocument(content: string, metadata?: Record<string, unknown>) {
+      const supabase = await createClient();
+      const embedding = await generateEmbedding(content);
+
+      const { error } = await supabase
+        .from("documents")
+        .insert({ content, embedding, metadata: metadata ?? {} });
+
+      if (error) throw new Error(`Insert failed: ${error.message}`);
+    }
+
+  src/app/api/chat/route.ts: |
+    import { openai } from "@ai-sdk/openai";
+    import { convertToModelMessages, streamText, type UIMessage } from "ai";
+    import { env } from "@/lib/env";
+    import { semanticSearch } from "@/services/vector-store";
+
+    export const maxDuration = 30;
+
+    export async function POST(req: Request) {
+      const { messages }: { messages: UIMessage[] } = await req.json();
+
+      // RAG: retrieve relevant context for the last user message
+      const lastUserMessage = messages.findLast((m) => m.role === "user");
+      let systemPrompt = "You are a helpful assistant.";
+
+      if (lastUserMessage) {
+        const lastText = lastUserMessage.parts
+          .filter((p): p is { type: "text"; text: string } => p.type === "text")
+          .map((p) => p.text)
+          .join(" ");
+
+        if (lastText) {
+          const results = await semanticSearch(lastText, 3);
+          if (results.length > 0) {
+            const context = results.map((r) => r.content).join("\n\n");
+            systemPrompt = `You are a helpful assistant. Use the following context to answer:\n\n${context}`;
+          }
+        }
+      }
+
+      const result = streamText({
+        model: openai(env.OPENAI_CHAT_MODEL),
+        system: systemPrompt,
+        messages: await convertToModelMessages(messages),
+      });
+
+      return result.toUIMessageStreamResponse();
+    }
+
+  src/components/chat/ChatInterface.tsx: |
+    "use client";
+    import { useChat } from "@ai-sdk/react";
+    import { useRef, useEffect } from "react";
+
+    export function ChatInterface() {
+      const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+        api: "/api/chat",
+      });
+      const bottomRef = useRef<HTMLDivElement>(null);
+
+      useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, [messages]);
+
+      return (
+        <div className="flex h-full flex-col">
+          <div className="flex-1 overflow-y-auto space-y-4 p-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                    message.role === "user"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-900"
+                  }`}
+                >
+                  {message.parts.map((part, i) =>
+                    part.type === "text" ? (
+                      <p key={i} className="whitespace-pre-wrap">{part.text}</p>
+                    ) : null
+                  )}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl bg-gray-100 px-4 py-2 text-sm text-gray-500">Thinking...</div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+          <form onSubmit={handleSubmit} className="border-t p-4">
+            <div className="flex gap-2">
+              <input
+                value={input}
+                onChange={handleInputChange}
+                placeholder="Ask anything..."
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 hover:bg-blue-700"
+              >
+                Send
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+  src/app/(chat)/chat/page.tsx: |
+    import { ChatInterface } from "@/components/chat/ChatInterface";
+
+    export default function ChatPage() {
+      return (
+        <main className="flex h-screen flex-col">
+          <header className="border-b px-6 py-4">
+            <h1 className="text-xl font-bold">AI Assistant</h1>
+          </header>
+          <div className="flex-1 overflow-hidden">
+            <ChatInterface />
+          </div>
+        </main>
+      );
+    }
+
+  src/__tests__/smoke.test.ts: |
+    import { describe, it, expect } from "vitest";
+
+    describe("Smoke test", () => {
+      it("should pass", () => {
+        expect(true).toBe(true);
+      });
+    });
+
+commands:
+  dev: "pnpm exec next dev"
+  test: "pnpm exec vitest run"
+  build: "pnpm exec next build"
+  lint: "pnpm exec next lint"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+
+package_json_scripts:
+  dev: "next dev"
+  build: "next build"
+  test: "vitest run"
+  lint: "next lint"
+  typecheck: "tsc --noEmit"
+
+env_example: |
+  NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+  OPENAI_API_KEY=sk-xxxx
+  OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+  OPENAI_CHAT_MODEL=gpt-4o
+
+gitignore_extra: |
+  .next/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Next.js 15 + Vercel AI SDK v4 + Supabase + pgvector
+  - AI: OpenAI via @ai-sdk/openai, streaming via streamText
+  - Embeddings: text-embedding-3-small (1536 dimensions)
+  - Vector store: Supabase pgvector
+
+  ## Commands
+  - Dev: `pnpm exec next dev`
+  - Test: `pnpm exec vitest run`
+  - Build: `pnpm exec next build`
+  - Lint: `pnpm exec next lint`
+  - Typecheck: `pnpm exec tsc --noEmit`
+
+  ## Architecture
+  - `src/app/api/chat/` — streaming chat route handler (POST)
+  - `src/app/(chat)/` — chat UI pages
+  - `src/components/chat/` — ChatInterface component with useChat hook
+  - `src/lib/embeddings.ts` — embed() and embedMany() wrappers
+  - `src/services/vector-store.ts` — pgvector search and insert
+  - `src/lib/supabase/` — server and client Supabase clients
+
+  ## Conventions
+  - All API responses use envelope: `{ success, data, error, meta }` (except streaming routes)
+  - Streaming routes return result.toUIMessageStreamResponse() directly
+  - NEVER use `any` type
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: Next.js 15 (App Router)
+  - AI SDK: Vercel AI SDK v4 (@ai-sdk/openai, @ai-sdk/react)
+  - Vector DB: Supabase pgvector
+  - Embeddings: OpenAI text-embedding-3-small (1536 dims)
+  - Testing: Vitest
+
+  ## Patterns & Conventions
+  - Chat route: POST /api/chat accepts UIMessage[], returns UI message stream
+  - useChat hook manages state client-side, auto-retries on error
+  - RAG pattern: embed query → vector search → inject context into system prompt
+  - Server Components: use supabase/server client; Client Components: supabase/client
+
+  ## Gotchas
+  - Embedding dimensions MUST match the model AND the pgvector column definition
+  - If you switch from text-embedding-3-small to text-embedding-3-large, re-create the vector column (1536 → 3072)
+  - maxDuration = 30 is required on streaming route handlers (Vercel limit)
+  - useChat is from @ai-sdk/react, not "ai" — different import path
+  - pgvector extension must be enabled in Supabase before creating vector columns
+  - The match_documents RPC function must be created in Supabase SQL editor
+
+  ## Resolved Issues

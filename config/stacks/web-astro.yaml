@@ -1,0 +1,312 @@
+# Web Stack Template — Astro
+# Astro 5 + TypeScript + Tailwind CSS + Content Collections + Cloudflare Pages
+
+name: web-astro
+description: "Astro 5 + TypeScript + Tailwind CSS + Content Collections + Cloudflare Pages"
+short_label: "astro"
+
+init_commands:
+  - "pnpm create astro@latest . --template minimal --typescript strict --no-git --yes"
+  - "pnpm astro add tailwind --yes"
+  - "pnpm astro add cloudflare --yes"
+  - "pnpm add zod"
+  - "pnpm add -D vitest @vitest/ui prettier"
+
+directories:
+  - src/content/blog
+  - src/components
+  - src/layouts
+  - src/pages
+  - src/pages/blog
+  - src/lib
+  - src/__tests__
+
+starter_files:
+  src/content/config.ts: |
+    import { defineCollection } from 'astro:content';
+    import { z } from 'astro/zod';
+    import { glob } from 'astro/loaders';
+
+    const blog = defineCollection({
+      loader: glob({ pattern: '**/[^_]*.{md,mdx}', base: './src/content/blog' }),
+      schema: z.object({
+        title: z.string(),
+        description: z.string(),
+        pubDate: z.coerce.date(),
+        updatedDate: z.coerce.date().optional(),
+        draft: z.boolean().default(false),
+      }),
+    });
+
+    export const collections = { blog };
+
+  src/content/blog/hello-world.md: |
+    ---
+    title: Hello World
+    description: The first post on this Astro site.
+    pubDate: 2024-01-01
+    ---
+
+    Welcome to my new Astro site! This is the first post.
+
+  src/lib/env.ts: |
+    import { z } from 'zod';
+
+    const envSchema = z.object({
+      PUBLIC_SITE_URL: z.string().url().default('http://localhost:4321'),
+    });
+
+    export const env = envSchema.parse({
+      PUBLIC_SITE_URL: import.meta.env.PUBLIC_SITE_URL,
+    });
+
+  src/layouts/Layout.astro: |
+    ---
+    interface Props {
+      title: string;
+      description?: string;
+    }
+
+    const { title, description = 'An Astro site' } = Astro.props;
+    ---
+
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content={description} />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <title>{title}</title>
+      </head>
+      <body class="min-h-screen bg-white text-gray-900 antialiased">
+        <header class="border-b border-gray-200 px-6 py-4">
+          <nav class="mx-auto flex max-w-4xl items-center justify-between">
+            <a href="/" class="text-xl font-bold">My Site</a>
+            <a href="/blog" class="text-gray-600 hover:text-gray-900">Blog</a>
+          </nav>
+        </header>
+        <main class="mx-auto max-w-4xl px-6 py-10">
+          <slot />
+        </main>
+      </body>
+    </html>
+
+  src/pages/index.astro: |
+    ---
+    import Layout from '../layouts/Layout.astro';
+    import { getCollection } from 'astro:content';
+
+    const posts = (await getCollection('blog', ({ data }) => !data.draft))
+      .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+      .slice(0, 5);
+    ---
+
+    <Layout title="Home">
+      <h1 class="mb-6 text-4xl font-bold">Welcome</h1>
+      <p class="mb-8 text-lg text-gray-600">A fast, content-focused site built with Astro 5.</p>
+
+      {posts.length > 0 && (
+        <section>
+          <h2 class="mb-4 text-2xl font-semibold">Latest Posts</h2>
+          <ul class="space-y-4">
+            {posts.map((post) => (
+              <li class="rounded-lg border border-gray-200 p-4">
+                <a href={`/blog/${post.id}`} class="text-lg font-medium hover:underline">
+                  {post.data.title}
+                </a>
+                <p class="mt-1 text-sm text-gray-500">
+                  {post.data.pubDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+                <p class="mt-2 text-gray-600">{post.data.description}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </Layout>
+
+  src/pages/blog/index.astro: |
+    ---
+    import Layout from '../../layouts/Layout.astro';
+    import { getCollection } from 'astro:content';
+
+    const posts = (await getCollection('blog', ({ data }) => !data.draft))
+      .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+    ---
+
+    <Layout title="Blog" description="All blog posts">
+      <h1 class="mb-8 text-4xl font-bold">Blog</h1>
+      {posts.length === 0 && (
+        <p class="text-gray-500">No posts yet. Add .md files to src/content/blog/.</p>
+      )}
+      <ul class="space-y-6">
+        {posts.map((post) => (
+          <li class="border-b border-gray-100 pb-6">
+            <a href={`/blog/${post.id}`} class="text-xl font-semibold hover:underline">
+              {post.data.title}
+            </a>
+            <p class="mt-1 text-sm text-gray-500">
+              {post.data.pubDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </p>
+            <p class="mt-2 text-gray-600">{post.data.description}</p>
+          </li>
+        ))}
+      </ul>
+    </Layout>
+
+  src/pages/blog/[...slug].astro: |
+    ---
+    import { getCollection, render } from 'astro:content';
+    import Layout from '../../layouts/Layout.astro';
+
+    export async function getStaticPaths() {
+      const posts = await getCollection('blog', ({ data }) => !data.draft);
+      return posts.map((post) => ({
+        params: { slug: post.id },
+        props: { post },
+      }));
+    }
+
+    const { post } = Astro.props;
+    const { Content } = await render(post);
+    ---
+
+    <Layout title={post.data.title} description={post.data.description}>
+      <article class="prose prose-gray max-w-none">
+        <h1>{post.data.title}</h1>
+        <p class="text-sm text-gray-500">
+          Published on {post.data.pubDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </p>
+        <Content />
+      </article>
+    </Layout>
+
+  vitest.config.ts: |
+    import { defineConfig } from 'vitest/config';
+
+    export default defineConfig({
+      test: {
+        include: ['src/__tests__/**/*.{test,spec}.ts'],
+        environment: 'node',
+      },
+    });
+
+  src/__tests__/smoke.test.ts: |
+    import { describe, it, expect } from 'vitest';
+
+    describe('Smoke test', () => {
+      it('should pass', () => {
+        expect(true).toBe(true);
+      });
+    });
+
+    describe('Content collection schema', () => {
+      it('validates a valid blog post frontmatter', () => {
+        const { z } = await import('zod');
+        const schema = z.object({
+          title: z.string(),
+          description: z.string(),
+          pubDate: z.coerce.date(),
+          updatedDate: z.coerce.date().optional(),
+          draft: z.boolean().default(false),
+        });
+        const result = schema.safeParse({
+          title: 'Hello World',
+          description: 'A test post',
+          pubDate: '2024-01-01',
+        });
+        expect(result.success).toBe(true);
+      });
+    });
+
+commands:
+  dev: "pnpm astro dev"
+  test: "pnpm exec vitest run"
+  build: "pnpm astro build"
+  lint: "pnpm exec tsc --noEmit"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+  preview: "pnpm astro preview"
+
+package_json_scripts:
+  test: "vitest run"
+  typecheck: "astro check && tsc --noEmit"
+
+env_example: |
+  PUBLIC_SITE_URL=https://your-site.pages.dev
+
+gitignore_extra: |
+  .env
+  .env*.local
+  .wrangler
+  dist/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Astro 5 + TypeScript + Tailwind CSS + Content Collections + Cloudflare Pages
+  - Rendering: Static-first (SSG). Pages with `export const prerender = false` run on Cloudflare Workers.
+
+  ## Commands
+  - Dev: `pnpm astro dev`
+  - Test: `pnpm exec vitest run`
+  - Build: `pnpm astro build`
+  - Typecheck: `pnpm exec tsc --noEmit`
+  - Preview (CF): `pnpm astro preview`
+
+  ## Architecture
+  - `src/content/` — Content collections. Schema defined in `src/content/config.ts`.
+  - `src/pages/` — File-based routing. `.astro` files are pages.
+  - `src/layouts/` — Shared page shells. Always typed with `interface Props`.
+  - `src/components/` — UI components. Can be Astro, React, Svelte, etc.
+  - `src/lib/` — Utilities, helpers, env validation.
+  - `src/__tests__/` — Vitest unit tests.
+
+  ## Conventions
+  - Content collections use `glob()` loader (Astro 5 API) — NOT legacy `type: 'content'`.
+  - Blog slugs: use `post.id` (Astro 5), NOT `post.slug` (Astro 3/4 legacy).
+  - Render post body with `render(post)` then `<Content />`, NOT `post.render()`.
+  - Env vars: `PUBLIC_` prefix for client-accessible, validate with Zod in `src/lib/env.ts`.
+  - NEVER use `any` type — use `unknown` + type guard.
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: Astro 5 (static-first, islands architecture)
+  - Language: TypeScript (strict)
+  - Styling: Tailwind CSS
+  - Content: Astro Content Collections (Zod-validated)
+  - Deploy: Cloudflare Pages (via @astrojs/cloudflare adapter)
+  - Testing: Vitest
+
+  ## Patterns & Conventions
+  - Content collections defined in `src/content/config.ts` with `defineCollection` + Zod schema
+  - Use `getCollection('blog')` to fetch; filter drafts with `({ data }) => !data.draft`
+  - Static paths generated with `getStaticPaths()` in `[...slug].astro`
+  - Render markdown with `const { Content } = await render(post)`
+  - Layouts accept typed `Props` via `interface Props` in the frontmatter fence
+
+  ## Gotchas
+  - Astro 5 content collections use `glob()` loader — `src/content/config.ts` must import from `astro/loaders`. The legacy `type: 'content'` format from Astro 3/4 does NOT work.
+  - Use `post.id` for the slug in Astro 5, not `post.slug` (that was the Astro 4 API).
+  - `render(post)` is the Astro 5 API. The old `post.render()` method is gone.
+  - `astro check` is separate from `tsc --noEmit` — run both for full typecheck coverage.
+  - Tailwind `prose` classes require `@tailwindcss/typography` plugin for markdown rendering.
+  - Cloudflare adapter requires `output: 'server'` or per-page `export const prerender = false` for SSR routes. Static pages remain static by default.
+
+  ## Resolved Issues

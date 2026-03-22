@@ -1,0 +1,283 @@
+# Chrome Extension Stack Template
+# TypeScript + Vite + React + Chrome Manifest V3
+
+name: chrome-extension
+description: "TypeScript + Vite + React + Chrome Manifest V3"
+short_label: "chrome-ext"
+
+init_commands:
+  - "pnpm init"
+  - "pnpm add react react-dom"
+  - "pnpm add -D typescript vite @vitejs/plugin-react @crxjs/vite-plugin @types/chrome @types/react @types/react-dom vitest prettier eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser"
+  - "pnpm install"
+
+directories:
+  - src/popup
+  - src/content
+  - src/background
+  - src/lib
+  - src/types
+  - public
+
+starter_files:
+  manifest.json: |
+    {
+      "manifest_version": 3,
+      "name": "My Extension",
+      "version": "0.1.0",
+      "description": "A Chrome extension built with Vite + React + TypeScript.",
+      "permissions": ["storage", "activeTab"],
+      "host_permissions": [],
+      "action": {
+        "default_popup": "src/popup/index.html",
+        "default_icon": {
+          "16": "public/icon-16.png",
+          "48": "public/icon-48.png",
+          "128": "public/icon-128.png"
+        }
+      },
+      "background": {
+        "service_worker": "src/background/index.ts",
+        "type": "module"
+      },
+      "content_scripts": [
+        {
+          "matches": ["<all_urls>"],
+          "js": ["src/content/index.ts"]
+        }
+      ],
+      "icons": {
+        "16": "public/icon-16.png",
+        "48": "public/icon-48.png",
+        "128": "public/icon-128.png"
+      }
+    }
+
+  vite.config.ts: |
+    import { defineConfig } from "vite";
+    import react from "@vitejs/plugin-react";
+    import { crx } from "@crxjs/vite-plugin";
+    import manifest from "./manifest.json";
+
+    export default defineConfig({
+      plugins: [
+        react(),
+        crx({ manifest }),
+      ],
+      build: {
+        rollupOptions: {
+          input: {
+            popup: "src/popup/index.html",
+          },
+        },
+      },
+    });
+
+  tsconfig.json: |
+    {
+      "compilerOptions": {
+        "target": "es2022",
+        "lib": ["es2022", "dom"],
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "jsx": "react-jsx",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "types": ["chrome"]
+      },
+      "include": ["src"],
+      "exclude": ["node_modules", "dist"]
+    }
+
+  src/popup/index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Extension</title>
+        <style>
+          body { margin: 0; min-width: 320px; min-height: 200px; }
+        </style>
+      </head>
+      <body>
+        <div id="root"></div>
+        <script type="module" src="./popup.tsx"></script>
+      </body>
+    </html>
+
+  src/popup/popup.tsx: |
+    import { StrictMode } from "react";
+    import { createRoot } from "react-dom/client";
+    import { Popup } from "./Popup";
+
+    const rootElement = document.getElementById("root");
+    if (!rootElement) throw new Error("Root element not found");
+
+    createRoot(rootElement).render(
+      <StrictMode>
+        <Popup />
+      </StrictMode>
+    );
+
+  src/popup/Popup.tsx: |
+    import { useEffect, useState } from "react";
+    import { storage } from "../lib/storage";
+
+    export function Popup() {
+      const [count, setCount] = useState(0);
+
+      useEffect(() => {
+        storage.get<number>("count").then((saved) => {
+          if (saved !== undefined) setCount(saved);
+        });
+      }, []);
+
+      async function handleIncrement() {
+        const next = count + 1;
+        setCount(next);
+        await storage.set("count", next);
+      }
+
+      return (
+        <div style={{ padding: 16, fontFamily: "sans-serif" }}>
+          <h2 style={{ margin: "0 0 12px", fontSize: 18 }}>Extension Popup</h2>
+          <p>Count: {count}</p>
+          <button onClick={handleIncrement} style={{ padding: "6px 12px" }}>
+            Increment
+          </button>
+        </div>
+      );
+    }
+
+  src/background/index.ts: |
+    // MV3 Background Service Worker
+    // IMPORTANT: MV3 service workers have a ~5-minute idle timeout.
+    // Do not rely on in-memory state persisting between events.
+    // Use chrome.storage for persistence.
+
+    chrome.runtime.onInstalled.addListener(() => {
+      console.log("Extension installed");
+    });
+
+    chrome.runtime.onMessage.addListener(
+      (message: unknown, sender, sendResponse) => {
+        console.log("Message from content script:", message, sender.tab?.id);
+        sendResponse({ received: true });
+        return true; // Keep channel open for async response
+      }
+    );
+
+  src/content/index.ts: |
+    // Content script — runs in the context of web pages
+    // Can access the DOM but runs in an isolated world (no access to page's JS)
+    console.log("Content script loaded on:", window.location.href);
+
+    // Example: send a message to the background service worker
+    chrome.runtime.sendMessage({ type: "PAGE_LOADED", url: window.location.href });
+
+  src/lib/storage.ts: |
+    // Type-safe chrome.storage.local wrapper
+    export const storage = {
+      async get<T>(key: string): Promise<T | undefined> {
+        const result = await chrome.storage.local.get(key);
+        return result[key] as T | undefined;
+      },
+
+      async set<T>(key: string, value: T): Promise<void> {
+        await chrome.storage.local.set({ [key]: value });
+      },
+
+      async remove(key: string): Promise<void> {
+        await chrome.storage.local.remove(key);
+      },
+
+      async clear(): Promise<void> {
+        await chrome.storage.local.clear();
+      },
+    };
+
+  src/types/messages.ts: |
+    export type Message =
+      | { type: "PAGE_LOADED"; url: string }
+      | { type: "GET_COUNT" }
+      | { type: "SET_COUNT"; count: number };
+
+commands:
+  dev: "pnpm exec vite build --watch"
+  build: "pnpm exec vite build"
+  test: "pnpm exec vitest run"
+  lint: "pnpm exec eslint src/"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+
+package_json_scripts:
+  dev: "vite build --watch"
+  build: "vite build"
+  test: "vitest run"
+  lint: "eslint src/"
+  typecheck: "tsc --noEmit"
+
+env_example: |
+  # Chrome extensions do not use .env files.
+  # Store API keys using chrome.storage.sync (set via options page or background script).
+  # Never hardcode API keys in extension source — they are visible to users.
+
+gitignore_extra: |
+  dist/
+  dist-zip/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Chrome Extension + TypeScript + Vite + React + Manifest V3
+  - Bundler: Vite + @crxjs/vite-plugin (handles manifest injection)
+
+  ## Commands
+  - Dev (watch): `pnpm exec vite build --watch` — outputs to dist/
+  - Build: `pnpm exec vite build`
+  - Test: `pnpm exec vitest run`
+  - Typecheck: `pnpm exec tsc --noEmit`
+  - Load in Chrome: go to chrome://extensions → Load unpacked → select dist/
+
+  ## Architecture
+  - `src/popup/` — React popup UI (rendered in popup.html)
+  - `src/background/` — MV3 Service Worker (event-driven, no persistent state)
+  - `src/content/` — content scripts (access page DOM, isolated JS world)
+  - `src/lib/storage.ts` — type-safe chrome.storage wrapper
+  - `manifest.json` — extension manifest (Vite plugin reads this)
+
+  ## Conventions
+  - NO dev server — build to dist/ and load unpacked in Chrome
+  - Use chrome.storage.local (not localStorage) for persistence
+  - Message passing between popup ↔ background ↔ content via chrome.runtime.sendMessage
+  - NEVER use `any` type
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Platform: Chrome Extension (Manifest V3)
+  - Language: TypeScript
+  - Bundler: Vite + @crxjs/vite-plugin
+  - UI: React (popup only)
+  - Testing: Vitest (unit tests only — no browser automation)
+
+  ## Patterns & Conventions
+  - Build to dist/ then load unpacked — there is no dev server
+  - Each extension context (popup, background, content) is a separate entry point
+  - Use the storage.ts wrapper for all chrome.storage.local access
+  - All inter-context communication via typed messages (see src/types/messages.ts)
+
+  ## Gotchas
+  - MV3 service workers have a ~5-minute idle timeout — do NOT store state in memory
+  - Content scripts run in isolated world — cannot access page's global JS variables
+  - chrome.storage is async — always await it, never synchronous
+  - After any code change: rebuild (vite build), then click "Reload" in chrome://extensions
+  - No Node.js APIs in extension context (no fs, no path, no process.env)
+  - API keys embedded in extension source are visible to users via devtools — use backend instead
+
+  ## Resolved Issues
