@@ -329,6 +329,27 @@ Content-Type: application/json
 
 These `.http` files work with the REST Client extension and serve as living API documentation.
 
+## Step 4C: AUTO — Create .cursor/ Settings (All Projects)
+
+If the Cursor template exists at `~/.claude/config/cursor-template/`, scaffold `.cursor/` alongside `.vscode/`:
+
+1. Create `.cursor/mcp.json` — Copy from the cursor template. If a project `.mcp.json` exists, convert it (replace `$HOME` with `${userHome}`).
+
+2. Create `.cursor/rules/` — Copy all `.mdc` files from the cursor template directory:
+   - `design-system.mdc` (UI projects only)
+   - `backend-architecture.mdc`
+   - `docker.mdc`
+   - `git-workflow.mdc`
+   - `consistency.mdc`
+   - `typescript.mdc` (TS projects) or `python.mdc` (Python projects)
+   - `security.mdc`
+   - `testing.mdc`
+   - `api.mdc`
+
+3. If `CLAUDE.md` exists, generate `.cursor/rules/project-conventions.mdc` from it with `alwaysApply: true`.
+
+This ensures Cursor IDE users get the same rules and MCP access as VS Code + Claude Code users.
+
 ## Step 5: Design System (Frontend Projects Only)
 
 If this is a frontend project:
@@ -693,6 +714,8 @@ test -f .vscode/settings.json && echo "  .vscode/settings.json" || echo "  MISSI
 test -f .vscode/launch.json && echo "  .vscode/launch.json" || echo "  MISSING: .vscode/launch.json"
 test -f .vscode/extensions.json && echo "  .vscode/extensions.json" || echo "  MISSING: .vscode/extensions.json"
 test -f .vscode/tasks.json && echo "  .vscode/tasks.json" || echo "  MISSING: .vscode/tasks.json"
+test -d .cursor/rules && echo "  .cursor/rules/ ($(ls .cursor/rules/*.mdc 2>/dev/null | wc -l | tr -d ' ') rules)" || echo "  MISSING: .cursor/rules/"
+test -f .cursor/mcp.json && echo "  .cursor/mcp.json" || echo "  MISSING: .cursor/mcp.json"
 test -f .devcontainer/devcontainer.json && echo "  .devcontainer/" || echo "  MISSING: .devcontainer/"
 test -f .claude/mcp.json && echo "  .claude/mcp.json" || echo "  MISSING: .claude/mcp.json"
 test -f .github/workflows/ci.yml && echo "  .github/workflows/ci.yml" || echo "  MISSING: CI workflow"
@@ -759,6 +782,7 @@ Project Setup Complete!
     AGENTS.md          — stack-aware learning memory
     tasks.json         — scaffold verification tasks
     .vscode/           — settings, debugger, tasks, recommended extensions
+    .cursor/           — Cursor IDE rules (.mdc) and MCP config
     .devcontainer/     — reproducible sandboxed dev environment
     .claude/mcp.json   — per-project RAG (knowledge-rag)
     .nvmrc/.python-version — runtime pinning
