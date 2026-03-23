@@ -55,9 +55,11 @@ Check for existing specs/plans in this order:
 ### Step 3: For All Sizes
 
 Before writing code:
-1. Read CLAUDE.md for project conventions
-2. Explore existing code patterns (find similar features)
-3. Verify dev environment works (tests pass, server starts)
+1. Complete the Resource Audit (see `rules/consistency.md`) — check skills, templates, and existing project components
+2. Read CLAUDE.md for project conventions
+3. Read AGENTS.md if present (project-specific patterns)
+4. Search for existing implementations of what you're about to build — reuse, never duplicate
+5. Verify dev environment works (tests pass, server starts)
 
 After writing code:
 1. Run tests
@@ -121,3 +123,12 @@ Next: Run /check to review before merging.
 - Use parallel agents only for 15+ file changes (it has overhead)
 - For API routes: generate matching `.http` files in `requests/` for REST Client testing
 - If the Claude Code VS Code extension is active, leverage `mcp__ide__getDiagnostics` to catch type errors without running `pnpm typecheck`
+
+## Frontend Quality Gates (MANDATORY for .tsx/.jsx/.css changes)
+- Visual verification via Playwright screenshot is MANDATORY — not optional
+- Design system compliance: grep changed files for hardcoded hex values (`#[0-9a-fA-F]{3,8}`) — zero tolerance
+- Every content section must have scroll-reveal animation (Framer Motion)
+- Every interactive element must have hover + focus-visible states
+- Loading states: every async component needs a skeleton, not a spinner
+- Error states: every route needs error.tsx, every form needs inline error display
+- Responsive: test at 375px (mobile), 768px (tablet), 1440px (desktop)

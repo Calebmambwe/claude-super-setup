@@ -94,19 +94,23 @@ If task failed after max fix cycles:
 2. If `attempts >= max_attempts`, set status to `"blocked"` with `"blocked_reason"`
 3. Report what went wrong and move to next task
 
-## Optional: Visual Verification
+## Visual Verification (MANDATORY for frontend tasks)
 
-If the task involves UI changes (frontend files, pages, components), consider running visual verification after Step 5:
+If the task involves ANY `.tsx`, `.jsx`, `.css`, or `.html` files, visual verification is **mandatory** — not optional:
 
 1. Run `/visual-verify` to:
    - Start the dev server
    - Navigate the app with Playwright
    - Check for console errors, network failures, visual regressions
+   - Verify design system compliance (no hardcoded colors/spacing)
+   - Test at mobile (375px) and desktop (1440px) viewports
    - Report pass/fail
 
 2. If visual verification finds issues, fix them (maximum 1 visual fix cycle, tracked separately from the code-review 2-cycle max)
 
-This step is optional but recommended for frontend tasks. It can also be triggered manually with `/visual-verify`.
+3. Design system compliance check: grep all changed `.tsx` files for hardcoded hex values (`#[0-9a-fA-F]{3,8}` outside of globals.css). If any are found, fix them before proceeding.
+
+Skipping visual verification for frontend tasks is a failure condition.
 
 ## Rules
 

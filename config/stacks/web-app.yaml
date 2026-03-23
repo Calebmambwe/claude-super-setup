@@ -7,18 +7,20 @@ short_label: "web"
 
 init_commands:
   - "pnpm create next-app . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*' --yes"
-  - "pnpm add @supabase/supabase-js @supabase/ssr zod"
-  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom prettier"
+  - "pnpm add @supabase/supabase-js @supabase/ssr zod framer-motion lucide-react next-themes"
+  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom prettier @next/bundle-analyzer prettier-plugin-tailwindcss"
   - "pnpm dlx shadcn@latest init -y"
 
 directories:
   - src/app
   - src/components/ui
   - src/components/shared
+  - src/components/sections
   - src/lib
   - src/hooks
   - src/types
   - src/actions
+  - src/providers
   - src/__tests__
 
 starter_files:
@@ -94,6 +96,92 @@ starter_files:
       },
     });
 
+  src/lib/animations.ts: |
+    export const fadeInUp = {
+      hidden: { opacity: 0, y: 20 },
+      visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+    };
+
+    export const fadeInDown = {
+      hidden: { opacity: 0, y: -20 },
+      visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+    };
+
+    export const scaleIn = {
+      hidden: { opacity: 0, scale: 0.95 },
+      visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } },
+    };
+
+    export const staggerContainer = {
+      hidden: {},
+      visible: { transition: { staggerChildren: 0.1 } },
+    };
+
+  src/providers/theme-provider.tsx: |
+    "use client";
+
+    import { ThemeProvider as NextThemesProvider } from "next-themes";
+
+    export function ThemeProvider({ children }: { children: React.ReactNode }) {
+      return (
+        <NextThemesProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          {children}
+        </NextThemesProvider>
+      );
+    }
+
+  src/app/error.tsx: |
+    "use client";
+
+    import { Button } from "@/components/ui/button";
+
+    export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+      return (
+        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
+          <h2 className="font-heading text-2xl font-bold">Something went wrong</h2>
+          <p className="text-muted-foreground max-w-md">{error.message || "An unexpected error occurred."}</p>
+          <Button onClick={reset}>Try again</Button>
+        </div>
+      );
+    }
+
+  src/app/not-found.tsx: |
+    import { Button } from "@/components/ui/button";
+    import Link from "next/link";
+
+    export default function NotFound() {
+      return (
+        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
+          <h2 className="font-heading text-4xl font-bold">404</h2>
+          <p className="text-muted-foreground max-w-md">The page you're looking for doesn't exist.</p>
+          <Button asChild><Link href="/">Go Home</Link></Button>
+        </div>
+      );
+    }
+
+  src/app/loading.tsx: |
+    export default function Loading() {
+      return (
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <div className="space-y-4 w-full max-w-2xl px-4">
+            <div className="h-8 w-48 animate-pulse rounded bg-muted/50" />
+            <div className="h-4 w-full animate-pulse rounded bg-muted/50" />
+            <div className="h-4 w-3/4 animate-pulse rounded bg-muted/50" />
+            <div className="grid grid-cols-3 gap-4 mt-8">
+              <div className="h-32 animate-pulse rounded-xl bg-muted/50" />
+              <div className="h-32 animate-pulse rounded-xl bg-muted/50" />
+              <div className="h-32 animate-pulse rounded-xl bg-muted/50" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+  prettier.config.js: |
+    module.exports = {
+      plugins: ["prettier-plugin-tailwindcss"],
+    };
+
   src/__tests__/setup.ts: |
     import "@testing-library/jest-dom/vitest";
 
@@ -143,10 +231,12 @@ claude_md: |
   - Typecheck: `pnpm exec tsc --noEmit`
 
   ## Architecture
-  - `src/app/` — Next.js App Router pages and layouts (server components by default)
+  - `src/app/` — Next.js App Router pages, layouts, loading.tsx, error.tsx, not-found.tsx
   - `src/components/ui/` — shadcn/ui primitives (do not edit directly)
   - `src/components/shared/` — reusable app components
-  - `src/lib/` — utilities, Supabase clients, helpers
+  - `src/components/sections/` — page sections (hero, features, pricing)
+  - `src/lib/` — utilities, Supabase clients, animations.ts
+  - `src/providers/` — context providers (theme-provider.tsx)
   - `src/hooks/` — custom React hooks
   - `src/types/` — TypeScript types and database types
   - `src/actions/` — Next.js Server Actions
@@ -156,6 +246,12 @@ claude_md: |
   - Use Server Actions for mutations, not API routes
   - Supabase client: use `src/lib/supabase/server.ts` in server components, `src/lib/supabase/client.ts` in client components
   - NEVER use `any` type — use `unknown` + type guard
+  - NEVER hardcode colors or spacing — use design system tokens
+  - Use Framer Motion for scroll-reveal animations (variants in src/lib/animations.ts)
+  - Use lucide-react for icons — import individually, never barrel import
+  - Use next-themes for dark/light mode via src/providers/theme-provider.tsx
+  - Use next/image for ALL images — never raw <img> tags
+  - Every page must have error.tsx, loading.tsx siblings for error/loading states
 
 agents_md: |
   # AGENTS.md

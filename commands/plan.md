@@ -24,6 +24,16 @@ Attach the brief to the planning context before routing.
 
 Research adds ~5 minutes but prevents 30+ minutes of wrong-API debugging.
 
+## Step 0.5: Resource Audit (Non-Negotiable)
+
+Before routing, complete the Resource Audit from `rules/consistency.md`:
+- If task involves UI: read `~/.claude/skills/design-system/SKILL.md`
+- If task is a new project: read the matching stack template from `~/.claude/config/stacks/`
+- If task produces a BMAD artifact: read the matching template from `~/.claude/config/bmad/templates/`
+- If project has AGENTS.md: read it for project-specific patterns and gotchas
+
+Do NOT proceed to routing until the audit is complete.
+
 ## Routing Logic
 
 ### Assess Scope from $ARGUMENTS

@@ -31,6 +31,16 @@ Full chain:
 
 ## Process
 
+### Phase 0: Resource Audit (Non-Negotiable)
+
+Before planning, complete the Resource Audit from `rules/consistency.md`:
+- Check if a matching stack template exists in `~/.claude/config/stacks/`
+- Check if relevant skills apply (design-system, backend-architecture, docker)
+- Read AGENTS.md if present in the project
+- Search the project for existing components/patterns to reuse
+
+Do NOT proceed to planning until the audit is complete. Autonomous does not mean reckless.
+
 ### Phase A: Plan + Decompose
 
 Run `/auto-plan` with $ARGUMENTS.

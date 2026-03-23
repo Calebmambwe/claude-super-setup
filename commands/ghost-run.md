@@ -23,6 +23,16 @@ Read `~/.claude/ghost-config.json` and extract:
 
 If config is missing or invalid, exit with error.
 
+### Step 1.5: Resource Audit (Non-Negotiable)
+
+Before planning, complete the Resource Audit from `rules/consistency.md`:
+- Check if a matching stack template exists in `~/.claude/config/stacks/`
+- Check if relevant skills apply (design-system, backend-architecture, docker)
+- Read AGENTS.md if present in the project
+- Search the project for existing components/patterns to reuse
+
+Ghost mode is NOT exempt from consistency checks.
+
 ### Step 2: Run /plan
 
 Run `/plan` with $ARGUMENTS.
