@@ -3,11 +3,18 @@ paths:
   - "**/auth/**"
   - "**/middleware/**"
   - "**/security/**"
+  - "**/jwt/**"
+  - "**/oauth/**"
+  - "**/crypto/**"
+  - "**/hash/**"
   - "**/login*"
   - "**/signup*"
   - "**/password*"
   - "**/token*"
   - "**/session*"
+  - "**/auth.*"
+  - "**/authenticate.*"
+  - "**/authorization.*"
 ---
 # Security Rules (Loaded for Auth/Middleware Files)
 

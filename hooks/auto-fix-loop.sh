@@ -43,7 +43,7 @@ DEBOUNCE_FILE="$PROJECT_ROOT/.claude-autofix-last-run"
 LOCK="$PROJECT_ROOT/.claude-autofix.lock"
 # Remove stale lock if older than 30 seconds (e.g., after SIGKILL)
 if [ -d "$LOCK" ]; then
-  LOCK_AGE=$(( $(date +%s) - $(stat -f %m "$LOCK" 2>/dev/null || echo 0) ))
+  LOCK_AGE=$(( $(date +%s) - $(stat -f %m "$LOCK" 2>/dev/null || stat -c %Y "$LOCK" 2>/dev/null || echo 0) ))
   [ "$LOCK_AGE" -gt 30 ] && rmdir "$LOCK" 2>/dev/null
 fi
 mkdir "$LOCK" 2>/dev/null || exit 0
