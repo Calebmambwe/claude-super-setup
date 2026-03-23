@@ -1,0 +1,27 @@
+---
+description: "Resource consistency rules — always check skills, templates, and existing components before writing code"
+alwaysApply: true
+---
+
+# Resource Consistency Rules
+
+Before writing ANY code, complete the applicable audit:
+
+## Full Audit (tasks touching 3+ files)
+
+1. **Skills Check** — Does this task involve UI, backend, or Docker? Read the relevant skill first.
+2. **Templates Check** — Is this a new project or SDLC artifact? Check for matching templates.
+3. **Component Check** — Search the project for existing implementations before creating new ones. NEVER duplicate.
+4. **AGENTS.md Check** — If it exists, read it for project-specific patterns.
+
+## Lightweight Audit (1-2 files)
+
+1. Search for existing components/utilities that do what you need. If one exists, use it.
+2. For UI changes: colors, spacing, and radius MUST come from the design system tokens.
+
+## Anti-Patterns (NEVER DO)
+
+- NEVER scaffold without checking templates first
+- NEVER build UI without reading design-system rules
+- NEVER create duplicate components
+- NEVER hardcode values that exist in design tokens

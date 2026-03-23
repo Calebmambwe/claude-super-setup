@@ -1,0 +1,16 @@
+---
+description: "API rules — standard response envelope, thin route handlers, pagination, proper status codes"
+alwaysApply: false
+globs: ["**/routes/**", "**/api/**", "**/controllers/**", "**/endpoints/**"]
+---
+
+# API Rules
+
+- ALL responses use the standard envelope: `{ success: boolean, data: T | null, error: { code, message, details } | null, meta?: { page, limit, total } }`
+- Route handlers are THIN: validate input, call service, format response. No business logic in routes.
+- Validate request body/params/query with Zod (TS) or Pydantic (Python) at the route layer.
+- Return appropriate HTTP status codes: 200 (success), 201 (created), 400 (bad input), 401 (unauthenticated), 403 (forbidden), 404 (not found), 422 (validation error), 500 (server error).
+- Paginate all list endpoints. Default: page=1, limit=20, max=100.
+- Include `Content-Type: application/json` header on all responses.
+- Log all 4xx and 5xx responses with request context (method, path, user ID, duration).
+- Never expose internal error details (stack traces, SQL errors) in production responses.

@@ -1,0 +1,33 @@
+---
+description: "Backend layering rules, API patterns, and quality standards — Route/Service/Repository architecture"
+alwaysApply: false
+globs: ["**/*.ts", "**/*.py", "**/routes/**", "**/services/**"]
+---
+
+## Layered Architecture (MANDATORY)
+
+Route/Controller -> Service -> Repository -> Database
+
+- **Routes:** HTTP concerns ONLY (parse, validate, respond). No business logic.
+- **Services:** ALL business logic. No HTTP imports. Raise domain exceptions.
+- **Repositories:** Data access ONLY. Parameterized queries. Return domain objects.
+- **Schemas:** Pydantic/Zod models matching OpenAPI spec exactly.
+
+## Response Envelope (ALL endpoints)
+
+Success: `{ "data": { ... }, "meta": { ... } }`
+Error: `{ "error": { "code": "ERROR_CODE", "message": "...", "details": [...] } }`
+
+## Error Handling
+
+- Global exception handler — never try/except in routes
+- Domain exceptions in app/exceptions.py
+- Map to HTTP status codes in middleware
+- Standard codes: VALIDATION_ERROR, NOT_FOUND, UNAUTHORIZED, FORBIDDEN, CONFLICT, INTERNAL_ERROR
+
+## Implementation Order (per endpoint)
+
+1. Pydantic/Zod schema (matching OpenAPI spec)
+2. Repository (data access)
+3. Service (business logic)
+4. Route handler (HTTP only)

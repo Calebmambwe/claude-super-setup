@@ -1,0 +1,35 @@
+# Cursor Automation: Auto PR Review
+# Import this template at cursor.com/automations
+#
+# Trigger: GitHub pull request opened
+# Action: Review for code quality, security, test coverage, design system compliance
+
+name: "Auto PR Review"
+description: "Runs comprehensive code review when a GitHub PR is opened"
+
+trigger:
+  type: github
+  event: pull_request.opened
+
+instructions: |
+  Review this pull request thoroughly:
+
+  1. **Code Quality** — Check for clean architecture (Route/Service/Repository layers),
+     proper error handling, no business logic in route handlers
+  2. **Security** — OWASP Top 10 checks: no hardcoded secrets, parameterized queries,
+     input validation at boundaries, proper auth middleware
+  3. **Test Coverage** — Every new function should have tests. Check AAA pattern,
+     behavior-focused tests, minimum 80% coverage for new code
+  4. **Design System** — If UI changes: all colors, spacing, typography must use tokens.
+     No hardcoded hex values or arbitrary pixel values
+  5. **Consistency** — No duplicate components, proper naming conventions,
+     conventional commit messages
+
+  Use the project AGENTS.md for project-specific context if available.
+  Flag blocking issues as "MUST FIX" and suggestions as "NICE TO HAVE".
+
+mcps:
+  - github
+  - context7
+
+model: claude-opus-4-6

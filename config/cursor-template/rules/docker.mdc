@@ -1,0 +1,27 @@
+---
+description: "Docker containerization patterns and best practices — multi-stage builds, security, compose"
+alwaysApply: false
+globs: ["**/Dockerfile*", "**/docker-compose*", "**/.devcontainer/**"]
+---
+
+## Dockerfile Standards
+
+### Multi-Stage Builds (Always)
+
+- Stage 1: Build (install deps, compile)
+- Stage 2: Production (copy artifacts, run as non-root)
+- Always use alpine or slim base images
+- Always run as non-root user (USER appuser)
+
+### Security
+
+- Never store secrets in Dockerfiles or docker-compose
+- Use .dockerignore to exclude .env, .git, node_modules
+- Pin base image versions (node:22-alpine, NOT node:latest)
+
+### Compose
+
+- Use named volumes for persistent data
+- Use healthchecks for all services
+- Use depends_on with condition: service_healthy
+- Expose only necessary ports

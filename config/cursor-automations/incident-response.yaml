@@ -1,0 +1,42 @@
+# Cursor Automation: Incident Response
+# Import this template at cursor.com/automations
+#
+# Trigger: PagerDuty incident created
+# Action: Investigate logs, find recent changes, propose fix
+
+name: "Incident Response"
+description: "Automated investigation and fix proposal for production incidents"
+
+trigger:
+  type: pagerduty
+  event: incident.triggered
+
+instructions: |
+  A production incident has been triggered. Investigate and respond:
+
+  1. **Understand the alert** — Read the PagerDuty incident details (service, severity, description)
+  2. **Check recent changes** — Look at git log for the last 24 hours of merged PRs
+  3. **Investigate logs** — Use Datadog MCP to search for error patterns matching the incident
+  4. **Identify root cause** — Correlate recent changes with the error pattern
+  5. **Propose fix** — If a likely fix is identified:
+     - Create a branch: `fix/incident-{incident-id}`
+     - Implement the minimal fix
+     - Add a regression test
+     - Create a PR tagged "incident-fix"
+  6. **Notify team** — Send a Slack message to the on-call channel with:
+     - Incident summary
+     - Root cause analysis
+     - Link to fix PR (if created)
+     - Recommended immediate actions
+
+  Rules:
+  - Prefer minimal, targeted fixes over broad refactors
+  - Always add a regression test for the fix
+  - Never deploy automatically — create PR for human review
+  - Log all investigation steps for the post-mortem
+
+mcps:
+  - github
+  - slack
+
+model: claude-opus-4-6

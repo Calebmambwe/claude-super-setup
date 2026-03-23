@@ -1,0 +1,57 @@
+---
+description: "Size-based implementation routing — Tiny / Small / Medium / Large. Invoke by asking to follow the /build workflow."
+alwaysApply: true
+---
+
+# Build Workflow
+
+Use this workflow when the user asks you to implement a feature or task.
+
+## Step 0: Check for Task List
+
+If `tasks.json` exists with pending tasks:
+- Suggest implementing tasks in dependency order
+- Each task = one commit with conventional message
+
+## Step 1: Assess What We're Building
+
+Check for existing specs/plans:
+1. `specs/*.tasks.md` → task list exists? Use it.
+2. `specs/*.plan.md` → plan exists? Use it.
+3. `docs/*/design-doc.md` → design doc exists? Use it.
+4. Nothing found → assess the request directly.
+
+## Step 2: Route by Size
+
+### Tiny (1-2 files)
+- Implement directly in this session
+- Write code + tests together
+
+### Small (3-5 files)
+- Plan the implementation order first
+- Implement file-by-file in dependency order
+- Write tests alongside each file
+
+### Medium (6-15 files)
+- Read the task list from specs
+- Implement tasks sequentially in dependency order
+- Each task = one commit
+- Run tests after each task
+
+### Large (15+ files)
+- Identify parallelizable task groups
+- Consider launching a Cursor Cloud Agent for independent subtasks
+- Merge results, resolve conflicts, run verification
+
+## Step 3: Before Writing Code
+
+1. Complete the Resource Audit — check design system, templates, existing components
+2. Read CLAUDE.md for project conventions
+3. Read AGENTS.md if present
+4. Search for existing implementations — reuse, never duplicate
+
+## Step 4: After Writing Code
+
+1. Run tests
+2. Run lint and typecheck
+3. Commit with conventional commit message (feat:, fix:, refactor:, etc.)
