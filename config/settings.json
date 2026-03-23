@@ -218,7 +218,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write(**/*.{ts,tsx,js,jsx})|Edit(**/*.{ts,tsx,js,jsx})",
+        "matcher": "Write(.+\\.(ts|tsx|js|jsx)$)|Edit(.+\\.(ts|tsx|js|jsx)$)",
         "hooks": [
           {
             "type": "command",
@@ -227,7 +227,7 @@
         ]
       },
       {
-        "matcher": "Write(**/*.{json,css,md})|Edit(**/*.{json,css,md})",
+        "matcher": "Write(.+\\.(json|css|md)$)|Edit(.+\\.(json|css|md)$)",
         "hooks": [
           {
             "type": "command",
@@ -236,7 +236,7 @@
         ]
       },
       {
-        "matcher": "Write(**/*.py)|Edit(**/*.py)",
+        "matcher": "Write(.+\\.py$)|Edit(.+\\.py$)",
         "hooks": [
           {
             "type": "command",
@@ -254,7 +254,7 @@
         ]
       },
       {
-        "matcher": "Write(**/*.test.*)|Write(**/*.spec.*)|Write(**/*_test.*)|Write(**/test_*.py)|Edit(**/*.test.*)|Edit(**/*.spec.*)|Edit(**/*_test.*)|Edit(**/test_*.py)",
+        "matcher": "Write(.+\\.test\\..+$)|Write(.+\\.spec\\..+$)|Write(.+_test\\..+$)|Write(.+/test_.+\\.py$)|Edit(.+\\.test\\..+$)|Edit(.+\\.spec\\..+$)|Edit(.+_test\\..+$)|Edit(.+/test_.+\\.py$)",
         "hooks": [
           {
             "type": "command",
@@ -263,7 +263,7 @@
         ]
       },
       {
-        "matcher": "Write(**/research.md)",
+        "matcher": "Write(.+/research\\.md$)",
         "hooks": [
           {
             "type": "prompt",
@@ -273,7 +273,7 @@
         ]
       },
       {
-        "matcher": "Write(**/brief.md)",
+        "matcher": "Write(.+/brief\\.md$)",
         "hooks": [
           {
             "type": "prompt",
@@ -283,7 +283,7 @@
         ]
       },
       {
-        "matcher": "Write(**/design-doc.md)|Write(**/reverse-doc.md)",
+        "matcher": "Write(.+/design-doc\\.md$)|Write(.+/reverse-doc\\.md$)",
         "hooks": [
           {
             "type": "prompt",
@@ -293,7 +293,7 @@
         ]
       },
       {
-        "matcher": "Write(**/prompts/milestone-*.md)|Write(**/prompts/implementation-prompt.md)|Write(**/prompts/sdlc-prompt-*.md)",
+        "matcher": "Write(.+/prompts/milestone-.+\\.md$)|Write(.+/prompts/implementation-prompt\\.md$)|Write(.+/prompts/sdlc-prompt-.+\\.md$)",
         "hooks": [
           {
             "type": "prompt",
@@ -303,7 +303,7 @@
         ]
       },
       {
-        "matcher": "Write(**/prd.md)|Write(**/architecture.md)",
+        "matcher": "Write(.+/prd\\.md$)|Write(.+/architecture\\.md$)",
         "hooks": [
           {
             "type": "prompt",
@@ -315,7 +315,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Write(**/brief.md)|Write(**/product-brief.md)|Write(**/research.md)|Write(**/prd.md)|Write(**/architecture.md)|Write(**/design-doc.md)|Write(**/reverse-doc.md)|Write(**/prompts/milestone-*.md)|Write(**/prompts/implementation-prompt.md)|Write(**/prompts/sdlc-prompt-*.md)|Write(**/prompts/README.md)",
+        "matcher": "Write(.+/brief\\.md$)|Write(.+/product-brief\\.md$)|Write(.+/research\\.md$)|Write(.+/prd\\.md$)|Write(.+/architecture\\.md$)|Write(.+/design-doc\\.md$)|Write(.+/reverse-doc\\.md$)|Write(.+/prompts/milestone-.+\\.md$)|Write(.+/prompts/implementation-prompt\\.md$)|Write(.+/prompts/sdlc-prompt-.+\\.md$)|Write(.+/prompts/README\\.md$)",
         "hooks": [
           {
             "type": "command",
@@ -324,7 +324,7 @@
         ]
       },
       {
-        "matcher": "Bash(git commit*)",
+        "matcher": "Bash(git commit.*)",
         "hooks": [
           {
             "type": "prompt",
@@ -334,7 +334,7 @@
         ]
       },
       {
-        "matcher": "Bash(git push*)",
+        "matcher": "Bash(git push.*)",
         "hooks": [
           {
             "type": "command",
@@ -343,7 +343,7 @@
         ]
       },
       {
-        "matcher": "Edit(**/*.lock)|Write(**/*.lock)|Edit(**/package-lock.json)|Write(**/package-lock.json)",
+        "matcher": "Edit(.+\\.lock$)|Write(.+\\.lock$)|Edit(.+/package-lock\\.json$)|Write(.+/package-lock\\.json$)",
         "hooks": [
           {
             "type": "command",
