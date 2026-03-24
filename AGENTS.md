@@ -52,6 +52,19 @@ Shared project context for Claude Code and Cursor agents.
 - `shlex.quote()` is required for user-supplied paths in shell commands — never interpolate raw strings into f-string shell commands.
 - `--skip-chezmoi` flag in setup-vps.sh is parsed but intentionally unused — reserved for Sprint 2 chezmoi dotfiles integration.
 
+## Gemini Media Integration (Sprint 2)
+- Gemini MCP provides 37 tools via `@rlabs-inc/gemini-mcp` (image gen, video gen, TTS, editing).
+- Setup: `bash scripts/setup-gemini-mcp.sh` — requires `GEMINI_API_KEY` env var.
+- `/prototype` generates UI mockups via Gemini Imagen 3, saves to `docs/{project}/mockups/`.
+- `/demo-video` generates short videos via Gemini Veo 2, saves to `docs/{project}/demos/`.
+- fal.ai is the cheaper video alternative — add with `--with-fal` flag on setup script.
+
+## Voice Transcription (Sprint 2)
+- `scripts/transcribe-voice.sh` converts OGG/OGA voice files to text via OpenAI Whisper API ($0.006/min).
+- Requires `OPENAI_API_KEY` env var and `ffmpeg` installed.
+- `/voice-brief` structures raw voice transcriptions into feature briefs at `docs/{feature}/brief.md`.
+- Voice notes from Telegram arrive as OGG files — the transcription script handles the OGG→MP3→Whisper pipeline.
+
 ## Maintenance
 - Update this file whenever durable project conventions change.
 - Re-run `/cursor-setup` after major setup updates.
