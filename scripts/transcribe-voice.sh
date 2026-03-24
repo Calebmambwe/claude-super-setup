@@ -25,9 +25,15 @@ shift || true
 while [ $# -gt 0 ]; do
   case "$1" in
     --language) LANGUAGE="${2:-en}"; shift 2 ;;
-    *) shift ;;
+    *) err "Unknown argument: $1"; exit 1 ;;
   esac
 done
+
+# Validate language is an ISO 639-1 code
+if ! [[ "$LANGUAGE" =~ ^[a-z]{2,3}$ ]]; then
+  err "Invalid language code: $LANGUAGE (expected ISO 639-1, e.g. en, fr, sw)"
+  exit 1
+fi
 
 if [ -z "$INPUT_FILE" ]; then
   err "Usage: transcribe-voice.sh <input-file> [--language en]"
@@ -57,7 +63,7 @@ if [ -z "${OPENAI_API_KEY:-}" ]; then
   # Try loading from telegram .env
   TELEGRAM_ENV="$HOME/.claude/channels/telegram/.env"
   if [ -f "$TELEGRAM_ENV" ]; then
-    OPENAI_API_KEY=$(grep -s '^OPENAI_API_KEY=' "$TELEGRAM_ENV" | sed 's/^OPENAI_API_KEY=//' | sed 's/[[:space:]]*#.*//' | sed "s/^[\"']\(.*\)[\"']$/\1/" | tr -d '\r' || true)
+    OPENAI_API_KEY=$(grep -s '^OPENAI_API_KEY=' "$TELEGRAM_ENV" | head -1 | sed 's/^OPENAI_API_KEY=//' | sed 's/[[:space:]]*#.*//' | sed "s/^[\"']\(.*\)[\"']$/\1/" | tr -d '\r' || true)
   fi
 fi
 
@@ -70,9 +76,16 @@ if [ -z "${OPENAI_API_KEY:-}" ]; then
 fi
 
 # Convert OGG/OGA to MP3 (Whisper API accepts mp3, mp4, mpeg, mpga, m4a, wav, webm)
+# Validate input is a local file path, not a URL (prevent ffmpeg SSRF)
+if [[ "$INPUT_FILE" =~ :// ]]; then
+  err "Input file must be a local path, not a URL: $INPUT_FILE"
+  exit 1
+fi
+
 BASENAME=$(basename "$INPUT_FILE")
 BASENAME_NO_EXT="${BASENAME%.*}"
 TMP_DIR=$(mktemp -d)
+chmod 700 "$TMP_DIR"  # enforce restrictive permissions regardless of umask
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 MP3_FILE="$TMP_DIR/${BASENAME_NO_EXT}.mp3"
 
@@ -84,10 +97,12 @@ if [ ! -f "$MP3_FILE" ]; then
   exit 1
 fi
 
-# Call Whisper API
+# Call Whisper API (use curl config file to avoid exposing API key in process args)
 log "Transcribing via Whisper API..."
-RESPONSE=$(curl -s --fail -X POST "https://api.openai.com/v1/audio/transcriptions" \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
+CURL_CONFIG="$TMP_DIR/.curlrc"
+printf 'header = "Authorization: Bearer %s"\n' "$OPENAI_API_KEY" > "$CURL_CONFIG"
+chmod 600 "$CURL_CONFIG"
+RESPONSE=$(curl -s --fail --config "$CURL_CONFIG" -X POST "https://api.openai.com/v1/audio/transcriptions" \
   -F "file=@$MP3_FILE" \
   -F "model=whisper-1" \
   -F "language=$LANGUAGE" \
@@ -99,8 +114,10 @@ if [ -z "$RESPONSE" ]; then
 fi
 
 # Save transcription alongside the original file (restrict to same directory)
-INPUT_DIR=$(dirname "$(realpath "$INPUT_FILE")")
-INPUT_BASE=$(basename "${INPUT_FILE%.*}")
+# Use portable path resolution (realpath not available on all macOS versions)
+RESOLVED_FILE=$(cd "$(dirname "$INPUT_FILE")" && pwd)/$(basename "$INPUT_FILE")
+INPUT_DIR=$(dirname "$RESOLVED_FILE")
+INPUT_BASE=$(basename "${RESOLVED_FILE%.*}")
 TRANSCRIPT_FILE="$INPUT_DIR/${INPUT_BASE}.txt"
 echo "$RESPONSE" > "$TRANSCRIPT_FILE"
 log "Transcription saved to: $TRANSCRIPT_FILE"

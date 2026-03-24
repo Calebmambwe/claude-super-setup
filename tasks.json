@@ -36,7 +36,7 @@
     {
       "id": 4,
       "title": "Create voice transcription hook for Telegram voice messages",
-      "description": "Create hooks/voice-transcribe.sh — detects OGG voice attachments from Telegram, converts via ffmpeg, sends to Whisper API, returns transcription text.",
+      "description": "Create scripts/transcribe-voice.sh — detects OGG voice attachments from Telegram, converts via ffmpeg, sends to Whisper API, returns transcription text.",
       "status": "completed",
       "priority": "high",
       "risk": "medium",
