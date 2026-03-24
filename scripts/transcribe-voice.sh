@@ -45,6 +45,13 @@ if [ ! -f "$INPUT_FILE" ]; then
   exit 1
 fi
 
+# Whisper API limit is 25 MB
+FILE_SIZE=$(stat -f%z "$INPUT_FILE" 2>/dev/null || stat -c%s "$INPUT_FILE")
+if [ "$FILE_SIZE" -gt 26214400 ]; then
+  err "File too large ($(( FILE_SIZE / 1048576 ))MB). Whisper API limit is 25MB."
+  exit 1
+fi
+
 # Check dependencies
 if ! command -v ffmpeg &>/dev/null; then
   err "ffmpeg is required but not installed."
