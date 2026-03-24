@@ -1,0 +1,186 @@
+#!/bin/bash
+
+# Telegram Dispatch Runner — Spawns a headless Claude session for a dispatched command
+# Usage: telegram-dispatch-runner.sh <command> <args> <project_dir> <session_name>
+#
+# Spawns a screen session running claude -p with the given command.
+# Logs output to ~/.claude/logs/dispatch-<session_name>.log
+# Updates ~/.claude/telegram-sessions.json on completion.
+#
+# CRITICAL: Does NOT use --channels (avoids 409 Telegram Bot API conflict).
+# CRITICAL: Does NOT pipe stdout through tee (breaks TTY detection).
+
+set -euo pipefail
+
+COMMAND="${1:?Usage: telegram-dispatch-runner.sh <command> <args> <project_dir> <session_name>}"
+ARGS="${2:-}"
+PROJECT_DIR="${3:?Missing project_dir}"
+SESSION_NAME="${4:?Missing session_name}"
+CHAT_ID="${5:-}"
+
+LOG_DIR="$HOME/.claude/logs"
+SESSION_FILE="$HOME/.claude/telegram-sessions.json"
+QUEUE_FILE="$HOME/.claude/telegram-queue.json"
+LOG_FILE="$LOG_DIR/dispatch-${SESSION_NAME}.log"
+
+mkdir -p "$LOG_DIR"
+
+# ─── Initialize session registry if absent ────────────────────────────────────
+
+init_session_file() {
+  if [[ ! -f "$SESSION_FILE" ]]; then
+    echo '{"sessions":[]}' > "$SESSION_FILE"
+  fi
+}
+
+# ─── Register session ─────────────────────────────────────────────────────────
+
+register_session() {
+  init_session_file
+  local now
+  now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  local tmp="${SESSION_FILE}.tmp.$$"
+  jq --arg name "$SESSION_NAME" \
+     --arg screen "$SESSION_NAME" \
+     --arg cmd "$COMMAND" \
+     --arg args "$ARGS" \
+     --arg chat "$CHAT_ID" \
+     --arg dir "$PROJECT_DIR" \
+     --arg started "$now" \
+     --arg log "$LOG_FILE" \
+     '.sessions += [{
+       session_name: $name,
+       screen_name: $screen,
+       command: $cmd,
+       args: $args,
+       chat_id: $chat,
+       project_dir: $dir,
+       started_at: $started,
+       completed_at: null,
+       exit_code: null,
+       log_file: $log
+     }]' "$SESSION_FILE" > "$tmp" && mv "$tmp" "$SESSION_FILE"
+}
+
+# ─── Mark session complete ────────────────────────────────────────────────────
+
+complete_session() {
+  local exit_code="$1"
+  local now
+  now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  local tmp="${SESSION_FILE}.tmp.$$"
+  jq --arg name "$SESSION_NAME" \
+     --arg completed "$now" \
+     --argjson code "$exit_code" \
+     '(.sessions[] | select(.session_name == $name)) |= . + {
+       completed_at: $completed,
+       exit_code: $code
+     }' "$SESSION_FILE" > "$tmp" && mv "$tmp" "$SESSION_FILE"
+}
+
+# ─── Update queue status ─────────────────────────────────────────────────────
+
+update_queue_status() {
+  local status="$1"
+  if [[ -f "$QUEUE_FILE" ]]; then
+    local tmp="${QUEUE_FILE}.tmp.$$"
+    local now
+    now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    jq --arg name "$SESSION_NAME" \
+       --arg status "$status" \
+       --arg now "$now" \
+       '(.queue[] | select(.screen_name == $name)) |= . + {
+         status: $status,
+         finished_at: (if $status == "completed" or $status == "failed" then $now else .finished_at end)
+       }' "$QUEUE_FILE" > "$tmp" && mv "$tmp" "$QUEUE_FILE" 2>/dev/null || true
+  fi
+}
+
+# ─── Send Telegram notification on completion ─────────────────────────────────
+
+notify_telegram() {
+  local exit_code="$1"
+  local telegram_env="$HOME/.claude/channels/telegram/.env"
+  local telegram_token=""
+
+  if [[ -f "$telegram_env" ]]; then
+    telegram_token=$(grep 'TELEGRAM_BOT_TOKEN=' "$telegram_env" 2>/dev/null | sed 's/^TELEGRAM_BOT_TOKEN=//' || echo "")
+  fi
+
+  if [[ -z "$telegram_token" ]] || [[ -z "$CHAT_ID" ]]; then
+    return 0
+  fi
+
+  local emoji="✅"
+  local status_text="completed"
+  if [[ "$exit_code" -ne 0 ]]; then
+    emoji="❌"
+    status_text="failed (exit $exit_code)"
+  fi
+
+  # Get last 10 lines of log for context
+  local log_tail=""
+  if [[ -f "$LOG_FILE" ]]; then
+    log_tail=$(tail -10 "$LOG_FILE" 2>/dev/null | head -c 2000 || echo "")
+  fi
+
+  local tg_text="${emoji} *Task ${status_text}*\n\nCommand: \`/${COMMAND} ${ARGS}\`\nSession: \`${SESSION_NAME}\`"
+  if [[ -n "$log_tail" ]]; then
+    tg_text="${tg_text}\n\n\`\`\`\n${log_tail}\n\`\`\`"
+  fi
+
+  curl -s -o /dev/null -X POST \
+    "https://api.telegram.org/bot${telegram_token}/sendMessage" \
+    -d "chat_id=${CHAT_ID}" \
+    -d "text=$(echo -e "$tg_text")" \
+    -d "parse_mode=Markdown" \
+    -d "disable_web_page_preview=true" \
+    2>/dev/null || true
+}
+
+# ─── Main: spawn or execute ──────────────────────────────────────────────────
+
+if [[ "${6:-}" == "--inner" ]]; then
+  # Running inside screen session — execute the command
+  register_session
+  update_queue_status "running"
+
+  echo "=== Dispatch Runner ===" >> "$LOG_FILE"
+  echo "Command: /$COMMAND $ARGS" >> "$LOG_FILE"
+  echo "Project: $PROJECT_DIR" >> "$LOG_FILE"
+  echo "Started: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+  echo "========================" >> "$LOG_FILE"
+
+  cd "$PROJECT_DIR"
+
+  EXIT_CODE=0
+  claude -p \
+    --dangerously-skip-permissions \
+    "/$COMMAND $ARGS" \
+    >> "$LOG_FILE" 2>&1 || EXIT_CODE=$?
+
+  echo "" >> "$LOG_FILE"
+  echo "=== Completed with exit code: $EXIT_CODE ===" >> "$LOG_FILE"
+  echo "Finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+
+  complete_session "$EXIT_CODE"
+
+  if [[ "$EXIT_CODE" -eq 0 ]]; then
+    update_queue_status "completed"
+  else
+    update_queue_status "failed"
+  fi
+
+  # Send completion notification directly via Bot API
+  notify_telegram "$EXIT_CODE"
+
+  exit "$EXIT_CODE"
+else
+  # Outer invocation — spawn a screen session
+  SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+  screen -dmS "$SESSION_NAME" bash "$SCRIPT_PATH" "$COMMAND" "$ARGS" "$PROJECT_DIR" "$SESSION_NAME" "$CHAT_ID" --inner
+  echo "Dispatched: screen session '$SESSION_NAME' started"
+  echo "Log: $LOG_FILE"
+fi

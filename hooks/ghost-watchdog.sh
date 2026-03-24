@@ -153,9 +153,15 @@ check_git_state() {
 
 pipeline_is_done() {
   # Check if checkpoint file is gone (deleted on successful completion by auto-ship)
+  # BUT only consider it "done" if a PR URL exists — otherwise the pipeline never started
   local checkpoint="$PROJECT_DIR/.claude/pipeline-checkpoint.json"
   if [[ ! -f "$checkpoint" ]]; then
-    return 0
+    local pr_url
+    pr_url=$(jq -r '.pr_url // ""' "$CONFIG_FILE" 2>/dev/null || echo "")
+    if [[ -n "$pr_url" && "$pr_url" != "null" ]]; then
+      return 0  # checkpoint gone + PR exists = genuinely complete
+    fi
+    return 1  # checkpoint gone + no PR = never started
   fi
 
   # Check if checkpoint shows phase 4+ (ship complete)
@@ -212,28 +218,44 @@ while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
 
   cd "$PROJECT_DIR"
 
+  # Conditionally add --channels for Telegram bidirectional communication
+  # WARNING: Only one bot poller per token allowed. If the persistent
+  # telegram listener (start-telegram-server.sh) is running, do NOT
+  # enable --channels here — stop the listener first.
+  CHANNELS_FLAG=""
+  if [[ "$TELEGRAM_ENABLED" == "true" ]]; then
+    CHANNELS_FLAG="--channels plugin:telegram@claude-plugins-official"
+  fi
+
+  # IMPORTANT: Do NOT pipe stdout through tee — piping breaks TTY detection
+  # and causes Claude to dump telemetry JSON instead of executing commands.
+  # Use >> redirect instead. Same constraint as start-telegram-server.sh.
+
   if [[ $ATTEMPT -eq 1 ]] && [[ -z "$SESSION_ID" || "$SESSION_ID" == "null" ]]; then
     # First run: use /ghost-run
     claude -p \
       --dangerously-skip-permissions \
       --max-budget-usd "$BUDGET" \
+      $CHANNELS_FLAG \
       "/ghost-run $FEATURE" \
-      2>&1 | tee -a "$LOG_FILE" || true
+      >> "$LOG_FILE" 2>&1 || true
   else
     # Restart: use --resume if we have a session ID, otherwise /auto-ship
     if [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" ]]; then
       claude -p \
         --dangerously-skip-permissions \
         --max-budget-usd "$BUDGET" \
+        $CHANNELS_FLAG \
         --resume "$SESSION_ID" \
         "/auto-ship" \
-        2>&1 | tee -a "$LOG_FILE" || true
+        >> "$LOG_FILE" 2>&1 || true
     else
       claude -p \
         --dangerously-skip-permissions \
         --max-budget-usd "$BUDGET" \
+        $CHANNELS_FLAG \
         "/auto-ship $FEATURE" \
-        2>&1 | tee -a "$LOG_FILE" || true
+        >> "$LOG_FILE" 2>&1 || true
     fi
   fi
 
