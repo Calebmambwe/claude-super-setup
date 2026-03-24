@@ -104,6 +104,7 @@ BASENAME=$(basename "$INPUT_FILE")
 BASENAME_NO_EXT="${BASENAME%.*}"
 # Sanitize basename to prevent ffmpeg flag injection from filenames starting with -
 BASENAME_NO_EXT=$(echo "$BASENAME_NO_EXT" | tr -cd 'a-zA-Z0-9._-' | sed 's/^-//')
+[ -z "$BASENAME_NO_EXT" ] && BASENAME_NO_EXT="voice-note"
 TMP_DIR=$(mktemp -d)
 chmod 700 "$TMP_DIR"  # enforce restrictive permissions regardless of umask
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
@@ -122,11 +123,11 @@ log "Transcribing via Whisper API..."
 CURL_CONFIG="$TMP_DIR/.curlrc"
 printf 'header = "Authorization: Bearer %s"\n' "$OPENAI_API_KEY" > "$CURL_CONFIG"
 chmod 600 "$CURL_CONFIG"
-RESPONSE=$(curl -s --fail --config "$CURL_CONFIG" -X POST "https://api.openai.com/v1/audio/transcriptions" \
+RESPONSE=$(curl -s --fail-with-body --config "$CURL_CONFIG" -X POST "https://api.openai.com/v1/audio/transcriptions" \
   -F "file=@$MP3_FILE" \
   -F "model=whisper-1" \
   -F "language=$LANGUAGE" \
-  -F "response_format=text") || { err "Whisper API request failed"; exit 1; }
+  -F "response_format=text" 2>&1) || { err "Whisper API request failed: $RESPONSE"; exit 1; }
 
 if [ -z "$RESPONSE" ]; then
   err "Whisper API returned empty response"

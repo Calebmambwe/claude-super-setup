@@ -79,7 +79,9 @@ if command -v claude &>/dev/null; then
     info "[DRY-RUN] Would run: claude mcp add gemini -s user -- env GEMINI_API_KEY=*** npx -y @rlabs-inc/gemini-mcp@0.1.2"
   else
     info "Adding Gemini MCP via claude CLI..."
-    claude mcp add -e "GEMINI_API_KEY=$GEMINI_API_KEY" -e "GEMINI_TOOL_PRESET=media" gemini -s user -- npx -y @rlabs-inc/gemini-mcp@0.1.2 2>/dev/null && \
+    # Pass keys via environment (not -e flag) to avoid exposure in ps aux
+    GEMINI_API_KEY="$GEMINI_API_KEY" GEMINI_TOOL_PRESET="media" \
+      claude mcp add gemini -s user -- npx -y @rlabs-inc/gemini-mcp@0.1.2 2>/dev/null && \
       log "Gemini MCP added to Claude Code" || \
       warn "claude mcp add failed — may already exist. Check with: claude mcp list"
   fi
@@ -116,7 +118,8 @@ if $WITH_FAL; then
         info "[DRY-RUN] Would run: claude mcp add fal-ai --transport http https://mcp.fal.ai/mcp"
       else
         info "Adding fal.ai MCP via claude CLI..."
-        claude mcp add -e "FAL_KEY=$FAL_KEY" fal-ai --transport http "https://mcp.fal.ai/mcp" -s user 2>/dev/null && \
+        FAL_KEY="$FAL_KEY" \
+          claude mcp add fal-ai --transport http "https://mcp.fal.ai/mcp" -s user 2>/dev/null && \
           log "fal.ai MCP added to Claude Code" || \
           warn "fal.ai MCP add failed — may already exist."
       fi
