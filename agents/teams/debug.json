@@ -6,7 +6,7 @@
   "agents": [
     {
       "name": "env-doctor",
-      "role": "diagnostician",
+      "role": "lead",
       "description": "Audits environment health — hooks, MCP servers, settings, dependencies",
       "tools": ["Read", "Bash", "Grep", "Glob", "Write", "Edit"]
     },

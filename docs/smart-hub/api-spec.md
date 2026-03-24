@@ -264,7 +264,7 @@ interface Task {
 ```json
 {
   "feature": "Enterprise Agent Platform Sprint 5: VS Code Agent Teams, Remote Control, Smart Hub API",
-  "project_dir": "/Users/calebmambwe/claude_super_setup",
+  "project_dir": "/home/user/my-project",
   "tasks": [
     {
       "id": 1,
@@ -597,7 +597,7 @@ Returns `AppError { kind: 'notFound' }` if no agent with the given name exists i
 {
   "name": "code-reviewer",
   "file": "agents/core/engineering/code-reviewer.md",
-  "file_path": "/Users/calebmambwe/.claude-super-setup/agents/core/engineering/code-reviewer.md",
+  "file_path": "/home/user/.claude-super-setup/agents/core/engineering/code-reviewer.md",
   "source": "core",
   "department": "engineering",
   "description": "Reviews code for quality, correctness, and adherence to project standards",
@@ -695,7 +695,7 @@ listen<CommandOutputEvent>('command-output', (event) => {
 ```json
 {
   "args": "add telegram notification for pipeline completion",
-  "project_dir": "/Users/calebmambwe/claude_super_setup"
+  "project_dir": "/home/user/my-project"
 }
 ```
 
@@ -706,7 +706,7 @@ listen<CommandOutputEvent>('command-output', (event) => {
   "execution_id": "a3f2c1d0-7b4e-4a1f-9c8d-2e5f6b7a0c3d",
   "status": "started",
   "command": "/auto-dev add telegram notification for pipeline completion",
-  "project_dir": "/Users/calebmambwe/claude_super_setup",
+  "project_dir": "/home/user/my-project",
   "started_at": "2026-03-24T16:45:00Z"
 }
 ```
@@ -778,7 +778,7 @@ interface TeamAgentRef {
       ],
       "workflow_steps": ["spec", "architect", "implement-backend", "implement-frontend", "write-tests", "review"],
       "model_tier": "sonnet",
-      "file_path": "/Users/calebmambwe/.claude-super-setup/agents/teams/feature.json"
+      "file_path": "/home/user/.claude-super-setup/agents/teams/feature.json"
     },
     {
       "name": "debug",
@@ -790,7 +790,7 @@ interface TeamAgentRef {
       ],
       "workflow_steps": ["diagnose", "reproduce", "research", "fix", "verify"],
       "model_tier": "sonnet",
-      "file_path": "/Users/calebmambwe/.claude-super-setup/agents/teams/debug.json"
+      "file_path": "/home/user/.claude-super-setup/agents/teams/debug.json"
     }
   ],
   "total": 3

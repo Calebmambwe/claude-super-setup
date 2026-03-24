@@ -178,11 +178,11 @@ Only explicitly registered action paths are executed. The handler maintains a st
 
 ```typescript
 const ALLOWED_ACTIONS: Record<string, Record<string, ActionHandler>> = {
-  command: { plan, build, 'ghost-status', check },
-  task:    { /* numeric ids resolved at runtime */, next },
-  agent:   { /* catalog-validated at runtime */ },
-  team:    { review, /* other registered presets */ },
-  pipeline:{ status, 'latest-pr', metrics },
+  command:  { plan, build, 'ghost-status': ghostStatus, check },
+  task:     { next },          // numeric task IDs resolved dynamically at runtime
+  agent:    {},                // all agents resolved dynamically from catalog.json
+  team:     { review, feature, debug },
+  pipeline: { status, 'latest-pr': latestPr, metrics },
 };
 ```
 

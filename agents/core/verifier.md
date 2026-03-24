@@ -146,7 +146,7 @@ For each team preset file:
    - Verify override makes sense (e.g., verifier at sonnet is cheaper than opus — valid cost optimization)
 
 3. **Role assignment** — each agent must have a `role` from: `lead`, `specialist`, `implementer`, `quality`, `gatekeeper`, `diagnostician`, `fixer`, `investigator`
-   - Exactly one agent should have `role: "lead"` or `role: "gatekeeper"`
+   - Exactly one agent should have a coordinating role (`lead`, `gatekeeper`, or `diagnostician`)
 
 4. **Workflow dependency graph** — verify no circular dependencies:
    - `depends_on` references must point to valid step numbers

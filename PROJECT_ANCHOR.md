@@ -41,7 +41,7 @@ The following sections should be populated per-sprint or per-feature. They form 
 
 ### Current Goal
 
-> Enterprise Agent Platform Sprint 4: Personal assistant commands (/morning-brief, /eod-summary, /weekly-health, /pr-reminder) + Manus agent patterns (PROJECT_ANCHOR.md, verifier agent, HANDOVER.md).
+> Enterprise Agent Platform Sprint 5: VS Code Agent Teams (review, feature, debug presets), Remote Control architecture docs (worktree isolation, URI handler), Smart Hub web API spec, verifier team preset validation.
 
 ### Key Constraints
 
