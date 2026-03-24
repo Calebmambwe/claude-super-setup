@@ -41,32 +41,33 @@ The following sections should be populated per-sprint or per-feature. They form 
 
 ### Current Goal
 
-> Enterprise Agent Platform Sprint 5: VS Code Agent Teams presets, Remote Control docs, worktree isolation, URI handler integration, Smart Hub web API spec.
+> Enterprise Agent Platform Sprint 4: Personal assistant commands (/morning-brief, /eod-summary, /weekly-health, /pr-reminder) + Manus agent patterns (PROJECT_ANCHOR.md, verifier agent, HANDOVER.md).
 
 ### Key Constraints
 
 - Must build on existing architecture — extend, don't replace
 - Must not break existing functionality (Ghost Mode, Telegram, overnight.sh)
 - Solo developer — leverage AI agents for implementation
-- All docs must reference existing patterns (catalog.json teams, verifier agent, Telegram dispatch)
-- Smart Hub API spec is design-only — no running server code yet
+- All commands must follow existing SKILL.md frontmatter pattern
+- Commands must gracefully skip missing integrations with setup hints
 
 ### Success Criteria
 
-- [ ] VS Code team presets created for review, feature, debug teams
-- [ ] Remote Control, worktree isolation, URI handler fully documented
-- [ ] Smart Hub API spec covers pipeline status, task queue, metrics endpoints
-- [ ] Verifier agent enhanced with team preset awareness
-- [ ] AGENTS.md updated with Sprint 5 patterns
-- [ ] catalog.json updated with new team presets
-- [ ] No regressions in existing commands or agents
+- [x] /morning-brief command created with 6 data sources
+- [x] /eod-summary command created with git-based work tracking
+- [x] /weekly-health command created with cross-project discovery
+- [x] /pr-reminder command created with staleness classification
+- [x] PROJECT_ANCHOR.md implements attention anchoring pattern
+- [x] agents/core/verifier.md implements independent verification
+- [x] HANDOVER.md implements cross-session state preservation
+- [x] AGENTS.md and catalog.json updated with Sprint 4 content
 
 ### Non-Goals (Explicit)
 
-- Smart Hub application code (Tauri/React) — spec only
-- Running API server implementation
+- Implementing cron scheduling (documented, not automated)
+- Calendar MCP server setup (referenced, not installed)
 - Modifying existing commands or agent behavior
-- Multi-machine or cloud deployment patterns
+- Running server code or API implementations
 
 ---
 

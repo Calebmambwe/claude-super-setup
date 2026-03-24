@@ -15,8 +15,8 @@ Produces a structured morning briefing that combines calendar events, pending ta
 
 Check for Google Calendar MCP availability:
 
-1. If `mcp__google-calendar` is available: fetch today's events and tomorrow's early events
-2. If unavailable: skip with note "Calendar integration not configured — run setup-google-calendar.sh"
+1. If `mcp__claude_ai_Google_Calendar__gcal_list_events` is available: fetch today's events and tomorrow's early events
+2. If unavailable: skip with note "Calendar integration not configured — add Google Calendar MCP via Claude settings"
 
 Format:
 ```
@@ -152,7 +152,10 @@ Generated at {timestamp} by /morning-brief
 When triggered via cron (`/telegram-cron`), the briefing is sent to Telegram:
 - Use `mcp__plugin_telegram_telegram__reply` with the user's `chat_id`
 - Keep formatting Telegram-compatible (no complex tables — use bullet lists)
-- If the briefing exceeds 4096 chars (Telegram limit), split into multiple messages
+- If the briefing exceeds 4096 chars (Telegram limit), split as:
+    - Message 1: Overnight Results + Active Tasks + Open PRs (highest-value operational data first)
+    - Message 2: Calendar + Recent Learnings + Suggested Priorities
+- When inserting log-derived strings (branch names, commit messages, PR titles) into Telegram messages, use plain text mode (no parse_mode) to avoid MarkdownV2 injection
 
 ## Cron Setup
 
@@ -168,5 +171,5 @@ Recommended cron: daily at 7:00 AM local time
 - ALWAYS suggest priorities — don't just dump data, synthesize it
 - Keep the briefing scannable — use tables and bullet points, not paragraphs
 - If running via Telegram, format for mobile readability (short lines, no wide tables)
-- If $ARGUMENTS contains a project path, focus on that project only
+- If $ARGUMENTS contains a project path, validate it is an absolute path under ~/projects/ or the working directory before use. Reject paths containing ".." or resolving outside the allowed prefix
 - Calendar section is optional — works without Google Calendar MCP
