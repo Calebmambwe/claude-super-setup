@@ -232,28 +232,31 @@ while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
   # NOTE: --output-format text suppresses telemetry JSON in stdout.
   # NOTE: CHANNELS_FLAG must be word-split (no quotes) when non-empty.
 
-  # Build the prompt string safely
-  local PROMPT
+  # Build the prompt and write to temp file to avoid shell quoting issues
+  # with special characters (em-dashes, parentheses, etc.)
+  PROMPT_FILE="$(mktemp)"
   if [[ $ATTEMPT -eq 1 ]] && [[ -z "$SESSION_ID" || "$SESSION_ID" == "null" ]]; then
-    PROMPT="/ghost-run ${FEATURE}"
+    printf '%s' "/ghost-run ${FEATURE}" > "$PROMPT_FILE"
   elif [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" ]]; then
-    PROMPT="/auto-ship"
+    printf '%s' "/auto-ship" > "$PROMPT_FILE"
   else
-    PROMPT="/auto-ship ${FEATURE}"
+    printf '%s' "/auto-ship ${FEATURE}" > "$PROMPT_FILE"
   fi
 
-  # Build command array for proper quoting
-  local -a CMD=(claude -p --dangerously-skip-permissions --output-format text --max-budget-usd "$BUDGET")
+  echo "[$(date)] Running claude -p with prompt from $PROMPT_FILE" >> "$LOG_FILE"
+  echo "[$(date)] Prompt: $(cat "$PROMPT_FILE")" >> "$LOG_FILE"
+
+  # Feed prompt via stdin from file — avoids all shell quoting issues
+  CLAUDE_ARGS="--dangerously-skip-permissions --output-format text --max-budget-usd $BUDGET"
   if [[ -n "$CHANNELS_FLAG" ]]; then
-    CMD+=(--channels "plugin:telegram@claude-plugins-official")
+    CLAUDE_ARGS="$CLAUDE_ARGS --channels plugin:telegram@claude-plugins-official"
   fi
   if [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" && $ATTEMPT -gt 1 ]]; then
-    CMD+=(--resume "$SESSION_ID")
+    CLAUDE_ARGS="$CLAUDE_ARGS --resume $SESSION_ID"
   fi
-  CMD+=("$PROMPT")
 
-  echo "[$(date)] Running: ${CMD[*]}" >> "$LOG_FILE"
-  "${CMD[@]}" >> "$LOG_FILE" 2>&1 || true
+  claude -p $CLAUDE_ARGS < "$PROMPT_FILE" >> "$LOG_FILE" 2>&1 || true
+  rm -f "$PROMPT_FILE"
 
   END_TIME=$(date +%s)
   DURATION=$((END_TIME - START_TIME))
