@@ -26,7 +26,15 @@ from typing import Optional
 SCRIPTS_DIR = Path.home() / ".claude" / "skills" / "reflect" / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from learning_ledger import LearningLedger  # noqa: E402
+try:
+    from learning_ledger import LearningLedger  # noqa: E402
+except ModuleNotFoundError:
+    print(
+        f"ERROR: learning_ledger not found at {SCRIPTS_DIR}\n"
+        "Install the reflect skill: ~/.claude/skills/reflect/",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 # ── MCP SDK ──────────────────────────────────────────────────────────────────
 try:
@@ -55,6 +63,7 @@ def _get_embedding(text: str) -> Optional[list]:
     if not api_key:
         return None
     try:
+        import urllib.error
         import urllib.request
         payload = json.dumps({"model": "text-embedding-3-small", "input": text}).encode()
         req = urllib.request.Request(
@@ -65,7 +74,9 @@ def _get_embedding(text: str) -> Optional[list]:
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read())
             return data["data"][0]["embedding"]
-    except Exception:
+    except (urllib.error.URLError, json.JSONDecodeError, KeyError) as e:
+        import logging
+        logging.getLogger("learning-mcp").warning("Embedding request failed: %s", e)
         return None
 
 
@@ -75,7 +86,7 @@ def _get_embedding(text: str) -> Optional[list]:
 def search_learnings(
     query: str,
     project_dir: str = "",
-    type: str = "",
+    learning_type: str = "",
     top_k: int = 5,
 ) -> str:
     """Search past learnings by keyword or semantic similarity.
@@ -83,7 +94,7 @@ def search_learnings(
     Args:
         query: Search text (can be empty to get recent learnings)
         project_dir: Filter to a specific project directory (optional)
-        type: Filter by learning type: correction, success, pattern (optional)
+        learning_type: Filter by learning type: correction, success, pattern (optional)
         top_k: Maximum number of results to return (default 5)
     """
     results = []
@@ -110,8 +121,8 @@ def search_learnings(
         conn.close()
 
     # Apply type filter
-    if type.strip():
-        results = [r for r in results if r.get("learning_type") == type.strip()]
+    if learning_type.strip():
+        results = [r for r in results if r.get("learning_type") == learning_type.strip()]
 
     if not results:
         return "No learnings found."
@@ -132,7 +143,7 @@ def search_learnings(
 @mcp.tool()
 def record_learning(
     content: str,
-    type: str = "correction",
+    learning_type: str = "correction",
     confidence: float = 0.8,
     project_dir: str = "",
     tags: str = "",
@@ -141,7 +152,7 @@ def record_learning(
 
     Args:
         content: The learning to record (be specific and actionable)
-        type: One of: correction, success, pattern, preference
+        learning_type: One of: correction, success, pattern, preference
         confidence: 0.0–1.0 (corrections=0.9, successes=0.75, patterns=0.8)
         project_dir: Project directory this learning applies to (optional)
         tags: Comma-separated tags (optional)
@@ -155,7 +166,7 @@ def record_learning(
     if embedding:
         result = ledger.record_with_embedding(
             content=content,
-            learning_type=type,
+            learning_type=learning_type,
             confidence=confidence,
             embedding=embedding,
             project_dir=pd,
@@ -164,7 +175,7 @@ def record_learning(
     else:
         result = ledger.record_learning(
             content=content,
-            learning_type=type,
+            learning_type=learning_type,
             skill_name="general",
             confidence=confidence,
             project_dir=pd,

@@ -16,9 +16,11 @@ Register in ~/.claude/settings.json under mcpServers:
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 import logging
 import os
+import shlex
 import sys
 import uuid
 from dataclasses import dataclass
@@ -87,7 +89,7 @@ class SandboxClient:
             "docker", "run", "-d",
             "--name", name,
             "--label", f"claude-session={self.session_id}",
-            "-p", "9222:9222",
+            "-p", "127.0.0.1:9222:9222",
             "-v", f"{workspace}:/workspace",
             self.image,
         ]
@@ -161,7 +163,7 @@ class SandboxClient:
             return ExecResult(output="Command timed out", exit_code=-1)
 
         output = stdout.decode() + stderr.decode()
-        return ExecResult(output=output, exit_code=proc.returncode or 0)
+        return ExecResult(output=output, exit_code=proc.returncode if proc.returncode is not None else -1)
 
     async def write_file(
         self,
@@ -173,7 +175,6 @@ class SandboxClient:
         if not self._container_id:
             await self.start()
 
-        import shlex
         operator = ">>" if append else ">"
         proc = await asyncio.create_subprocess_exec(
             "docker", "exec", "-i", self._container_id,
@@ -248,7 +249,6 @@ def _load_state() -> None:
 
 def _audit(tool: str, args: dict[str, Any], result: str) -> None:
     """Append to sandbox audit log."""
-    import datetime
     entry = {
         "ts": datetime.datetime.now().isoformat(),
         "tool": tool,
@@ -435,14 +435,15 @@ async def sandbox_read_file(
     """
     sandbox = _get_sandbox(session_id)
 
+    safe_path = shlex.quote(path)
     if start_line is not None and end_line is not None:
-        cmd = f"sed -n '{start_line + 1},{end_line}p' '{path}'"
+        cmd = f"sed -n '{start_line + 1},{end_line}p' {safe_path}"
     elif start_line is not None:
-        cmd = f"tail -n +{start_line + 1} '{path}'"
+        cmd = f"tail -n +{start_line + 1} {safe_path}"
     elif end_line is not None:
-        cmd = f"head -n {end_line} '{path}'"
+        cmd = f"head -n {end_line} {safe_path}"
     else:
-        cmd = f"cat '{path}'"
+        cmd = f"cat {safe_path}"
 
     result = await sandbox.exec(cmd)
     _audit("sandbox_read_file", {"path": path}, result.output[:200])
@@ -468,7 +469,7 @@ async def sandbox_find_files(
     """
     sandbox = _get_sandbox(session_id)
     result = await sandbox.exec(
-        f"find '{path}' -name '{glob}' -type f 2>/dev/null | head -100"
+        f"find {shlex.quote(path)} -name {shlex.quote(glob)} -type f 2>/dev/null | head -100"
     )
     files = result.output.strip().split("\n") if result.output.strip() else []
     return json.dumps({"files": files, "count": len(files), "path": path})

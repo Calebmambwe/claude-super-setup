@@ -98,17 +98,20 @@ load_config
 # Write PID file
 echo $$ > "$PID_FILE"
 
-# Start caffeinate to prevent macOS sleep
+# Start caffeinate to prevent macOS sleep (macOS only)
 TIMEOUT_SECS=$((MAX_HOURS * 3600))
-caffeinate -dims -t "$TIMEOUT_SECS" &
-CAFFEINATE_PID=$!
+CAFFEINATE_PID=""
+if command -v caffeinate &>/dev/null; then
+  caffeinate -dims -t "$TIMEOUT_SECS" &
+  CAFFEINATE_PID=$!
+fi
 
 # Calculate deadline
 DEADLINE=$(($(date +%s) + TIMEOUT_SECS))
 
 # Cleanup function
 cleanup() {
-  kill "$CAFFEINATE_PID" 2>/dev/null || true
+  [[ -n "$CAFFEINATE_PID" ]] && kill "$CAFFEINATE_PID" 2>/dev/null || true
   rm -f "$PID_FILE"
   rm -f "$STOP_FILE"
   update_config_field "status" "stopped"
@@ -167,7 +170,8 @@ pipeline_is_done() {
   # Check if checkpoint shows phase 4+ (ship complete)
   local phase
   phase=$(jq -r '.phase // 0' "$checkpoint" 2>/dev/null || echo "0")
-  if (( $(echo "$phase >= 4.5" | bc -l 2>/dev/null || echo "0") )); then
+  # Use integer comparison — phase 4 = ship, 5 = post-ship
+  if [[ "$phase" =~ ^[0-9]+$ ]] && (( phase >= 4 )); then
     return 0
   fi
 
@@ -247,15 +251,16 @@ while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
   echo "[$(date)] Prompt: $(cat "$PROMPT_FILE")" >> "$LOG_FILE"
 
   # Feed prompt via stdin from file — avoids all shell quoting issues
-  CLAUDE_ARGS="--dangerously-skip-permissions --output-format text --max-budget-usd $BUDGET"
+  # Use array to prevent word-splitting issues with argument values
+  CLAUDE_ARGS=("--dangerously-skip-permissions" "--output-format" "text" "--max-budget-usd" "$BUDGET")
   if [[ -n "$CHANNELS_FLAG" ]]; then
-    CLAUDE_ARGS="$CLAUDE_ARGS --channels plugin:telegram@claude-plugins-official"
+    CLAUDE_ARGS+=("--channels" "plugin:telegram@claude-plugins-official")
   fi
   if [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" && $ATTEMPT -gt 1 ]]; then
-    CLAUDE_ARGS="$CLAUDE_ARGS --resume $SESSION_ID"
+    CLAUDE_ARGS+=("--resume" "$SESSION_ID")
   fi
 
-  claude -p $CLAUDE_ARGS < "$PROMPT_FILE" >> "$LOG_FILE" 2>&1 || true
+  claude -p "${CLAUDE_ARGS[@]}" < "$PROMPT_FILE" >> "$LOG_FILE" 2>&1 || true
   rm -f "$PROMPT_FILE"
 
   END_TIME=$(date +%s)

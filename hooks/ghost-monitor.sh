@@ -7,7 +7,16 @@
 
 set -euo pipefail
 
-INTERVAL="${2:-600}"
+# Parse arguments
+INTERVAL=600
+ONCE=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --once) ONCE=true; shift ;;
+    --interval) INTERVAL="${2:?--interval requires a value}"; shift 2 ;;
+    *) echo "Unknown argument: $1" >&2; exit 1 ;;
+  esac
+done
 CONFIG_FILE="$HOME/.claude/ghost-config.json"
 TELEGRAM_ENV="$HOME/.claude/channels/telegram/.env"
 
@@ -108,7 +117,7 @@ send_update() {
 }
 
 # One-shot mode
-if [[ "${1:-}" == "--once" ]]; then
+if $ONCE; then
   send_update
   exit 0
 fi

@@ -162,11 +162,16 @@ else
     warn "Install Docker Desktop manually from https://docker.com/products/docker-desktop"
   else
     if ! $DRY_RUN; then
+      # Use correct Docker repo for the detected OS (ubuntu vs debian)
+      DOCKER_DISTRO="ubuntu"
+      if [[ "$OS" == "debian" ]]; then
+        DOCKER_DISTRO="debian"
+      fi
       sudo install -m 0755 -d /etc/apt/keyrings
-      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg 2>/dev/null || true
+      curl -fsSL "https://download.docker.com/linux/${DOCKER_DISTRO}/gpg" | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg 2>/dev/null || true
       sudo chmod a+r /etc/apt/keyrings/docker.gpg
       echo \
-        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/${DOCKER_DISTRO} \
         $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
       sudo apt-get update -qq
       sudo apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plugin
@@ -209,9 +214,9 @@ info "Phase 6/9: Cloning repositories..."
 
 if [[ -d "$REPO_DIR" ]]; then
   info "Repository exists at $REPO_DIR — pulling latest..."
-  run_cmd "cd $REPO_DIR && git pull --quiet origin main 2>/dev/null || true"
+  run_cmd "cd \"$REPO_DIR\" && git pull --quiet origin main 2>/dev/null || true"
 else
-  run_cmd "git clone --quiet $REPO_URL $REPO_DIR"
+  run_cmd "git clone --quiet \"$REPO_URL\" \"$REPO_DIR\""
 fi
 log "claude-super-setup ready at $REPO_DIR"
 
@@ -230,21 +235,21 @@ info "Phase 7/9: Setting up MCP servers..."
 
 MCP_DIR="$CLAUDE_DIR/mcp-servers"
 if [[ ! -d "$MCP_DIR" ]]; then
-  run_cmd "mkdir -p $MCP_DIR"
+  run_cmd "mkdir -p \"$MCP_DIR\""
 fi
 
 # Copy MCP servers from repo (install.sh handles symlink mode,
 # but for VPS we ensure they exist)
 if [[ -f "$REPO_DIR/mcp-servers/learning-server.py" ]]; then
   if [[ ! -f "$MCP_DIR/learning-server.py" ]] && [[ ! -L "$MCP_DIR/learning-server.py" ]]; then
-    run_cmd "ln -sf $REPO_DIR/mcp-servers/learning-server.py $MCP_DIR/learning-server.py"
+    run_cmd "ln -sf \"$REPO_DIR/mcp-servers/learning-server.py\" \"$MCP_DIR/learning-server.py\""
   fi
   log "Learning MCP server linked"
 fi
 
 if [[ -f "$REPO_DIR/mcp-servers/sandbox-server.py" ]]; then
   if [[ ! -f "$MCP_DIR/sandbox-server.py" ]] && [[ ! -L "$MCP_DIR/sandbox-server.py" ]]; then
-    run_cmd "ln -sf $REPO_DIR/mcp-servers/sandbox-server.py $MCP_DIR/sandbox-server.py"
+    run_cmd "ln -sf \"$REPO_DIR/mcp-servers/sandbox-server.py\" \"$MCP_DIR/sandbox-server.py\""
   fi
   log "Sandbox MCP server linked"
 fi
@@ -273,9 +278,10 @@ if [[ "$OS" != "macos" ]]; then
 
     run_cmd "sudo systemctl daemon-reload"
 
-    # Enable services (user can start them after setting auth tokens)
+    # Enable template services (user can start them after setting auth tokens)
+    # Template units use @.service suffix — enable with @$USER instance
     for svc_name in claude-telegram claude-learning claude-sandbox; do
-      if [[ -f "/etc/systemd/system/${svc_name}.service" ]]; then
+      if [[ -f "/etc/systemd/system/${svc_name}@.service" ]]; then
         run_cmd "sudo systemctl enable ${svc_name}@${USER} 2>/dev/null || true"
       fi
     done
