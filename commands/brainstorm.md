@@ -159,7 +159,7 @@ Proceed to /design-doc {feature-name} when satisfied.
 
 ---
 
-## Step 6: Update Registry (was Step 5)
+## Step 6: Update Registry
 
 Check if `docs/FEATURES.md` exists. If not, create it with this header:
 

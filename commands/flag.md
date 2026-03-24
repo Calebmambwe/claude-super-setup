@@ -73,7 +73,7 @@ cat flags.json 2>/dev/null || echo '{"flags":{}}'
 
 **Usage:** `/flag create <flag-name> [--description "..."] [--tags "tag1,tag2"] [--expires "YYYY-MM-DD"]`
 
-1. Validate flag name: kebab-case, 2-50 chars, no spaces
+1. Validate flag name: must match `^[a-z][a-z0-9-]{1,49}$` — starts with a letter, 2-50 chars, lowercase and hyphens only. Reject names containing `.`, `/`, `\`, or `..`
 2. Check flag doesn't already exist
 3. Add to `flags.json`:
    ```json
@@ -98,9 +98,10 @@ export function isEnabled(flagName: string, userId?: string): boolean {
   const flag = flags.flags[flagName];
   if (!flag || !flag.enabled) return false;
   if (flag.percentage < 100) {
-    // Deterministic per flag+user: hash both for stable distributed rollout
-    const hash = `${flagName}:${userId}`.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-    return (hash % 100) < flag.percentage;
+    // djb2 hash — uniform distribution, no deps
+    let hash = 5381;
+    for (const c of `${flagName}:${userId}`) hash = ((hash << 5) + hash) ^ c.charCodeAt(0);
+    return (Math.abs(hash) % 100) < flag.percentage;
   }
   return true;
 }
@@ -120,9 +121,11 @@ def is_enabled(flag_name: str, user_id: str = "") -> bool:
         return False
     pct = flag.get("percentage", 100)
     if pct < 100:
-        # Deterministic per flag+user: hash both for stable distributed rollout
-        hash_val = sum(ord(c) for c in f"{flag_name}:{user_id}")
-        return (hash_val % 100) < pct
+        # djb2 hash — uniform distribution, no deps
+        hash_val = 5381
+        for c in f"{flag_name}:{user_id}":
+            hash_val = ((hash_val << 5) + hash_val) ^ ord(c)
+        return (abs(hash_val) % 100) < pct
     return True
 ```
 
