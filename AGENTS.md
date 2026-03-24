@@ -83,20 +83,31 @@ Shared project context for Claude Code and Cursor agents.
 - Feature flag percentage rollout must hash `flagName + userId`, not `flagName` alone — flag-only hash produces all-or-nothing, not distributed rollout.
 - All `$ARGUMENTS`-accepting commands need prompt injection guards when reachable via Telegram dispatch.
 
-## Personal Assistant Commands (Sprint 4)
-- `/morning-brief` aggregates calendar, overnight pipeline results, tasks, open PRs, and learnings into a daily briefing. Designed for 7am cron delivery via Telegram.
-- `/eod-summary` captures today's commits, task completions, PRs, blockers, and tomorrow's plan. Designed for 6pm weekday cron.
-- `/weekly-health` produces cross-project health report with velocity trends, pipeline reliability, health indicators, and recommendations. Designed for Sunday evening cron.
-- `/pr-reminder` scans open PRs, classifies by staleness, and sends actionable nudges. Recommended as twice-daily cron (9am + 2pm weekdays).
-- All four commands gracefully skip missing integrations (Calendar MCP, etc.) with setup hints instead of failing.
-- Telegram delivery must respect 4096-char message limit — split long outputs into multiple messages.
+## Sprint 4: Personal Assistant + Manus Patterns
+- `/morning-brief` (7am cron), `/eod-summary` (6pm weekday), `/weekly-health` (Sunday), `/pr-reminder` (9am+2pm) — all support Telegram delivery with 4096-char split, gracefully skip missing integrations.
+- `PROJECT_ANCHOR.md` — attention anchoring: agents re-read every task iteration to prevent goal drift.
+- `agents/core/verifier.md` — independent verifier (sonnet, no builder context). Accepts acceptance criteria + git diff, returns PASS/FAIL.
+- `HANDOVER.md` — cross-session state. Session protocol: HANDOVER → tasks.json → PROJECT_ANCHOR → work.
 
-## Manus Agent Patterns (Sprint 4)
-- `PROJECT_ANCHOR.md` implements attention anchoring — agents re-read it every task iteration to prevent goal drift in long autonomous runs.
-- `agents/core/verifier.md` is an independent verifier agent (Manus 3-agent model: Planner → Executor → Verifier). It receives acceptance criteria + git diff and verifies independently.
-- `HANDOVER.md` preserves cross-session state — updated by `/reflect` and `/eod-summary`, read at session start.
-- New session protocol: Read HANDOVER.md → Read tasks.json → Read PROJECT_ANCHOR.md → Start work.
-- Verifier agent uses `sonnet` model tier and has NO access to builder context (intentional — fresh perspective catches blind spots).
+## VS Code Agent Teams (Sprint 5)
+- `agents/teams/` contains VS Code team presets: `review.json`, `feature.json`, `debug.json`.
+- Each preset defines agent composition, workflow steps with dependencies, model tiers, and VS Code keybindings.
+- Presets reference agents from `catalog.json` — agent names must match exactly.
+- Schema at `schemas/team-preset.schema.json` validates preset structure.
+- Review team: code-reviewer + security-auditor + verifier (Cmd+Shift+R). Feature team: architect + backend-dev + frontend-dev + tdd-test-writer (Cmd+Shift+F). Debug team: env-doctor + test-writer-fixer + researcher (Cmd+Shift+D).
+- Verifier agent (`agents/core/verifier.md`) now validates team presets: checks agent existence, model tier validity, role assignment, workflow dependency cycles.
+
+## Remote Control Architecture (Sprint 5)
+- Full architecture documented at `docs/remote-control.md` — covers Telegram dispatch, cron, parallel sessions, Ghost Mode, notifications.
+- Worktree isolation documented at `docs/worktree-isolation.md` — covers when/how to use git worktrees for parallel agent execution.
+- URI handler documented at `docs/uri-handler.md` — `claude://` deep links for VS Code (commands, tasks, agents, pipeline).
+- URI security mirrors Telegram dispatch tiers: read-only URIs auto-execute, state-changing URIs require confirmation.
+
+## Smart Hub API (Sprint 5)
+- API spec at `docs/smart-hub/api-spec.md` — 10 endpoints covering pipeline status, tasks, metrics, agents, teams, commands, health.
+- Endpoints are Tauri IPC commands documented with REST conventions for clarity.
+- `POST /api/commands/:name/run` uses async event streaming for live output.
+- All endpoints source data from existing files (ghost-config.json, tasks.json, metrics.jsonl, catalog.json).
 
 ## Maintenance
 - Update this file whenever durable project conventions change.

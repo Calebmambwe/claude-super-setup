@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/team-preset.schema.json",
+  "name": "review",
+  "description": "Code quality, security, and verification review pipeline. Use before merging any PR.",
+  "model_tier": "opus",
+  "agents": [
+    {
+      "name": "code-reviewer",
+      "role": "lead",
+      "description": "Reviews code for correctness, security, and maintainability",
+      "tools": ["Read", "Grep", "Glob", "Bash", "Write", "Edit"]
+    },
+    {
+      "name": "security-auditor",
+      "role": "specialist",
+      "description": "Reviews code for security vulnerabilities (OWASP Top 10)",
+      "tools": ["Read", "Grep", "Glob", "Bash", "Write", "Edit"]
+    },
+    {
+      "name": "verifier",
+      "role": "gatekeeper",
+      "description": "Independent verification against acceptance criteria",
+      "model_tier_override": "sonnet",
+      "tools": ["Read", "Grep", "Glob", "Bash"]
+    }
+  ],
+  "workflow": [
+    {"step": 1, "agent": "code-reviewer", "action": "Review all changed files for correctness and patterns"},
+    {"step": 2, "agent": "security-auditor", "action": "Audit changes for security vulnerabilities", "parallel_with": 1},
+    {"step": 3, "agent": "verifier", "action": "Verify acceptance criteria satisfaction from git diff", "depends_on": [1, 2]}
+  ],
+  "triggers": {
+    "manual": "/code-review, /check, /review",
+    "automatic": "Pre-PR creation, pre-merge"
+  },
+  "vscode_integration": {
+    "task_label": "Claude: Review Team",
+    "keybinding": "Cmd+Shift+R",
+    "status_bar": true
+  }
+}

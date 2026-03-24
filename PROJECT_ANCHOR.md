@@ -41,29 +41,33 @@ The following sections should be populated per-sprint or per-feature. They form 
 
 ### Current Goal
 
-> {One sentence describing what this sprint/feature achieves}
->
-> Example: "Enterprise Agent Platform Sprint 4: Add personal assistant commands and Manus agent patterns"
+> Enterprise Agent Platform Sprint 5: VS Code Agent Teams (review, feature, debug presets), Remote Control architecture docs (worktree isolation, URI handler), Smart Hub web API spec, verifier team preset validation.
 
 ### Key Constraints
 
 - Must build on existing architecture — extend, don't replace
 - Must not break existing functionality (Ghost Mode, Telegram, overnight.sh)
 - Solo developer — leverage AI agents for implementation
-- {Add project-specific constraints here}
+- All commands must follow existing SKILL.md frontmatter pattern
+- Commands must gracefully skip missing integrations with setup hints
 
 ### Success Criteria
 
-- [ ] All new commands follow the existing SKILL.md / command pattern
-- [ ] All new agents follow agents/core/*.md pattern
-- [ ] AGENTS.md updated with new patterns and gotchas
-- [ ] No regressions in existing commands
-- {Add sprint-specific criteria here}
+- [x] /morning-brief command created with 6 data sources
+- [x] /eod-summary command created with git-based work tracking
+- [x] /weekly-health command created with cross-project discovery
+- [x] /pr-reminder command created with staleness classification
+- [x] PROJECT_ANCHOR.md implements attention anchoring pattern
+- [x] agents/core/verifier.md implements independent verification
+- [x] HANDOVER.md implements cross-session state preservation
+- [x] AGENTS.md and catalog.json updated with Sprint 4 content
 
 ### Non-Goals (Explicit)
 
-- {Things that are tempting but out of scope}
-- {Prevents scope creep during long autonomous runs}
+- Implementing cron scheduling (documented, not automated)
+- Calendar MCP server setup (referenced, not installed)
+- Modifying existing commands or agent behavior
+- Running server code or API implementations
 
 ---
 

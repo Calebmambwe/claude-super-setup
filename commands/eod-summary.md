@@ -25,8 +25,9 @@ Read `tasks.json` — find tasks where status changed to `completed` today (chec
 
 **PRs created/merged:**
 ```bash
+TODAY=$(date -u +%Y-%m-%d)
 gh pr list --state all --author @me --json number,title,state,createdAt,mergedAt 2>/dev/null | \
-  jq '[.[] | select(.createdAt >= "TODAY" or .mergedAt >= "TODAY")]'
+  jq --arg today "$TODAY" '[.[] | select((.createdAt | startswith($today)) or (.mergedAt // "" | startswith($today)))]'
 ```
 
 **Pipeline runs:**
@@ -142,6 +143,6 @@ Recommended cron: daily at 6:00 PM local time
 - ALWAYS check for blocked tasks — surfacing blockers early is the #1 value
 - NEVER fabricate accomplishments — if no commits today, say so honestly
 - Keep the tomorrow section actionable — specific tasks, not vague goals
-- If $ARGUMENTS contains a project path, scope to that project
+- If $ARGUMENTS contains a project path, validate it is an absolute path under ~/projects/ or the working directory before use. Reject paths containing ".." or resolving outside the allowed prefix
 - If running from Telegram, use bullet lists instead of tables for readability
 - Include metrics — they help track velocity over time

@@ -9,6 +9,7 @@ invoked_by:
   - /auto-build (after implement step)
   - /auto-ship (verification phase)
   - /check (Gate A enhancement)
+  - /team-build (post-implementation verification)
 escalation: orchestrator
 color: red
 ---
@@ -125,6 +126,54 @@ For code files, verify:
 
 {If FIX REQUIRED: specific list of what needs to change}
 ```
+
+## Team Preset Verification
+
+When invoked by `/team-build` or during team preset validation, perform additional checks on team preset JSON files (`agents/teams/*.json`).
+
+### Preset Structure Checks
+
+For each team preset file:
+
+1. **Agent existence** — every agent listed in `agents[]` must exist in `agents/catalog.json`
+   ```bash
+   # For each agent name in the preset
+   grep -c "\"name\": \"$AGENT_NAME\"" agents/catalog.json
+   ```
+
+2. **Model tier validity** — `model_tier` must be one of: `haiku`, `sonnet`, `opus`, `custom`
+   - Agent-level `model_tier_override` must also be a valid tier
+   - Verify override makes sense (e.g., verifier at sonnet is cheaper than opus — valid cost optimization)
+
+3. **Role assignment** — each agent must have a `role` from: `lead`, `specialist`, `implementer`, `quality`, `gatekeeper`, `diagnostician`, `fixer`, `investigator`
+   - Exactly one agent should have a coordinating role (`lead`, `gatekeeper`, or `diagnostician`)
+
+4. **Workflow dependency graph** — verify no circular dependencies:
+   - `depends_on` references must point to valid step numbers
+   - `parallel_with` references must point to valid step numbers
+   - No step can depend on itself or create a cycle
+
+5. **Tool permissions** — agent tools in the preset should be a subset of the tools defined in the agent's `.md` frontmatter
+
+### Preset Verification Output
+
+Add a `## Team Preset Checks` section to the verification report:
+
+```
+## Team Preset Checks
+
+| Preset | Agents Valid | Tiers Valid | Workflow Valid | Issues |
+|--------|-------------|-------------|----------------|--------|
+| review.json | ✅ 3/3 | ✅ | ✅ no cycles | None |
+| feature.json | ✅ 4/4 | ✅ | ✅ no cycles | None |
+| debug.json | ✅ 3/3 | ✅ | ✅ no cycles | None |
+```
+
+### When to Run Preset Checks
+
+- When any file in `agents/teams/` is in the git diff
+- When `agents/catalog.json` is modified (could break agent references)
+- When invoked explicitly via `/team-build` validation phase
 
 ## Verdict Logic
 
