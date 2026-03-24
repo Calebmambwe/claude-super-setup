@@ -1,0 +1,27 @@
+[Unit]
+Description=Claude Code Telegram Listener
+Documentation=https://github.com/Calebmambwe/claude-super-setup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=%h/claude_super_setup
+ExecStart=/usr/bin/screen -DmS claude-telegram /usr/local/bin/claude --dangerously-skip-permissions --channels plugin:telegram@claude-plugins-official
+ExecStop=/usr/bin/screen -X -S claude-telegram quit
+Restart=on-failure
+RestartSec=30
+# Prevent rapid restart loops
+StartLimitIntervalSec=300
+StartLimitBurst=5
+# Environment — ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN must be set
+# Use systemctl edit claude-telegram@$USER to add secrets
+EnvironmentFile=-%h/.claude/env
+Environment=HOME=%h
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target

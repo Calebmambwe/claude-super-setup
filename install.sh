@@ -281,6 +281,36 @@ if should_install "config"; then
   install_module "config/cursor-automations" "$CLAUDE_DIR/config/cursor-automations" "Cursor automation templates"
 fi
 
+# Step 5.5: Install MCP servers
+info "Installing MCP servers..."
+MCP_TARGET="$CLAUDE_DIR/mcp-servers"
+if [ -d "$REPO_DIR/mcp-servers" ]; then
+  mkdir -p "$MCP_TARGET" 2>/dev/null || true
+  for mcp_file in "$REPO_DIR/mcp-servers/"*.py; do
+    [ -f "$mcp_file" ] || continue
+    mcp_name=$(basename "$mcp_file")
+    install_file "mcp-servers/$mcp_name" "$MCP_TARGET/$mcp_name" "MCP: $mcp_name"
+  done
+  log "MCP servers installed to $MCP_TARGET"
+else
+  warn "No mcp-servers/ directory found in repo"
+fi
+
+# Step 5.6: Install systemd service files (Linux only)
+if [ -d "$REPO_DIR/config/systemd" ] && [ -d "/etc/systemd/system" ]; then
+  info "Installing systemd service files..."
+  if $DRY_RUN; then
+    for svc in "$REPO_DIR/config/systemd/"*.service; do
+      [ -f "$svc" ] || continue
+      dry "cp $svc /etc/systemd/system/$(basename "$svc")"
+    done
+  else
+    info "systemd units available at $REPO_DIR/config/systemd/"
+    info "To install: sudo cp config/systemd/*.service /etc/systemd/system/"
+    info "Then: sudo systemctl daemon-reload"
+  fi
+fi
+
 # Step 6: Set up user override files (if they don't exist)
 if [ ! -f "$CLAUDE_DIR/settings.local.json" ]; then
   if $DRY_RUN; then
