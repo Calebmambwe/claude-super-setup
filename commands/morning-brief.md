@@ -158,7 +158,7 @@ When triggered via cron (`/telegram-cron`), the briefing is sent to Telegram:
 
 Recommended cron: daily at 7:00 AM local time
 ```
-/telegram-cron create "morning-brief" "0 7 * * *" "/morning-brief"
+/telegram-cron add "0 7 * * *: /morning-brief"
 ```
 
 ## Rules

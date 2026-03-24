@@ -163,7 +163,7 @@ When sent via Telegram:
 
 Recommended cron: Sunday 8:00 PM or Monday 7:00 AM
 ```
-/telegram-cron create "weekly-health" "0 20 * * 0" "/weekly-health"
+/telegram-cron add "0 20 * * 0: /weekly-health"
 ```
 
 ## Rules

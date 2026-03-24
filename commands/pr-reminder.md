@@ -154,8 +154,8 @@ Example Telegram message:
 
 Recommended: twice daily (morning + afternoon)
 ```
-/telegram-cron create "pr-reminder-am" "0 9 * * 1-5" "/pr-reminder"
-/telegram-cron create "pr-reminder-pm" "0 14 * * 1-5" "/pr-reminder"
+/telegram-cron add "0 9 * * 1-5: /pr-reminder"
+/telegram-cron add "0 14 * * 1-5: /pr-reminder"
 ```
 
 ## Arguments

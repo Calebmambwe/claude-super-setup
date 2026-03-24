@@ -22,7 +22,7 @@
   "teams": {
     "review": {
       "description": "Code quality, security, and documentation review pipeline",
-      "agents": ["code-reviewer", "security-auditor", "doc-verifier", "tdd-test-writer"]
+      "agents": ["code-reviewer", "security-auditor", "doc-verifier", "tdd-test-writer", "verifier"]
     },
     "frontend": {
       "description": "Frontend and UI development team",
@@ -30,11 +30,11 @@
     },
     "backend": {
       "description": "Backend and API development team",
-      "agents": ["backend-dev", "backend-architect", "api-architect", "security-auditor", "tdd-test-writer"]
+      "agents": ["backend-dev", "backend-architect", "api-architect", "security-auditor", "tdd-test-writer", "verifier"]
     },
     "fullstack": {
       "description": "Full-stack feature development team",
-      "agents": ["architect", "backend-dev", "frontend-dev", "api-architect", "tdd-test-writer", "code-reviewer", "security-auditor"]
+      "agents": ["architect", "backend-dev", "frontend-dev", "api-architect", "tdd-test-writer", "code-reviewer", "security-auditor", "verifier"]
     },
     "mobile": {
       "description": "Mobile application development team",

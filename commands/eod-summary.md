@@ -26,7 +26,8 @@ Read `tasks.json` — find tasks where status changed to `completed` today (chec
 **PRs created/merged:**
 ```bash
 gh pr list --state all --author @me --json number,title,state,createdAt,mergedAt 2>/dev/null | \
-  jq '[.[] | select(.createdAt >= "TODAY" or .mergedAt >= "TODAY")]'
+  today=$(date -u +%Y-%m-%dT00:00:00Z) && \
+  jq --arg today "$today" '[.[] | select(.createdAt >= $today or .mergedAt >= $today)]'
 ```
 
 **Pipeline runs:**
@@ -131,7 +132,7 @@ When triggered via cron:
 
 Recommended cron: daily at 6:00 PM local time
 ```
-/telegram-cron create "eod-summary" "0 18 * * 1-5" "/eod-summary"
+/telegram-cron add "0 18 * * 1-5: /eod-summary"
 ```
 
 (Weekdays only — skip weekends unless $ARGUMENTS includes `--include-weekends`)

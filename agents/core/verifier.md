@@ -10,6 +10,7 @@ invoked_by:
   - /auto-ship (verification phase)
   - /check (Gate A enhancement)
 escalation: orchestrator
+maxTurns: 20
 color: red
 ---
 
