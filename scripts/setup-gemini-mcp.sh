@@ -61,6 +61,12 @@ fi
 
 log "GEMINI_API_KEY found"
 
+# Validate API key format (prevent shell injection via crafted key values)
+if ! [[ "$GEMINI_API_KEY" =~ ^[A-Za-z0-9_-]{10,}$ ]]; then
+  err "GEMINI_API_KEY contains unexpected characters. Expected alphanumeric, hyphens, underscores."
+  exit 1
+fi
+
 # Check for npx
 if ! command -v npx &>/dev/null; then
   err "npx not found. Install Node.js first: nvm install 22"
@@ -70,10 +76,10 @@ fi
 # Add Gemini MCP via claude CLI
 if command -v claude &>/dev/null; then
   if $DRY_RUN; then
-    info "[DRY-RUN] Would run: claude mcp add gemini -s user -- env GEMINI_API_KEY=*** npx -y @rlabs-inc/gemini-mcp"
+    info "[DRY-RUN] Would run: claude mcp add gemini -s user -- env GEMINI_API_KEY=*** npx -y @rlabs-inc/gemini-mcp@0.1.2"
   else
     info "Adding Gemini MCP via claude CLI..."
-    claude mcp add -e "GEMINI_API_KEY=$GEMINI_API_KEY" -e "GEMINI_TOOL_PRESET=media" gemini -s user -- npx -y @rlabs-inc/gemini-mcp 2>/dev/null && \
+    claude mcp add -e "GEMINI_API_KEY=$GEMINI_API_KEY" -e "GEMINI_TOOL_PRESET=media" gemini -s user -- npx -y @rlabs-inc/gemini-mcp@0.1.2 2>/dev/null && \
       log "Gemini MCP added to Claude Code" || \
       warn "claude mcp add failed — may already exist. Check with: claude mcp list"
   fi
@@ -101,6 +107,9 @@ if $WITH_FAL; then
     warn "FAL_KEY not set. Skipping fal.ai MCP."
     echo "  Set it with: export FAL_KEY=your-key-here"
     echo "  Get a key at: https://fal.ai/dashboard/keys"
+  elif ! [[ "$FAL_KEY" =~ ^[A-Za-z0-9_:-]{10,}$ ]]; then
+    err "FAL_KEY contains unexpected characters. Expected alphanumeric, hyphens, underscores, colons."
+    exit 1
   else
     if command -v claude &>/dev/null; then
       if $DRY_RUN; then
@@ -118,7 +127,7 @@ fi
 # Pre-cache the package
 if ! $DRY_RUN; then
   info "Pre-caching @rlabs-inc/gemini-mcp package..."
-  npx -y @rlabs-inc/gemini-mcp --help >/dev/null 2>&1 || true
+  npx -y @rlabs-inc/gemini-mcp@0.1.2 --help >/dev/null 2>&1 || true
   log "Package cached"
 fi
 

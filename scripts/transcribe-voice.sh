@@ -17,15 +17,20 @@ NC='\033[0m'
 err() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 log() { echo -e "${GREEN}[OK]${NC} $1" >&2; }
 
-INPUT_FILE="${1:-}"
+INPUT_FILE=""
 LANGUAGE="en"
 
-# Parse optional args
-shift || true
+# Parse all args (flags can appear in any order)
 while [ $# -gt 0 ]; do
   case "$1" in
     --language) LANGUAGE="${2:-en}"; shift 2 ;;
-    *) err "Unknown argument: $1"; exit 1 ;;
+    --*) err "Unknown flag: $1"; exit 1 ;;
+    *)
+      if [ -n "$INPUT_FILE" ]; then
+        err "Unexpected argument: $1 (input file already set to $INPUT_FILE)"
+        exit 1
+      fi
+      INPUT_FILE="$1"; shift ;;
   esac
 done
 
@@ -89,8 +94,16 @@ if [[ "$INPUT_FILE" =~ :// ]]; then
   exit 1
 fi
 
+# Validate file extension
+case "${INPUT_FILE##*.}" in
+  ogg|oga|mp3|mp4|m4a|wav|webm|mpga|mpeg) ;;
+  *) err "Unsupported file type: ${INPUT_FILE##*.}. Expected: ogg, oga, mp3, m4a, wav, webm"; exit 1 ;;
+esac
+
 BASENAME=$(basename "$INPUT_FILE")
 BASENAME_NO_EXT="${BASENAME%.*}"
+# Sanitize basename to prevent ffmpeg flag injection from filenames starting with -
+BASENAME_NO_EXT=$(echo "$BASENAME_NO_EXT" | tr -cd 'a-zA-Z0-9._-' | sed 's/^-//')
 TMP_DIR=$(mktemp -d)
 chmod 700 "$TMP_DIR"  # enforce restrictive permissions regardless of umask
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
