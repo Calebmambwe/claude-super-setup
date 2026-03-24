@@ -7,7 +7,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=%i
-WorkingDirectory=%h/claude_super_setup
+WorkingDirectory=%h/.claude-super-setup
 ExecStart=/usr/bin/screen -DmS claude-telegram /usr/local/bin/claude --dangerously-skip-permissions --channels plugin:telegram@claude-plugins-official
 ExecStop=/usr/bin/screen -X -S claude-telegram quit
 Restart=on-failure

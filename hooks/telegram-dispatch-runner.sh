@@ -133,10 +133,10 @@ notify_telegram() {
 
   curl -s -o /dev/null -X POST \
     "https://api.telegram.org/bot${telegram_token}/sendMessage" \
-    -d "chat_id=${CHAT_ID}" \
-    -d "text=$(echo -e "$tg_text")" \
-    -d "parse_mode=Markdown" \
-    -d "disable_web_page_preview=true" \
+    --data-urlencode "chat_id=${CHAT_ID}" \
+    --data-urlencode "text=$(printf '%b' "$tg_text")" \
+    --data-urlencode "parse_mode=Markdown" \
+    --data-urlencode "disable_web_page_preview=true" \
     2>/dev/null || true
 }
 

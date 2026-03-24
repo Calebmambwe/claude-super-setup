@@ -35,7 +35,7 @@ run_cmd() {
   if $DRY_RUN; then
     dry "$1"
   else
-    eval "$1"
+    bash -c "$1"
   fi
 }
 

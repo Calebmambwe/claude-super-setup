@@ -22,6 +22,9 @@ plugins/
 agent-memory/
 projects/
 
+# Pipeline runtime
+pipeline-checkpoint.json
+
 # Runtime
 node_modules/
 .env*
