@@ -84,16 +84,16 @@ if [ -z "${OPENAI_API_KEY:-}" ]; then
   fi
 fi
 
-if ! [[ "$OPENAI_API_KEY" =~ ^[A-Za-z0-9_-]{10,}$ ]]; then
-  err "OPENAI_API_KEY contains unexpected characters. Expected alphanumeric, hyphens, underscores."
-  exit 1
-fi
-
 if [ -z "${OPENAI_API_KEY:-}" ]; then
   err "OPENAI_API_KEY not found."
   echo "  Set it with: export OPENAI_API_KEY=your-key-here" >&2
   echo "  Or add to ~/.claude/channels/telegram/.env:" >&2
   echo "  OPENAI_API_KEY=your-key-here" >&2
+  exit 1
+fi
+
+if ! [[ "$OPENAI_API_KEY" =~ ^[A-Za-z0-9_-]{10,}$ ]]; then
+  err "OPENAI_API_KEY contains unexpected characters. Expected alphanumeric, hyphens, underscores."
   exit 1
 fi
 
