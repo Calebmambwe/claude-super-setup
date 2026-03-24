@@ -53,21 +53,20 @@ The following sections should be populated per-sprint or per-feature. They form 
 
 ### Success Criteria
 
-- [x] /morning-brief command created with 6 data sources
-- [x] /eod-summary command created with git-based work tracking
-- [x] /weekly-health command created with cross-project discovery
-- [x] /pr-reminder command created with staleness classification
-- [x] PROJECT_ANCHOR.md implements attention anchoring pattern
-- [x] agents/core/verifier.md implements independent verification
-- [x] HANDOVER.md implements cross-session state preservation
-- [x] AGENTS.md and catalog.json updated with Sprint 4 content
+- [x] VS Code Agent Teams presets (review, feature, debug) with JSON schema
+- [x] Remote Control architecture documentation
+- [x] Worktree isolation documentation
+- [x] URI handler integration documentation
+- [x] Smart Hub web API spec (10 endpoints)
+- [x] Verifier agent enhanced with team preset validation
+- [x] AGENTS.md and catalog.json updated with Sprint 5 content
 
 ### Non-Goals (Explicit)
 
-- Implementing cron scheduling (documented, not automated)
-- Calendar MCP server setup (referenced, not installed)
-- Modifying existing commands or agent behavior
+- Implementing Smart Hub Tauri frontend (spec only)
+- Implementing URI handler VS Code extension (docs only)
 - Running server code or API implementations
+- Modifying existing command behavior
 
 ---
 

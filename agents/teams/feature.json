@@ -32,7 +32,7 @@
   ],
   "workflow": [
     {"step": 1, "agent": "architect", "action": "Analyze requirements and create implementation plan"},
-    {"step": 2, "agent": "tdd-test-writer", "action": "Write failing tests for acceptance criteria"},
+    {"step": 2, "agent": "tdd-test-writer", "action": "Write failing tests for acceptance criteria", "depends_on": [1]},
     {"step": 3, "agent": "backend-dev", "action": "Implement backend changes per architecture plan", "depends_on": [1]},
     {"step": 4, "agent": "frontend-dev", "action": "Implement frontend changes per architecture plan", "parallel_with": 3, "depends_on": [1]},
     {"step": 5, "agent": "tdd-test-writer", "action": "Run tests and verify all pass", "depends_on": [3, 4]}
