@@ -41,17 +41,69 @@ Read 2-3 existing test files to understand:
 
 **CRITICAL: Match existing patterns exactly. Do not introduce a new test style.**
 
-### Step 3: Identify Test Categories
+### Step 3: Classify Tests Using SMURF Taxonomy
 
-For each function/module, classify what tests are needed:
+Every test MUST be tagged with a SMURF category. This classification drives test suite organization, CI pipeline ordering, and coverage reporting.
 
-| Category | Tests | When |
+**SMURF Categories:**
+
+| Tag | Category | Purpose | Run When | Typical Runtime |
+|-----|----------|---------|----------|-----------------|
+| `[S]` | **Smoke** | Verify the system starts and core paths work | Every commit, first in CI | < 30s total |
+| `[M]` | **Mutation** | Prove tests catch real bugs (mutation testing) | Weekly / pre-release | Minutes |
+| `[U]` | **Unit** | Verify individual functions in isolation | Every commit | < 60s total |
+| `[R]` | **Regression** | Prevent previously-fixed bugs from recurring | Every PR | Varies |
+| `[F]` | **Functional** | Verify complete features end-to-end | Every PR, post-deploy | Minutes |
+
+**How to classify:**
+
+- **Smoke `[S]`**: Health checks, can-the-app-start, does-login-work. If these fail, nothing else matters.
+- **Unit `[U]`**: Pure function tests, isolated service tests with mocked dependencies. Fast, deterministic.
+- **Functional `[F]`**: Integration tests, API endpoint tests, database round-trips, E2E flows. Slower, tests real interactions.
+- **Regression `[R]`**: Tests written specifically because a bug was found. ALWAYS tag with the bug/issue reference. These are the safety net for known failure modes.
+- **Mutation `[M]`**: Meta-tests that verify test quality itself. Use mutation testing tools (Stryker, mutmut) to check that tests actually catch code changes.
+
+**Tag placement — use the test name prefix:**
+```typescript
+// Jest / Vitest
+describe('[U] OrderService', () => {
+  it('[U] calculates total correctly with multiple items', () => {
+  it('[U] rejects empty cart with validation error', () => {
+
+describe('[F] POST /api/orders', () => {
+  it('[F] creates order and returns 201 with order details', () => {
+  it('[F] returns 400 when cart is empty', () => {
+
+describe('[S] Health', () => {
+  it('[S] GET /health returns 200', () => {
+
+describe('[R] Order edge cases', () => {
+  it('[R] handles concurrent stock deduction (fixes #142)', () => {
+```
+
+```python
+# Pytest — use markers
+@pytest.mark.smoke
+def test_health_endpoint():
+
+@pytest.mark.unit
+def test_calculate_total():
+
+@pytest.mark.functional
+def test_create_order_flow():
+
+@pytest.mark.regression
+def test_concurrent_stock_fix_142():
+```
+
+**Additionally, identify behavioral test types for each function:**
+
+| Behavior | Tests | When |
 |----------|-------|------|
 | **Happy path** | Normal inputs → expected outputs | Always |
 | **Validation** | Invalid inputs → proper errors | Functions with input validation |
 | **Edge cases** | Boundary values, empty inputs, nulls | Always |
 | **Error handling** | Dependency failures → graceful handling | Functions with try/catch or external calls |
-| **Integration** | Full request → response cycle | API endpoints, database operations |
 | **State transitions** | Before/after state changes | Stateful operations |
 | **Concurrency** | Parallel execution, race conditions | Shared resources |
 
@@ -68,19 +120,25 @@ File: src/services/order-service.ts
 Test file: src/services/__tests__/order-service.test.ts (or matching convention)
 
 Tests:
-  createOrder()
-    ✓ creates order with valid input
-    ✓ calculates total correctly with multiple items
-    ✓ applies discount code
-    ✓ rejects empty cart
-    ✓ rejects invalid discount code
-    ✓ handles database write failure
-    ✓ handles payment service timeout
+  [U] createOrder()
+    [U] creates order with valid input
+    [U] calculates total correctly with multiple items
+    [U] applies discount code
+    [U] rejects empty cart
+    [U] rejects invalid discount code
+    [U] handles database write failure
+    [U] handles payment service timeout
 
-  getOrder()
-    ✓ returns order by ID
-    ✓ returns 404 for non-existent order
-    ✓ only returns orders belonging to the authenticated user
+  [F] POST /api/orders (integration)
+    [F] creates order end-to-end and returns 201
+    [S] POST /api/orders returns 400 for empty body (smoke)
+
+  [U] getOrder()
+    [U] returns order by ID
+    [U] returns 404 for non-existent order
+    [U] only returns orders belonging to the authenticated user
+
+SMURF Distribution: S:1 M:0 U:8 R:0 F:1
 ```
 
 ### Step 5: Write Tests
@@ -156,21 +214,41 @@ Test Generation Complete:
   Target: {files tested}
   Test files created: {count}
   Tests written: {count}
-    Happy path: {count}
-    Validation: {count}
-    Edge cases: {count}
+
+  SMURF Distribution:
+    [S] Smoke:      {count} — core paths verified
+    [M] Mutation:    {count} — test quality checks
+    [U] Unit:        {count} — isolated function tests
+    [R] Regression:  {count} — bug-fix safety nets
+    [F] Functional:  {count} — end-to-end flows
+
+  Behavioral Breakdown:
+    Happy path:    {count}
+    Validation:    {count}
+    Edge cases:    {count}
     Error handling: {count}
-    Integration: {count}
+
   Coverage: {percentage}
   Bugs discovered: {count} (noted as TODOs, not fixed)
 
   All tests passing: YES
+
+  CI Ordering Recommendation:
+    1. [S] Smoke tests first (fail fast)
+    2. [U] Unit tests (fast feedback)
+    3. [F] Functional tests (full verification)
+    4. [R] Regression tests (safety net)
+    5. [M] Mutation tests (weekly/pre-release only)
 ```
 
 ---
 
 ## Rules
 
+- ALWAYS tag every test with a SMURF category: `[S]`, `[M]`, `[U]`, `[R]`, or `[F]`
+- ALWAYS include at least 1 Smoke `[S]` test per module (health/can-it-start)
+- ALWAYS tag regression tests `[R]` with the bug/issue number they prevent
+- ALWAYS include SMURF distribution in the test summary
 - ALWAYS read existing test patterns before writing — match the project's test style exactly
 - ALWAYS write tests that are independent — no test should depend on another test's state
 - ALWAYS use descriptive test names that read like specifications

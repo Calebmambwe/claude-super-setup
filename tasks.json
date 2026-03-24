@@ -1,67 +1,67 @@
 {
   "version": 1,
-  "feature": "Enterprise Agent Platform Sprint 2: Gemini Media + Voice",
-  "created_at": "2026-03-24T21:40:00Z",
+  "feature": "Enterprise Agent Platform Sprint 3: Enterprise dev process upgrades",
+  "created_at": "2026-03-24T22:45:00Z",
   "tasks": [
     {
       "id": 1,
-      "title": "Add Gemini MCP setup script and configuration",
-      "description": "Create scripts/setup-gemini-mcp.sh to add Gemini MCP to user's ~/.mcp.json. Update install.sh to reference it. Add fal.ai as documented alternative.",
+      "title": "Enhanced design doc templates (Alternatives Considered + Cross-Cutting Concerns)",
+      "description": "Add two new sections to commands/design-doc.md: 'Alternatives Considered' (options evaluated with trade-offs) and 'Cross-Cutting Concerns' (security, observability, testing, deployment, error handling).",
       "status": "completed",
       "priority": "high",
       "risk": "low",
       "depends_on": [],
-      "files": ["scripts/setup-gemini-mcp.sh", "install.sh"]
+      "files": ["commands/design-doc.md"]
     },
     {
       "id": 2,
-      "title": "Create /prototype command for UI mockup generation",
-      "description": "Create commands/prototype.md — takes a UI description, calls Gemini image generation MCP, saves to docs/{project}/mockups/, sends via Telegram if in context.",
+      "title": "SMURF test classification in /generate-tests",
+      "description": "Add SMURF (Smoke, Mutation, Unit, Regression, Functional) test classification taxonomy to commands/generate-tests.md. Each generated test gets a SMURF tag. Summary shows counts per category.",
       "status": "completed",
       "priority": "high",
       "risk": "low",
-      "depends_on": [1],
-      "files": ["commands/prototype.md"]
+      "depends_on": [],
+      "files": ["commands/generate-tests.md"]
     },
     {
       "id": 3,
-      "title": "Create /demo-video command for video generation",
-      "description": "Create commands/demo-video.md — reads mockup images, generates video via Veo/Gemini, saves to docs/{project}/demos/, sends via Telegram.",
+      "title": "3-gate code review in /check",
+      "description": "Upgrade the code-reviewer agent in commands/check.md from a single pass to a 3-gate review: Gate A (Correctness), Gate B (Ownership/maintainability), Gate C (Readability). Each gate produces independent findings.",
       "status": "completed",
-      "priority": "medium",
+      "priority": "high",
       "risk": "low",
-      "depends_on": [1],
-      "files": ["commands/demo-video.md"]
+      "depends_on": [],
+      "files": ["commands/check.md"]
     },
     {
       "id": 4,
-      "title": "Create voice transcription hook for Telegram voice messages",
-      "description": "Create scripts/transcribe-voice.sh — detects OGG voice attachments from Telegram, converts via ffmpeg, sends to Whisper API, returns transcription text.",
+      "title": "Feature flag system (/flag command)",
+      "description": "Create commands/flag.md — a new skill for managing feature flags. Subcommands: create, enable, disable, list. Flags stored in a flags.json file. Integrates with code via a simple isEnabled() pattern.",
       "status": "completed",
       "priority": "high",
-      "risk": "medium",
+      "risk": "low",
       "depends_on": [],
-      "files": ["scripts/transcribe-voice.sh"]
+      "files": ["commands/flag.md"]
     },
     {
       "id": 5,
-      "title": "Create /voice-brief command",
-      "description": "Create commands/voice-brief.md — takes transcribed text (from voice or typed), structures into problem/solution/users/constraints brief, saves to docs/{feature}/brief.md.",
+      "title": "Amazon PR/FAQ step in /brainstorm",
+      "description": "Add a PR/FAQ (Press Release / FAQ) step to commands/brainstorm.md after the brief is written. Generates a fake press release and anticipated FAQs to pressure-test the feature idea (Amazon's Working Backwards method).",
       "status": "completed",
-      "priority": "high",
+      "priority": "medium",
       "risk": "low",
-      "depends_on": [4],
-      "files": ["commands/voice-brief.md"]
+      "depends_on": [],
+      "files": ["commands/brainstorm.md"]
     },
     {
       "id": 6,
-      "title": "Update AGENTS.md and run verification",
-      "description": "Add Sprint 2 patterns/gotchas to AGENTS.md. Verify all new files are syntactically correct.",
+      "title": "Enhanced /post-mortem with Google SRE template",
+      "description": "Upgrade commands/post-mortem.md to use the Google SRE post-mortem template: add Detection section, add Recurrence Assessment, add Support/Communication section, enhance Action Items with bug tracking integration.",
       "status": "completed",
-      "priority": "low",
+      "priority": "medium",
       "risk": "low",
-      "depends_on": [1, 2, 3, 4, 5],
-      "files": ["AGENTS.md"]
+      "depends_on": [],
+      "files": ["commands/post-mortem.md"]
     }
   ]
 }

@@ -43,7 +43,7 @@ You are the Technical Lead, executing the **Design Document** workflow.
 
 ## Design Document Structure
 
-Use TodoWrite to track: Pre-flight → Introduction → Architecture Diagrams → Data Structures → Implementation → Conventions → Milestones → Tooling → Generate → Validate
+Use TodoWrite to track: Pre-flight → Introduction (incl. Alternatives Considered) → Architecture Diagrams → Data Structures → Implementation → Conventions → Cross-Cutting Concerns → Milestones → Tooling → Generate → Validate
 
 Approach: **Precise, implementation-focused, diagram-driven.**
 
@@ -84,6 +84,31 @@ Approach: **Precise, implementation-focused, diagram-driven.**
 - {Technical constraint}
 - {Business constraint}
 - {Timeline constraint}
+
+### 1.6 Alternatives Considered
+
+{For each major design decision, document what options were evaluated and why the chosen approach won. This prevents revisiting settled decisions and helps onboard new team members.}
+
+| Decision | Option A (Chosen) | Option B | Option C |
+|----------|-------------------|----------|----------|
+| {Database} | PostgreSQL — mature, strong ecosystem, team expertise | MongoDB — flexible schema, but poor relational support | SQLite — simple, but no concurrent writes at scale |
+| {Auth strategy} | JWT + refresh tokens — stateless, scales horizontally | Session cookies — simpler, but requires sticky sessions | OAuth-only — limits to third-party providers |
+| {Hosting} | Vercel — zero-config deploys, edge functions | AWS ECS — more control, but higher ops burden | Self-hosted — cheapest, but maintenance overhead |
+
+**For each row, document:**
+- **Why chosen:** 1-2 sentences on the winning argument
+- **Why not others:** Key disqualifier for each rejected option
+- **Revisit trigger:** Under what conditions should this decision be reconsidered (e.g., "If we exceed 10K concurrent users, revisit the session strategy")
+
+```markdown
+#### Decision: {Decision Name}
+**Chosen:** {Option A}
+**Why:** {Key reason this won — cost, team expertise, performance, timeline}
+**Rejected:**
+- {Option B}: {Why not — e.g., "schema migrations too painful at our data volume"}
+- {Option C}: {Why not — e.g., "vendor lock-in, no self-host fallback"}
+**Revisit if:** {Condition that would reopen this decision}
+```
 ```
 
 **Store as:** `{{introduction}}`
@@ -376,6 +401,67 @@ src/
 
 ---
 
+### Part 5B: Cross-Cutting Concerns (REQUIRED)
+
+**Document how these concerns are handled across the entire system.** Cross-cutting concerns span multiple layers and components — they can't be addressed in a single module.
+
+```markdown
+## 5B. Cross-Cutting Concerns
+
+### 5B.1 Security
+- **Authentication:** {How users prove identity — JWT, session, OAuth}
+- **Authorization:** {How access is controlled — RBAC, ABAC, row-level security}
+- **Data encryption:** {At rest: AES-256 via {provider}. In transit: TLS 1.3}
+- **Secrets management:** {Environment variables, vault, sealed secrets}
+- **Input sanitization:** {Where and how — Zod schemas at API boundary, parameterized queries}
+- **OWASP mitigations:** {Rate limiting, CSRF tokens, CSP headers, etc.}
+
+### 5B.2 Observability
+- **Logging:** {Structured JSON logs, log levels, what to log at each level}
+- **Metrics:** {Key business and system metrics, collection method (Prometheus, StatsD)}
+- **Tracing:** {Distributed tracing approach — OpenTelemetry, correlation IDs}
+- **Alerting:** {What triggers alerts, who gets paged, escalation path}
+- **Dashboards:** {Key dashboards and what they monitor}
+
+### 5B.3 Error Handling
+- **Error taxonomy:** {Application errors, validation errors, system errors, third-party errors}
+- **Error propagation:** {How errors flow from service → API → client}
+- **Error response format:** {Standard envelope: `{ success: false, error: { code, message, details } }`}
+- **Retry strategy:** {Which operations are retried, backoff policy, max attempts}
+- **Circuit breaker:** {Which external dependencies have circuit breakers, thresholds}
+
+### 5B.4 Testing Strategy
+- **Unit tests:** {Coverage target, what to test, what to mock}
+- **Integration tests:** {Database, API endpoints, external service contracts}
+- **E2E tests:** {Critical user flows, browser automation framework}
+- **Performance tests:** {Load testing tool, baseline targets, when to run}
+- **Test data:** {Factories, fixtures, seed scripts, test database strategy}
+
+### 5B.5 Deployment & Operations
+- **CI/CD pipeline:** {Build → test → lint → typecheck → deploy stages}
+- **Deployment strategy:** {Blue-green, canary, rolling update}
+- **Feature flags:** {How new features are gated — flag system, percentage rollout}
+- **Rollback procedure:** {How to revert a bad deploy — automated or manual}
+- **Database migrations:** {Strategy: forward-only, backward-compatible, blue-green safe}
+
+### 5B.6 Performance
+- **Caching strategy:** {What is cached, where (Redis, CDN, browser), TTL policy}
+- **Database optimization:** {Indexing strategy, query monitoring, connection pooling}
+- **API pagination:** {Cursor-based vs offset, default/max page sizes}
+- **Rate limiting:** {Per-endpoint limits, global limits, rate limit headers}
+- **Bundle optimization:** {Code splitting, lazy loading, tree shaking — frontend only}
+```
+
+**Rules for Cross-Cutting Concerns:**
+- Every section must have a concrete answer, not "TBD" — if undecided, flag it as an open question
+- Reference specific tools/libraries by name (e.g., "Winston with JSON transport" not just "structured logging")
+- Include configuration details where they affect architecture decisions
+- This section is reviewed during the Solutioning Gate Check (`/bmad:solutioning-gate-check`)
+
+**Store as:** `{{cross_cutting_concerns}}`
+
+---
+
 ### Part 6: Development Milestones
 
 **Define concrete, executable milestones — NOT time estimates.** Each milestone produces a verifiable deliverable.
@@ -539,11 +625,13 @@ docker compose down            # Stop all services
    Location: docs/{project-name}/design-doc.md
 
    Contents:
-   - Introduction & Scope
+   - Introduction & Scope (incl. Alternatives Considered)
    - Architecture Diagrams: {count} Mermaid diagrams
    - Data Structures: {entity_count} entities documented
    - Implementation: {endpoint_count} endpoints, {feature_count} features
    - Conventions: {section_count} pattern sections
+   - Cross-Cutting Concerns: 6 areas covered
+   - Alternatives Considered: {decision_count} decisions documented
    - Milestones: {milestone_count} milestones with DoD checklists
    - Tooling: Setup guide with {var_count} env variables
 
@@ -561,6 +649,10 @@ Checklist:
 - [ ] Every data entity has field-level documentation (type, constraints, default)
 - [ ] API endpoints include request/response examples with JSON
 - [ ] Error responses documented for each endpoint
+- [ ] Alternatives Considered section documents at least 2 major design decisions with trade-offs
+- [ ] Each alternative has a "Revisit if" trigger condition
+- [ ] Cross-Cutting Concerns section covers all 6 areas (security, observability, error handling, testing, deployment, performance)
+- [ ] No cross-cutting concern is left as "TBD" — flag as open question if undecided
 - [ ] Conventions cover: naming, file structure, error handling, validation
 - [ ] Every milestone has a Definition of Done checklist
 - [ ] Milestones have explicit dependencies
@@ -607,6 +699,9 @@ Developers can start building from Milestone 1 immediately.
 - ALWAYS include request/response JSON examples for API endpoints
 - ALWAYS define milestones by deliverables, NEVER by time estimates
 - ALWAYS include a Definition of Done checklist for each milestone
+- ALWAYS include Alternatives Considered for at least 2 major design decisions
+- ALWAYS include Cross-Cutting Concerns covering all 6 areas — no "TBD" allowed
+- ALWAYS include a "Revisit if" trigger for each rejected alternative
 - ALWAYS document the setup from git clone to running app
 - NEVER include boilerplate code (basic CRUD, standard imports)
 - NEVER include styling/CSS details — reference the design system skill instead
