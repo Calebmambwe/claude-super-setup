@@ -30,6 +30,7 @@ load_config() {
   BRANCH=$(jq -r '.branch' "$CONFIG_FILE")
   STARTED=$(jq -r '.started' "$CONFIG_FILE")
   SESSION_ID=$(jq -r '.session_id // ""' "$CONFIG_FILE")
+  TELEGRAM_ENABLED=$(jq -r '.telegram_enabled // "false"' "$CONFIG_FILE")
   LOG_FILE="$LOG_DIR/ghost-$(date +%Y%m%d-%H%M%S).log"
 }
 

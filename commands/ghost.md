@@ -11,6 +11,7 @@ Launches a fully autonomous, self-healing pipeline that survives terminal closes
 
 ```
 /ghost "feature" --budget 20 --hours 8 --trust conservative --notify-url https://ntfy.sh/my-topic
+/ghost "feature" --telegram   # enables Telegram notifications + inbound task channel
 ```
 
 ## Process
@@ -23,6 +24,8 @@ Extract from $ARGUMENTS:
 - `--budget` — USD limit (default: 20)
 - `--hours` — max wall-clock hours (default: 8)
 - `--notify-url` — ntfy.sh topic URL for push notifications (optional)
+- `--telegram` — enable Telegram notifications and inbound task channel (optional)
+- `--telegram-chat-id` — override Telegram chat ID (default: auto-detect from access.json)
 - `--max-tasks` — maximum task count (default: 10)
 
 If no feature description is provided, ask the user what to build and stop.
@@ -65,6 +68,8 @@ Write `~/.claude/ghost-config.json`:
   "max_hours": {hours},
   "max_tasks": {max_tasks},
   "notify_url": "{notify_url or empty string}",
+  "telegram_enabled": "{true if --telegram flag, false otherwise}",
+  "telegram_chat_id": "{chat_id from --telegram-chat-id or auto-detected from access.json}",
   "project_dir": "{current working directory}",
   "branch": "{branch name}",
   "started": "{ISO 8601 timestamp}",
@@ -102,6 +107,7 @@ Budget:       ${budget} USD
 Time Limit:   {hours} hours
 Branch:       {branch}
 Notifications: {ntfy URL or "local only (osascript)"}
+Telegram:     {enabled (chat_id: XXX) or "disabled"}
 
 The pipeline is now running autonomously.
 You can safely close this terminal and go to sleep.
@@ -132,4 +138,7 @@ Sweet dreams.
 - ALWAYS write config BEFORE launching watchdog
 - ALWAYS show emergency stop instructions
 - If the user hasn't configured ntfy.sh, warn that notifications are local-only
+- If `--telegram` is set, auto-detect chat_id from `~/.claude/channels/telegram/access.json` (first allowFrom entry) unless `--telegram-chat-id` overrides it
+- If `--telegram` is set but no bot token found in `~/.claude/channels/telegram/.env`, warn and fall back to other channels
+- When Telegram is enabled, the watchdog launches Claude with `--channels plugin:telegram@claude-plugins-official`, allowing inbound messages from Telegram to reach the running session
 - This command is a launcher — it NEVER runs the pipeline itself
