@@ -146,10 +146,9 @@ class SandboxClient:
         if not self._container_id:
             await self.start()
 
-        full_command = f"cd '{working_dir}' && {command}"
         proc = await asyncio.create_subprocess_exec(
-            "docker", "exec", self._container_id,
-            "bash", "-c", full_command,
+            "docker", "exec", "--workdir", working_dir, self._container_id,
+            "bash", "-c", command,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -174,10 +173,11 @@ class SandboxClient:
         if not self._container_id:
             await self.start()
 
+        import shlex
         operator = ">>" if append else ">"
         proc = await asyncio.create_subprocess_exec(
             "docker", "exec", "-i", self._container_id,
-            "bash", "-c", f"tee {operator} '{path}'",
+            "bash", "-c", f"tee {operator} {shlex.quote(path)}",
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,

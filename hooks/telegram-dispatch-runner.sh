@@ -18,6 +18,13 @@ PROJECT_DIR="${3:?Missing project_dir}"
 SESSION_NAME="${4:?Missing session_name}"
 CHAT_ID="${5:-}"
 
+# Security: validate command against allowlist to prevent arbitrary execution
+ALLOWED_COMMANDS="ghost auto-ship auto-build auto-build-all auto-dev auto-plan check ship reflect pipeline-status ghost-status plan build dev spec code-review security-check generate-tests next-task"
+if ! echo "$ALLOWED_COMMANDS" | tr ' ' '\n' | grep -qx "$COMMAND"; then
+  echo "BLOCKED: /$COMMAND is not in the dispatch allowlist" >&2
+  exit 1
+fi
+
 LOG_DIR="$HOME/.claude/logs"
 SESSION_FILE="$HOME/.claude/telegram-sessions.json"
 QUEUE_FILE="$HOME/.claude/telegram-queue.json"
