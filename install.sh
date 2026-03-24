@@ -296,6 +296,13 @@ else
   warn "No mcp-servers/ directory found in repo"
 fi
 
+# Step 5.55: Install media scripts (Gemini MCP, voice transcription)
+[ -f "$REPO_DIR/scripts/setup-gemini-mcp.sh" ] && chmod +x "$REPO_DIR/scripts/setup-gemini-mcp.sh"
+[ -f "$REPO_DIR/scripts/transcribe-voice.sh" ] && chmod +x "$REPO_DIR/scripts/transcribe-voice.sh"
+if [ -f "$REPO_DIR/scripts/setup-gemini-mcp.sh" ]; then
+  log "Media scripts available (run: bash scripts/setup-gemini-mcp.sh)"
+fi
+
 # Step 5.6: Install systemd service files (Linux only)
 if [ -d "$REPO_DIR/config/systemd" ] && [ -d "/etc/systemd/system" ]; then
   info "Installing systemd service files..."
