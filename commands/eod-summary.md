@@ -25,8 +25,9 @@ Read `tasks.json` — find tasks where status changed to `completed` today (chec
 
 **PRs created/merged:**
 ```bash
+TODAY=$(date -u +%Y-%m-%d)
 gh pr list --state all --author @me --json number,title,state,createdAt,mergedAt 2>/dev/null | \
-  jq '[.[] | select(.createdAt >= "TODAY" or .mergedAt >= "TODAY")]'
+  jq --arg today "$TODAY" '[.[] | select((.createdAt | startswith($today)) or (.mergedAt // "" | startswith($today)))]'
 ```
 
 **Pipeline runs:**
