@@ -42,7 +42,6 @@ Shared project context for Claude Code and Cursor agents.
 ## Gotchas
 - Telegram typing indicator (`sendChatAction`) expires after ~5s — must re-fire on interval for long tasks.
 - If Claude Code exits uncleanly, the old Telegram bot process lingers as a zombie holding the poll slot — causes 409 Conflict for new sessions. Always `pkill -f "bun.*telegram.*server.ts"` before starting.
-- `grep -oP` (Perl regex) is NOT available on macOS — use `grep + sed` instead in shell scripts.
 - `caffeinate -s` only prevents sleep on AC power, not battery. Wi-Fi power management is separate.
 - Bash variable named `done` conflicts with `done` keyword — use `completed_count` or similar instead (SC1010).
 - systemd template units MUST use `@.service` suffix for `%i`/`%h` specifiers to expand correctly. Without `@`, `User=%i` is literal.
@@ -65,9 +64,24 @@ Shared project context for Claude Code and Cursor agents.
 - `/voice-brief` structures raw voice transcriptions into feature briefs at `docs/{feature}/brief.md`.
 - Voice notes from Telegram arrive as OGG files — the transcription script handles the OGG→MP3→Whisper pipeline.
 
+## Enterprise Dev Process (Sprint 3)
+- `/design-doc` now includes mandatory "Alternatives Considered" (with revisit triggers) and "Cross-Cutting Concerns" (6 areas: security, observability, error handling, testing, deployment, performance).
+- `/generate-tests` uses SMURF taxonomy: [S]moke, [M]utation, [U]nit, [R]egression, [F]unctional. Every test must be tagged.
+- `/check` runs 3-gate code review: Gate A (Correctness), Gate B (Ownership), Gate C (Readability). Only A and B block merge; C is advisory.
+- `/flag create|enable|disable|list|remove|status` manages feature flags in `flags.json`. Flags are disabled by default.
+- `/brainstorm` includes optional PR/FAQ step (Amazon Working Backwards) — generates press release + FAQs to pressure-test ideas.
+- `/post-mortem` uses Google SRE template: adds Detection metrics (TTD/TTE/TTM/TTR), Recurrence Assessment, Support & Communication, and PREVENT/DETECT/MITIGATE/PROCESS action item types.
+
 ## Security Notes
 - Voice transcriptions and `/prototype` `$ARGUMENTS` are user-supplied — Telegram allowlist (`access.json`) is the primary injection boundary. Keep it restrictive.
 - `transcribe-voice.sh` suppresses API error bodies by default to avoid leaking partial API keys in logs. Use `VERBOSE=1` for debugging.
+- `/flag` should be `CONFIRM` tier in Telegram dispatch — it writes to filesystem. Validate flag names against `^[a-z][a-z0-9-]{1,49}$`; treat `--description` as data, never interpolate into shell commands.
+
+## Sprint 3 QA Gotchas
+- Multi-gate commands (like `/check` with 5 agents) must keep agent counts consistent between headings, instructions, and rules sections — contradictions cause silent agent omission.
+- Nested markdown code fences in templates (e.g., `` ```markdown `` inside `` ```markdown ``) easily produce duplicate closing fences that break parsing.
+- Feature flag percentage rollout must hash `flagName + userId`, not `flagName` alone — flag-only hash produces all-or-nothing, not distributed rollout.
+- All `$ARGUMENTS`-accepting commands need prompt injection guards when reachable via Telegram dispatch.
 
 ## Maintenance
 - Update this file whenever durable project conventions change.

@@ -16,23 +16,51 @@ This is the ONE command you run before merging. It replaces `/code-review`, `/se
 - If no branch: `git diff --staged` for staged changes, or `git diff` for unstaged
 - If nothing changed: "No changes to review. Commit or stage changes first."
 
-### Step 2: Run Parallel Review Agents
+### Step 2: Run Parallel Review Agents (5 agents, 3 code review gates)
 
-Launch ALL three agents in parallel using the Agent tool:
+Launch ALL five agents in parallel using the Agent tool:
 
-**Agent 1: Code Quality (code-reviewer agent, Opus)**
-- Correctness, architecture compliance, naming, duplication
-- Test coverage for new code
-- Error handling completeness
-- Performance concerns (N+1 queries, missing pagination)
+**Agent 1: Code Review — Gate A: Correctness (code-reviewer agent, Opus)**
+Focus ONLY on whether the code is correct:
+- Logic errors, off-by-one, null dereference, unhandled promise rejections
+- Missing error handling for failure paths
+- Race conditions, deadlocks, data corruption risks
+- Wrong algorithm or data structure for the problem
+- N+1 queries, missing pagination, unbounded loops
+- Incorrect type usage (any casts, unsafe assertions)
 
-**Agent 2: Security (security-auditor agent, Opus)**
+Findings format: `[CORRECTNESS-{severity}] {file}:{line} — {description}`
+
+**Agent 2: Code Review — Gate B: Ownership (code-reviewer agent, Opus)**
+Focus ONLY on whether a new team member could maintain this code:
+- Architecture compliance — does it follow the project's established patterns?
+- Naming quality — do variable/function/class names convey intent?
+- Dependency direction — does it respect layer boundaries (routes → services → repositories)?
+- Duplication — is there copy-paste that should be extracted?
+- Test coverage — does new code have corresponding tests?
+- Configuration — are magic numbers extracted, are feature flags used where needed?
+- Documentation — are complex algorithms or non-obvious decisions explained?
+
+Findings format: `[OWNERSHIP-{severity}] {file}:{line} — {description}`
+
+**Agent 3: Code Review — Gate C: Readability (code-reviewer agent, Sonnet)**
+Focus ONLY on whether the code is easy to read and review:
+- Function length — is any function doing too much? (> 40 lines = flag)
+- Nesting depth — more than 3 levels of nesting = flag
+- Control flow clarity — are early returns used? Are conditionals simple?
+- Consistency — does it match the style of surrounding code?
+- Dead code — unused imports, unreachable branches, commented-out code
+- Naming conventions — kebab-case files, camelCase functions, PascalCase types (or project convention)
+
+Findings format: `[READABILITY-{severity}] {file}:{line} — {description}`
+
+**Agent 4: Security (security-auditor agent, Opus)**
 - OWASP Top 10 scan on changed files
 - Secrets/credentials in code
 - Input validation at boundaries
 - Dependency vulnerabilities (`pnpm audit` / `pip audit`)
 
-**Agent 3: Test Verification (Sonnet)**
+**Agent 5: Test Verification (Sonnet)**
 - Run the test suite: `pnpm test` or `pytest`
 - Run linting: `pnpm lint` or `ruff check`
 - Run typecheck: `pnpm typecheck` or `mypy .`
@@ -54,11 +82,23 @@ Merge all findings into a single report:
 ### Typecheck: PASS / FAIL
 {typecheck output summary}
 
-### Code Review: {N} findings
+### Code Review — Gate A: Correctness ({N} findings)
 CRITICAL:
-- {finding}
+- [CORRECTNESS-CRITICAL] {file}:{line} — {finding}
 WARNING:
-- {finding}
+- [CORRECTNESS-WARNING] {file}:{line} — {finding}
+
+### Code Review — Gate B: Ownership ({N} findings)
+CRITICAL:
+- [OWNERSHIP-CRITICAL] {file}:{line} — {finding}
+WARNING:
+- [OWNERSHIP-WARNING] {file}:{line} — {finding}
+
+### Code Review — Gate C: Readability ({N} findings)
+WARNING:
+- [READABILITY-WARNING] {file}:{line} — {finding}
+SUGGESTION:
+- [READABILITY-SUGGESTION] {file}:{line} — {finding}
 
 ### Security: {N} findings
 CRITICAL:
@@ -66,9 +106,18 @@ CRITICAL:
 HIGH:
 - {finding}
 
+### Review Summary
+| Gate | Findings | Critical | Blocking? |
+|------|----------|----------|-----------|
+| A: Correctness | {N} | {N} | {YES/NO} |
+| B: Ownership | {N} | {N} | {YES/NO} |
+| C: Readability | {N} | {N} | NO (advisory) |
+| Security | {N} | {N} | {YES/NO} |
+
 ### Verdict: PASS / FAIL
-{If any CRITICAL findings or test failures: FAIL with action items}
-{If only warnings/suggestions: PASS with recommendations}
+{FAIL if: any Gate A CRITICAL, any Gate B CRITICAL, any Security CRITICAL, or test failures}
+{PASS if: only Gate C findings, warnings, or suggestions remain}
+{Gate C findings are advisory — they do not block merge}
 ```
 
 ## VS Code Integration
@@ -95,10 +144,14 @@ Before declaring PASS, suggest the user verify changes visually:
 After code review, any TODO/FIXME/HACK tags found in new code appear in the Todo Tree sidebar. Report these as non-blocking warnings.
 
 ## Rules
-- ALWAYS run all three agents in parallel (not sequentially)
+- ALWAYS run all five agents in parallel (not sequentially) — 3 code review gates + security + tests
 - ALWAYS run tests — don't skip even if "just a small change"
-- CRITICAL findings = must fix before merge
-- WARNING findings = should fix, not blocking
+- Gate A (Correctness) CRITICAL = must fix before merge — these are bugs
+- Gate B (Ownership) CRITICAL = must fix before merge — these create maintenance debt
+- Gate C (Readability) findings are advisory — they NEVER block merge, but should be addressed
+- Security CRITICAL = must fix before merge
+- WARNING findings across all gates = should fix, not blocking
 - If verdict is PASS: "Ready for PR. Run /ship to create it."
-- If verdict is FAIL: list exactly what needs fixing
+- If verdict is FAIL: list exactly what needs fixing, organized by gate
 - Report any new TODO/FIXME tags as non-blocking warnings (visible in Todo Tree sidebar)
+- Each gate's agent MUST stay focused on its scope — a Correctness agent should not flag readability issues
