@@ -41,29 +41,32 @@ The following sections should be populated per-sprint or per-feature. They form 
 
 ### Current Goal
 
-> {One sentence describing what this sprint/feature achieves}
->
-> Example: "Enterprise Agent Platform Sprint 4: Add personal assistant commands and Manus agent patterns"
+> Enterprise Agent Platform Sprint 5: VS Code Agent Teams presets, Remote Control docs, worktree isolation, URI handler integration, Smart Hub web API spec.
 
 ### Key Constraints
 
 - Must build on existing architecture — extend, don't replace
 - Must not break existing functionality (Ghost Mode, Telegram, overnight.sh)
 - Solo developer — leverage AI agents for implementation
-- {Add project-specific constraints here}
+- All docs must reference existing patterns (catalog.json teams, verifier agent, Telegram dispatch)
+- Smart Hub API spec is design-only — no running server code yet
 
 ### Success Criteria
 
-- [ ] All new commands follow the existing SKILL.md / command pattern
-- [ ] All new agents follow agents/core/*.md pattern
-- [ ] AGENTS.md updated with new patterns and gotchas
-- [ ] No regressions in existing commands
-- {Add sprint-specific criteria here}
+- [ ] VS Code team presets created for review, feature, debug teams
+- [ ] Remote Control, worktree isolation, URI handler fully documented
+- [ ] Smart Hub API spec covers pipeline status, task queue, metrics endpoints
+- [ ] Verifier agent enhanced with team preset awareness
+- [ ] AGENTS.md updated with Sprint 5 patterns
+- [ ] catalog.json updated with new team presets
+- [ ] No regressions in existing commands or agents
 
 ### Non-Goals (Explicit)
 
-- {Things that are tempting but out of scope}
-- {Prevents scope creep during long autonomous runs}
+- Smart Hub application code (Tauri/React) — spec only
+- Running API server implementation
+- Modifying existing commands or agent behavior
+- Multi-machine or cloud deployment patterns
 
 ---
 

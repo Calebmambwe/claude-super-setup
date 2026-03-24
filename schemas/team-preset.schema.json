@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Team Preset",
+  "description": "Schema for VS Code agent team preset configurations",
+  "type": "object",
+  "required": ["name", "description", "model_tier", "agents", "workflow", "triggers", "vscode_integration"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "description": "Unique preset identifier, matches filename" },
+    "description": { "type": "string", "description": "What this team does and when to use it" },
+    "model_tier": {
+      "type": "string",
+      "enum": ["haiku", "sonnet", "opus", "custom"],
+      "description": "Default model tier for all agents in this team"
+    },
+    "agents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "role", "description", "tools"],
+        "properties": {
+          "name": { "type": "string", "description": "Agent name — must match an entry in catalog.json" },
+          "role": {
+            "type": "string",
+            "enum": ["lead", "specialist", "implementer", "quality", "gatekeeper", "diagnostician", "fixer", "investigator"],
+            "description": "Functional role within the team"
+          },
+          "description": { "type": "string", "description": "What this agent does in the context of this team" },
+          "model_tier_override": {
+            "type": "string",
+            "enum": ["haiku", "sonnet", "opus", "custom"],
+            "description": "Override the team-level model tier for this agent only"
+          },
+          "tools": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Tools this agent is allowed to use"
+          }
+        }
+      }
+    },
+    "workflow": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["step", "agent", "action"],
+        "properties": {
+          "step": { "type": "integer", "minimum": 1 },
+          "agent": { "type": "string", "description": "Agent name executing this step" },
+          "action": { "type": "string", "description": "What the agent does at this step" },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "Step numbers that must complete before this step starts"
+          },
+          "parallel_with": {
+            "type": "integer",
+            "description": "Step number this step can run concurrently with"
+          }
+        }
+      }
+    },
+    "triggers": {
+      "type": "object",
+      "properties": {
+        "manual": { "type": "string", "description": "Slash commands that invoke this team" },
+        "automatic": { "type": "string", "description": "Conditions that trigger this team automatically" }
+      }
+    },
+    "vscode_integration": {
+      "type": "object",
+      "required": ["task_label", "keybinding", "status_bar"],
+      "properties": {
+        "task_label": { "type": "string", "description": "Label shown in VS Code Tasks menu" },
+        "keybinding": { "type": "string", "description": "Keyboard shortcut to invoke this team" },
+        "status_bar": { "type": "boolean", "description": "Whether to show a status bar button for this team" }
+      }
+    }
+  }
+}

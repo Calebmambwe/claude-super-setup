@@ -47,6 +47,16 @@
     "security": {
       "description": "Security review and compliance team",
       "agents": ["security-auditor", "legal-compliance-checker", "rn-security", "code-reviewer"]
+    },
+    "feature": {
+      "description": "Full-stack feature development team with TDD workflow",
+      "agents": ["architect", "backend-dev", "frontend-dev", "tdd-test-writer"],
+      "preset": "agents/teams/feature.json"
+    },
+    "debug": {
+      "description": "Debugging and troubleshooting team for failures and environment issues",
+      "agents": ["env-doctor", "test-writer-fixer", "researcher"],
+      "preset": "agents/teams/debug.json"
     }
   },
   "agents": [

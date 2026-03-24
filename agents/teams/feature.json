@@ -1,0 +1,49 @@
+{
+  "$schema": "../../schemas/team-preset.schema.json",
+  "name": "feature",
+  "description": "Full-stack feature development team. Use for implementing new features spanning multiple files.",
+  "model_tier": "sonnet",
+  "agents": [
+    {
+      "name": "architect",
+      "role": "lead",
+      "description": "Plans architecture and coordinates multi-file changes",
+      "model_tier_override": "opus",
+      "tools": ["Read", "Grep", "Glob", "Write", "Edit"]
+    },
+    {
+      "name": "backend-dev",
+      "role": "implementer",
+      "description": "Implements backend services (routes, services, repositories)",
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep"]
+    },
+    {
+      "name": "frontend-dev",
+      "role": "implementer",
+      "description": "Builds frontend components with design system tokens",
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+    },
+    {
+      "name": "tdd-test-writer",
+      "role": "quality",
+      "description": "Writes failing tests first (RED phase), validates implementation (GREEN phase)",
+      "tools": ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
+    }
+  ],
+  "workflow": [
+    {"step": 1, "agent": "architect", "action": "Analyze requirements and create implementation plan"},
+    {"step": 2, "agent": "tdd-test-writer", "action": "Write failing tests for acceptance criteria"},
+    {"step": 3, "agent": "backend-dev", "action": "Implement backend changes per architecture plan", "depends_on": [1]},
+    {"step": 4, "agent": "frontend-dev", "action": "Implement frontend changes per architecture plan", "parallel_with": 3, "depends_on": [1]},
+    {"step": 5, "agent": "tdd-test-writer", "action": "Run tests and verify all pass", "depends_on": [3, 4]}
+  ],
+  "triggers": {
+    "manual": "/team-build, /build",
+    "automatic": "Feature task in tasks.json"
+  },
+  "vscode_integration": {
+    "task_label": "Claude: Feature Team",
+    "keybinding": "Cmd+Shift+F",
+    "status_bar": true
+  }
+}

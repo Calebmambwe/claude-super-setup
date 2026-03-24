@@ -89,6 +89,26 @@ Shared project context for Claude Code and Cursor agents.
 - `agents/core/verifier.md` — independent verifier (sonnet, no builder context). Accepts acceptance criteria + git diff, returns PASS/FAIL.
 - `HANDOVER.md` — cross-session state. Session protocol: HANDOVER → tasks.json → PROJECT_ANCHOR → work.
 
+## VS Code Agent Teams (Sprint 5)
+- `agents/teams/` contains VS Code team presets: `review.json`, `feature.json`, `debug.json`.
+- Each preset defines agent composition, workflow steps with dependencies, model tiers, and VS Code keybindings.
+- Presets reference agents from `catalog.json` — agent names must match exactly.
+- Schema at `schemas/team-preset.schema.json` validates preset structure.
+- Review team: code-reviewer + security-auditor + verifier (Cmd+Shift+R). Feature team: architect + backend-dev + frontend-dev + tdd-test-writer (Cmd+Shift+F). Debug team: env-doctor + test-writer-fixer + researcher (Cmd+Shift+D).
+- Verifier agent (`agents/core/verifier.md`) now validates team presets: checks agent existence, model tier validity, role assignment, workflow dependency cycles.
+
+## Remote Control Architecture (Sprint 5)
+- Full architecture documented at `docs/remote-control.md` — covers Telegram dispatch, cron, parallel sessions, Ghost Mode, notifications.
+- Worktree isolation documented at `docs/worktree-isolation.md` — covers when/how to use git worktrees for parallel agent execution.
+- URI handler documented at `docs/uri-handler.md` — `claude://` deep links for VS Code (commands, tasks, agents, pipeline).
+- URI security mirrors Telegram dispatch tiers: read-only URIs auto-execute, state-changing URIs require confirmation.
+
+## Smart Hub API (Sprint 5)
+- API spec at `docs/smart-hub/api-spec.md` — 10 endpoints covering pipeline status, tasks, metrics, agents, teams, commands, health.
+- Endpoints are Tauri IPC commands documented with REST conventions for clarity.
+- `POST /api/commands/:name/run` uses async event streaming for live output.
+- All endpoints source data from existing files (ghost-config.json, tasks.json, metrics.jsonl, catalog.json).
+
 ## Maintenance
 - Update this file whenever durable project conventions change.
 - Re-run `/cursor-setup` after major setup updates.

@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/team-preset.schema.json",
+  "name": "debug",
+  "description": "Debugging and troubleshooting team. Use for diagnosing failures, environment issues, and test regressions.",
+  "model_tier": "sonnet",
+  "agents": [
+    {
+      "name": "env-doctor",
+      "role": "diagnostician",
+      "description": "Audits environment health — hooks, MCP servers, settings, dependencies",
+      "tools": ["Read", "Bash", "Grep", "Glob", "Write", "Edit"]
+    },
+    {
+      "name": "test-writer-fixer",
+      "role": "fixer",
+      "description": "Runs tests, analyzes failures, fixes broken tests while maintaining integrity",
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+    },
+    {
+      "name": "researcher",
+      "role": "investigator",
+      "description": "Researches library docs and known issues via Context7",
+      "tools": ["Read", "Grep", "Glob", "Bash", "WebFetch", "WebSearch", "Write"]
+    }
+  ],
+  "workflow": [
+    {"step": 1, "agent": "env-doctor", "action": "Audit environment and identify configuration issues"},
+    {"step": 2, "agent": "researcher", "action": "Research error messages and known issues", "parallel_with": 1},
+    {"step": 3, "agent": "test-writer-fixer", "action": "Run failing tests, analyze root cause, apply fixes", "depends_on": [1, 2]},
+    {"step": 4, "agent": "test-writer-fixer", "action": "Verify all tests pass after fixes", "depends_on": [3]}
+  ],
+  "triggers": {
+    "manual": "/debug",
+    "automatic": "Test failure in pipeline, environment setup issues"
+  },
+  "vscode_integration": {
+    "task_label": "Claude: Debug Team",
+    "keybinding": "Cmd+Shift+D",
+    "status_bar": true
+  }
+}
