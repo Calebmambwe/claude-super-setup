@@ -65,6 +65,10 @@ Shared project context for Claude Code and Cursor agents.
 - `/voice-brief` structures raw voice transcriptions into feature briefs at `docs/{feature}/brief.md`.
 - Voice notes from Telegram arrive as OGG files — the transcription script handles the OGG→MP3→Whisper pipeline.
 
+## Security Notes
+- Voice transcriptions and `/prototype` `$ARGUMENTS` are user-supplied — Telegram allowlist (`access.json`) is the primary injection boundary. Keep it restrictive.
+- `transcribe-voice.sh` suppresses API error bodies by default to avoid leaking partial API keys in logs. Use `VERBOSE=1` for debugging.
+
 ## Maintenance
 - Update this file whenever durable project conventions change.
 - Re-run `/cursor-setup` after major setup updates.

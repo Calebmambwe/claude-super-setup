@@ -80,10 +80,12 @@ if command -v claude &>/dev/null; then
   else
     info "Adding Gemini MCP via claude CLI..."
     # Pass keys via environment (not -e flag) to avoid exposure in ps aux
-    GEMINI_API_KEY="$GEMINI_API_KEY" GEMINI_TOOL_PRESET="media" \
-      claude mcp add gemini -s user -- npx -y @rlabs-inc/gemini-mcp@0.1.2 2>/dev/null && \
-      log "Gemini MCP added to Claude Code" || \
+    if GEMINI_API_KEY="$GEMINI_API_KEY" GEMINI_TOOL_PRESET="media" \
+      claude mcp add gemini -s user -- npx -y @rlabs-inc/gemini-mcp@0.1.2 2>/dev/null; then
+      log "Gemini MCP added to Claude Code"
+    else
       warn "claude mcp add failed — may already exist. Check with: claude mcp list"
+    fi
   fi
 else
   warn "claude CLI not found. Add Gemini MCP manually to ~/.mcp.json:"
@@ -92,7 +94,7 @@ else
   "mcpServers": {
     "gemini": {
       "command": "npx",
-      "args": ["-y", "@rlabs-inc/gemini-mcp"],
+      "args": ["-y", "@rlabs-inc/gemini-mcp@0.1.2"],
       "env": {
         "GEMINI_API_KEY": "your-key-here",
         "GEMINI_TOOL_PRESET": "media"
@@ -118,19 +120,23 @@ if $WITH_FAL; then
         info "[DRY-RUN] Would run: claude mcp add fal-ai --transport http https://mcp.fal.ai/mcp"
       else
         info "Adding fal.ai MCP via claude CLI..."
-        FAL_KEY="$FAL_KEY" \
-          claude mcp add fal-ai --transport http "https://mcp.fal.ai/mcp" -s user 2>/dev/null && \
-          log "fal.ai MCP added to Claude Code" || \
+        warn "fal.ai HTTP MCP requires authentication via fal.ai dashboard, not env var."
+        warn "Adding MCP entry — configure auth at https://fal.ai/dashboard/keys"
+        if claude mcp add fal-ai --transport http "https://mcp.fal.ai/mcp" -s user 2>/dev/null; then
+          log "fal.ai MCP added to Claude Code (auth config required separately)"
+        else
           warn "fal.ai MCP add failed — may already exist."
+        fi
       fi
     fi
   fi
 fi
 
-# Pre-cache the package
+# Pre-cache the package (install only — do not execute entrypoint)
 if ! $DRY_RUN; then
   info "Pre-caching @rlabs-inc/gemini-mcp package..."
-  npx -y @rlabs-inc/gemini-mcp@0.1.2 --help >/dev/null 2>&1 || true
+  npm install --prefix /tmp/gemini-mcp-cache @rlabs-inc/gemini-mcp@0.1.2 >/dev/null 2>&1 || true
+  rm -rf /tmp/gemini-mcp-cache
   log "Package cached"
 fi
 

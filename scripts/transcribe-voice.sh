@@ -23,7 +23,12 @@ LANGUAGE="en"
 # Parse all args (flags can appear in any order)
 while [ $# -gt 0 ]; do
   case "$1" in
-    --language) LANGUAGE="${2:-en}"; shift 2 ;;
+    --language)
+      if [ $# -lt 2 ]; then
+        err "--language requires a value (e.g. --language fr)"
+        exit 1
+      fi
+      LANGUAGE="$2"; shift 2 ;;
     --*) err "Unknown flag: $1"; exit 1 ;;
     *)
       if [ -n "$INPUT_FILE" ]; then
@@ -79,6 +84,11 @@ if [ -z "${OPENAI_API_KEY:-}" ]; then
   fi
 fi
 
+if ! [[ "$OPENAI_API_KEY" =~ ^[A-Za-z0-9_-]{10,}$ ]]; then
+  err "OPENAI_API_KEY contains unexpected characters. Expected alphanumeric, hyphens, underscores."
+  exit 1
+fi
+
 if [ -z "${OPENAI_API_KEY:-}" ]; then
   err "OPENAI_API_KEY not found."
   echo "  Set it with: export OPENAI_API_KEY=your-key-here" >&2
@@ -111,7 +121,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 MP3_FILE="$TMP_DIR/${BASENAME_NO_EXT}.mp3"
 
 log "Converting to MP3..."
-ffmpeg -i "$INPUT_FILE" -codec:a libmp3lame -qscale:a 4 -y "$MP3_FILE" 2>/dev/null
+ffmpeg -i -- "$INPUT_FILE" -codec:a libmp3lame -qscale:a 4 -y "$MP3_FILE" 2>/dev/null
 
 if [ ! -f "$MP3_FILE" ]; then
   err "ffmpeg conversion failed"
@@ -127,7 +137,7 @@ RESPONSE=$(curl -s --fail-with-body --config "$CURL_CONFIG" -X POST "https://api
   -F "file=@$MP3_FILE" \
   -F "model=whisper-1" \
   -F "language=$LANGUAGE" \
-  -F "response_format=text" 2>&1) || { err "Whisper API request failed: $RESPONSE"; exit 1; }
+  -F "response_format=text" 2>&1) || { err "Whisper API request failed (HTTP error). Re-run with VERBOSE=1 for details."; [ "${VERBOSE:-0}" = "1" ] && echo "$RESPONSE" >&2; exit 1; }
 
 if [ -z "$RESPONSE" ]; then
   err "Whisper API returned empty response"
@@ -140,6 +150,7 @@ RESOLVED_FILE=$(cd "$(dirname "$INPUT_FILE")" && pwd)/$(basename "$INPUT_FILE")
 INPUT_DIR=$(dirname "$RESOLVED_FILE")
 INPUT_BASE=$(basename "${RESOLVED_FILE%.*}")
 TRANSCRIPT_FILE="$INPUT_DIR/${INPUT_BASE}.txt"
+umask 077
 echo "$RESPONSE" > "$TRANSCRIPT_FILE"
 log "Transcription saved to: $TRANSCRIPT_FILE"
 
