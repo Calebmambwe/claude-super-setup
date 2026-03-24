@@ -1,8 +1,8 @@
 ---
 paths:
-  - "**/*.yml"
-  - "**/*.yaml"
   - ".github/**"
+  - "**/ci/**"
+  - "**/.github/**"
 ---
 # CI/YAML Rules (Loaded for Workflow and Config Files)
 

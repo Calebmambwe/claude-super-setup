@@ -1,0 +1,41 @@
+# Cursor Automation: Ghost Run Dispatch
+# Import this template at cursor.com/automations
+#
+# Trigger: Linear issue assigned with "auto-build" label
+# Action: Clone repo, implement the issue, create PR
+
+name: "Ghost Run Dispatch"
+description: "Autonomous implementation triggered by Linear issue assignment"
+
+trigger:
+  type: linear
+  event: issue.assigned
+  filter:
+    label: "auto-build"
+
+instructions: |
+  You have been assigned a Linear issue to implement autonomously.
+
+  1. **Read the issue** — Extract requirements, acceptance criteria, and any linked docs
+  2. **Create branch** — `feature/{issue-id}-{short-description}` from main
+  3. **Plan** — Identify all files to create/modify. Check for existing patterns to reuse.
+  4. **Implement** — Follow the project's architecture rules:
+     - Route/Service/Repository layering
+     - Zod/Pydantic validation at boundaries
+     - Standard response envelope for APIs
+  5. **Test** — Write tests alongside implementation. Run full test suite.
+  6. **Verify** — Run lint, typecheck, and build. Fix any issues.
+  7. **Create PR** — Conventional commit messages. Link back to the Linear issue.
+
+  Rules:
+  - Never skip tests
+  - Never use `any` type in TypeScript
+  - Never hardcode secrets
+  - Follow the design system for UI changes
+
+mcps:
+  - github
+  - linear
+  - context7
+
+model: claude-opus-4-6

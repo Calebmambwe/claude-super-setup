@@ -1,0 +1,32 @@
+---
+description: "Production design system — tokens, animations, accessibility, 25+ component patterns. The design system is LAW."
+alwaysApply: false
+globs: ["**/*.tsx", "**/*.jsx", "**/*.css", "**/*.scss"]
+---
+
+## Golden Rule (Non-Negotiable)
+
+The design system is law. NEVER write custom styles in components. NEVER use direct color classes like `text-white` or `bg-black`. Every visual property traces back to a token. If a token doesn't exist for what you need, add it to the design system first, then use it.
+
+## Color Palette
+
+Use project-defined design tokens for all colors. Never hardcode hex values.
+
+- Primary, Secondary, Background, Surface, Text, Muted, Border, Accent, Error, Success, Warning
+- Always support Dark/Light mode via CSS variables or Tailwind dark: prefix
+
+## Spacing Scale
+
+Use the project spacing scale (4px base): 0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24
+
+## Typography
+
+Use project font tokens. Never set font-family directly in components.
+
+## Component Patterns
+
+- All interactive elements need focus-visible styles
+- All images need alt text
+- All forms need proper labels
+- Buttons: primary, secondary, ghost, destructive variants
+- Use semantic HTML elements

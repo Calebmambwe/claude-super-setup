@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "learning": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with", "mcp",
+        "python3",
+        "{{ .chezmoi.homeDir }}/.claude/mcp-servers/learning-server.py"
+      ]
+    },
+    "sandbox": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with", "mcp",
+        "--with", "pydantic",
+        "python3",
+        "{{ .chezmoi.homeDir }}/.claude/mcp-servers/sandbox-server.py"
+      ]
+    }
+  }
+}

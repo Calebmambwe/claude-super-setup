@@ -267,6 +267,48 @@ if should_install "config"; then
   # SDLC prompt templates
   mkdir -p "$CLAUDE_DIR/config/prompts" 2>/dev/null || true
   install_module "config/prompts" "$CLAUDE_DIR/config/prompts" "SDLC prompt templates"
+
+  # VS Code template
+  mkdir -p "$CLAUDE_DIR/config/vscode-template" 2>/dev/null || true
+  install_module "config/vscode-template" "$CLAUDE_DIR/config/vscode-template" "VS Code template"
+
+  # Cursor template
+  mkdir -p "$CLAUDE_DIR/config/cursor-template" 2>/dev/null || true
+  install_module "config/cursor-template" "$CLAUDE_DIR/config/cursor-template" "Cursor template"
+
+  # Cursor automation templates
+  mkdir -p "$CLAUDE_DIR/config/cursor-automations" 2>/dev/null || true
+  install_module "config/cursor-automations" "$CLAUDE_DIR/config/cursor-automations" "Cursor automation templates"
+fi
+
+# Step 5.5: Install MCP servers
+info "Installing MCP servers..."
+MCP_TARGET="$CLAUDE_DIR/mcp-servers"
+if [ -d "$REPO_DIR/mcp-servers" ]; then
+  mkdir -p "$MCP_TARGET" 2>/dev/null || true
+  for mcp_file in "$REPO_DIR/mcp-servers/"*.py; do
+    [ -f "$mcp_file" ] || continue
+    mcp_name=$(basename "$mcp_file")
+    install_file "mcp-servers/$mcp_name" "$MCP_TARGET/$mcp_name" "MCP: $mcp_name"
+  done
+  log "MCP servers installed to $MCP_TARGET"
+else
+  warn "No mcp-servers/ directory found in repo"
+fi
+
+# Step 5.6: Install systemd service files (Linux only)
+if [ -d "$REPO_DIR/config/systemd" ] && [ -d "/etc/systemd/system" ]; then
+  info "Installing systemd service files..."
+  if $DRY_RUN; then
+    for svc in "$REPO_DIR/config/systemd/"*.service; do
+      [ -f "$svc" ] || continue
+      dry "cp $svc /etc/systemd/system/$(basename "$svc")"
+    done
+  else
+    info "systemd units available at $REPO_DIR/config/systemd/"
+    info "To install: sudo cp config/systemd/*.service /etc/systemd/system/"
+    info "Then: sudo systemctl daemon-reload"
+  fi
 fi
 
 # Step 6: Set up user override files (if they don't exist)
@@ -286,6 +328,34 @@ else
   chmod +x "$CLAUDE_DIR/hooks/"*.sh 2>/dev/null || true
   chmod +x "$CLAUDE_DIR/statusline-command.sh" 2>/dev/null || true
   log "Made hooks executable"
+fi
+
+# Step 7.5: Sync Cursor IDE config (if Cursor is installed)
+if [ -d "/Applications/Cursor.app" ] || command -v cursor &>/dev/null; then
+  info "Cursor IDE detected — syncing MCP config..."
+  if $DRY_RUN; then
+    dry "Sync global MCP config to ~/.cursor/mcp.json"
+  else
+    if [ -f "$REPO_DIR/scripts/cursor-sync.sh" ]; then
+      bash "$REPO_DIR/scripts/cursor-sync.sh" global --quiet 2>/dev/null || warn "Cursor MCP sync failed (non-critical)"
+      log "Cursor MCP config synced"
+    fi
+  fi
+else
+  info "Cursor IDE not detected — skipping Cursor sync (run /cursor-setup later)"
+fi
+
+# Step 7.6: Make Cursor scripts executable
+if [ -f "$REPO_DIR/scripts/cursor-sync.sh" ]; then
+  if $DRY_RUN; then
+    dry "chmod +x cursor scripts"
+  else
+    chmod +x "$REPO_DIR/scripts/cursor-sync.sh" 2>/dev/null || true
+    chmod +x "$REPO_DIR/scripts/cursor-watch.sh" 2>/dev/null || true
+    chmod +x "$REPO_DIR/scripts/cursor-team-rules-export.sh" 2>/dev/null || true
+    chmod +x "$REPO_DIR/scripts/cursor-automations-provision.sh" 2>/dev/null || true
+    log "Made Cursor scripts executable"
+  fi
 fi
 
 # Step 8: Health check
@@ -319,6 +389,21 @@ if ! $DRY_RUN; then
       warn "settings.json is not valid JSON"
       HEALTH_ERRORS=$((HEALTH_ERRORS + 1))
     fi
+  fi
+
+  # Cursor integration health
+  if [ -d "/Applications/Cursor.app" ] || command -v cursor &>/dev/null; then
+    if [ -f "$HOME/.cursor/mcp.json" ]; then
+      log "Cursor MCP config present"
+    else
+      warn "Cursor detected but ~/.cursor/mcp.json missing — run /cursor-setup"
+    fi
+  fi
+
+  if command -v fswatch &>/dev/null; then
+    log "fswatch available (bidirectional sync supported)"
+  else
+    info "fswatch not found — bidirectional Cursor sync needs it: brew install fswatch"
   fi
 
   # Count files

@@ -1,0 +1,20 @@
+[Unit]
+Description=Claude Code Learning MCP Server
+Documentation=https://github.com/Calebmambwe/claude-super-setup
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=%h/.claude/mcp-servers
+ExecStart=/usr/local/bin/uv run --with mcp python3 %h/.claude/mcp-servers/learning-server.py
+Restart=on-failure
+RestartSec=10
+StartLimitIntervalSec=300
+StartLimitBurst=5
+EnvironmentFile=-%h/.claude/env
+Environment=HOME=%h
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

@@ -30,14 +30,16 @@ load_config() {
   BRANCH=$(jq -r '.branch' "$CONFIG_FILE")
   STARTED=$(jq -r '.started' "$CONFIG_FILE")
   SESSION_ID=$(jq -r '.session_id // ""' "$CONFIG_FILE")
+  TELEGRAM_ENABLED=$(jq -r '.telegram_enabled // "false"' "$CONFIG_FILE")
   LOG_FILE="$LOG_DIR/ghost-$(date +%Y%m%d-%H%M%S).log"
 }
 
 update_config_field() {
   local field="$1"
   local value="$2"
-  local tmp="${CONFIG_FILE}.tmp.$$"
-  jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$CONFIG_FILE" > "$tmp" && mv "$tmp" "$CONFIG_FILE"
+  local tmp
+  tmp=$(mktemp "${CONFIG_FILE}.tmp.XXXXXX")
+  jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$CONFIG_FILE" > "$tmp" && mv "$tmp" "$CONFIG_FILE" || rm -f "$tmp"
 }
 
 # ─── Dry-run mode ─────────────────────────────────────────────────────────────
@@ -97,17 +99,20 @@ load_config
 # Write PID file
 echo $$ > "$PID_FILE"
 
-# Start caffeinate to prevent macOS sleep
+# Start caffeinate to prevent macOS sleep (macOS only)
 TIMEOUT_SECS=$((MAX_HOURS * 3600))
-caffeinate -dims -t "$TIMEOUT_SECS" &
-CAFFEINATE_PID=$!
+CAFFEINATE_PID=""
+if command -v caffeinate &>/dev/null; then
+  caffeinate -dims -t "$TIMEOUT_SECS" &
+  CAFFEINATE_PID=$!
+fi
 
 # Calculate deadline
 DEADLINE=$(($(date +%s) + TIMEOUT_SECS))
 
 # Cleanup function
 cleanup() {
-  kill "$CAFFEINATE_PID" 2>/dev/null || true
+  [[ -n "$CAFFEINATE_PID" ]] && kill "$CAFFEINATE_PID" 2>/dev/null || true
   rm -f "$PID_FILE"
   rm -f "$STOP_FILE"
   update_config_field "status" "stopped"
@@ -152,15 +157,22 @@ check_git_state() {
 
 pipeline_is_done() {
   # Check if checkpoint file is gone (deleted on successful completion by auto-ship)
+  # BUT only consider it "done" if a PR URL exists — otherwise the pipeline never started
   local checkpoint="$PROJECT_DIR/.claude/pipeline-checkpoint.json"
   if [[ ! -f "$checkpoint" ]]; then
-    return 0
+    local pr_url
+    pr_url=$(jq -r '.pr_url // ""' "$CONFIG_FILE" 2>/dev/null || echo "")
+    if [[ -n "$pr_url" && "$pr_url" != "null" ]]; then
+      return 0  # checkpoint gone + PR exists = genuinely complete
+    fi
+    return 1  # checkpoint gone + no PR = never started
   fi
 
   # Check if checkpoint shows phase 4+ (ship complete)
   local phase
   phase=$(jq -r '.phase // 0' "$checkpoint" 2>/dev/null || echo "0")
-  if (( $(echo "$phase >= 4.5" | bc -l 2>/dev/null || echo "0") )); then
+  # Use integer comparison — phase 4 = ship, 5 = post-ship
+  if [[ "$phase" =~ ^[0-9]+$ ]] && (( phase >= 4 )); then
     return 0
   fi
 
@@ -211,30 +223,46 @@ while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
 
   cd "$PROJECT_DIR"
 
-  if [[ $ATTEMPT -eq 1 ]] && [[ -z "$SESSION_ID" || "$SESSION_ID" == "null" ]]; then
-    # First run: use /ghost-run
-    claude -p \
-      --dangerously-skip-permissions \
-      --max-budget-usd "$BUDGET" \
-      "/ghost-run $FEATURE" \
-      2>&1 | tee -a "$LOG_FILE" || true
-  else
-    # Restart: use --resume if we have a session ID, otherwise /auto-ship
-    if [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" ]]; then
-      claude -p \
-        --dangerously-skip-permissions \
-        --max-budget-usd "$BUDGET" \
-        --resume "$SESSION_ID" \
-        "/auto-ship" \
-        2>&1 | tee -a "$LOG_FILE" || true
-    else
-      claude -p \
-        --dangerously-skip-permissions \
-        --max-budget-usd "$BUDGET" \
-        "/auto-ship $FEATURE" \
-        2>&1 | tee -a "$LOG_FILE" || true
-    fi
+  # Conditionally add --channels for Telegram bidirectional communication
+  # WARNING: Only one bot poller per token allowed. If the persistent
+  # telegram listener (start-telegram-server.sh) is running, do NOT
+  # enable --channels here — stop the listener first.
+  CHANNELS_FLAG=""
+  if [[ "$TELEGRAM_ENABLED" == "true" ]]; then
+    CHANNELS_FLAG="--channels plugin:telegram@claude-plugins-official"
   fi
+
+  # IMPORTANT: Do NOT pipe stdout through tee — piping breaks TTY detection.
+  # Use >> redirect instead. Same constraint as start-telegram-server.sh.
+  # NOTE: --output-format text suppresses telemetry JSON in stdout.
+  # NOTE: CHANNELS_FLAG must be word-split (no quotes) when non-empty.
+
+  # Build the prompt and write to temp file to avoid shell quoting issues
+  # with special characters (em-dashes, parentheses, etc.)
+  PROMPT_FILE="$(mktemp)"
+  if [[ $ATTEMPT -eq 1 ]] && [[ -z "$SESSION_ID" || "$SESSION_ID" == "null" ]]; then
+    printf '%s' "/ghost-run ${FEATURE}" > "$PROMPT_FILE"
+  elif [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" ]]; then
+    printf '%s' "/auto-ship" > "$PROMPT_FILE"
+  else
+    printf '%s' "/auto-ship ${FEATURE}" > "$PROMPT_FILE"
+  fi
+
+  echo "[$(date)] Running claude -p with prompt from $PROMPT_FILE" >> "$LOG_FILE"
+  echo "[$(date)] Prompt: $(cat "$PROMPT_FILE")" >> "$LOG_FILE"
+
+  # Feed prompt via stdin from file — avoids all shell quoting issues
+  # Use array to prevent word-splitting issues with argument values
+  CLAUDE_ARGS=("--dangerously-skip-permissions" "--output-format" "text" "--max-budget-usd" "$BUDGET")
+  if [[ -n "$CHANNELS_FLAG" ]]; then
+    CLAUDE_ARGS+=("--channels" "plugin:telegram@claude-plugins-official")
+  fi
+  if [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" && $ATTEMPT -gt 1 ]]; then
+    CLAUDE_ARGS+=("--resume" "$SESSION_ID")
+  fi
+
+  claude -p "${CLAUDE_ARGS[@]}" < "$PROMPT_FILE" >> "$LOG_FILE" 2>&1 || true
+  rm -f "$PROMPT_FILE"
 
   END_TIME=$(date +%s)
   DURATION=$((END_TIME - START_TIME))

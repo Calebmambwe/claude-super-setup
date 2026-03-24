@@ -1,25 +1,12 @@
 ---
-paths:
-  - "**/auth/**"
-  - "**/middleware/**"
-  - "**/security/**"
-  - "**/jwt/**"
-  - "**/oauth/**"
-  - "**/crypto/**"
-  - "**/hash/**"
-  - "**/login*"
-  - "**/signup*"
-  - "**/password*"
-  - "**/token*"
-  - "**/session*"
-  - "**/auth.*"
-  - "**/authenticate.*"
-  - "**/authorization.*"
+description: "Security rules — no hardcoded secrets, parameterized queries, input validation, JWT handling"
+alwaysApply: true
 ---
-# Security Rules (Loaded for Auth/Middleware Files)
 
-- NEVER hardcode secrets, API keys, or credentials. Use environment variables via `process.env` or `os.environ`.
-- ALWAYS use parameterized queries. Example: `db.query('SELECT * FROM users WHERE id = $1', [id])`. NEVER interpolate.
+# Security Rules
+
+- NEVER hardcode secrets, API keys, or credentials. Use environment variables.
+- ALWAYS use parameterized queries. NEVER interpolate user input into SQL.
 - Validate and sanitize ALL user input before processing. Use Zod (TS) or Pydantic (Python).
 - Hash passwords with bcrypt (cost factor 12+) or argon2. NEVER store plaintext passwords.
 - JWT tokens: validate signature, check expiration, verify issuer. Validate in middleware BEFORE route handlers.

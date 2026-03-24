@@ -12,27 +12,42 @@ _do_extract() {
   # Find the latest transcript for this session
   TRANSCRIPT=""
 
-  # Try CLAUDE_SESSION_ID-based path first
+  # Strategy 1: Use CLAUDE_SESSION_ID if available
   if [ -n "${CLAUDE_SESSION_ID:-}" ]; then
-    CANDIDATE=$(find "$HOME/.claude/projects" -name "${CLAUDE_SESSION_ID}.jsonl" 2>/dev/null | head -1)
+    CANDIDATE=$(find "$HOME/.claude/projects" -name "${CLAUDE_SESSION_ID}.jsonl" -type f 2>/dev/null | head -1)
     if [ -f "$CANDIDATE" ]; then
       TRANSCRIPT="$CANDIDATE"
     fi
   fi
 
-  # Fall back: scope to the project-specific directory, exclude subagent files
+  # Strategy 2: Derive project dir from cwd using Claude's encoding (/ → -)
   if [ -z "$TRANSCRIPT" ]; then
-    # Derive the Claude project dir from cwd (same encoding Claude uses)
     PROJECT_KEY=$(echo "$PWD" | sed 's|/|-|g')
     PROJECT_DIR="$HOME/.claude/projects/${PROJECT_KEY}"
 
-    # Find only top-level session transcripts (maxdepth 1), not subagent files
-    TRANSCRIPT=$(find "$PROJECT_DIR" -maxdepth 1 -name "*.jsonl" 2>/dev/null \
+    if [ -d "$PROJECT_DIR" ]; then
+      # Find the most recently modified .jsonl file (top-level only, skip subagent dirs)
+      TRANSCRIPT=$(find "$PROJECT_DIR" -maxdepth 1 -name "*.jsonl" -type f 2>/dev/null \
+        | xargs ls -t 2>/dev/null | head -1)
+    fi
+  fi
+
+  # Strategy 3: Search ALL project dirs for the most recent transcript (last resort)
+  if [ -z "$TRANSCRIPT" ] || [ ! -f "$TRANSCRIPT" ]; then
+    TRANSCRIPT=$(find "$HOME/.claude/projects" -maxdepth 2 -name "*.jsonl" -type f \
+      -newer "$HOME/.claude/logs/auto-learn.log" 2>/dev/null \
       | xargs ls -t 2>/dev/null | head -1)
   fi
 
   if [ -z "$TRANSCRIPT" ] || [ ! -f "$TRANSCRIPT" ]; then
-    echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] auto-learn: no transcript found" >> "$LOG_FILE"
+    echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] auto-learn: no transcript found (pwd=$PWD, session_id=${CLAUDE_SESSION_ID:-unset})" >> "$LOG_FILE"
+    return 0
+  fi
+
+  # Skip tiny transcripts (< 1KB = likely empty/aborted sessions)
+  FILESIZE=$(wc -c < "$TRANSCRIPT" 2>/dev/null || echo 0)
+  if [ "$FILESIZE" -lt 1024 ]; then
+    echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] auto-learn: skipping tiny transcript ($FILESIZE bytes)" >> "$LOG_FILE"
     return 0
   fi
 

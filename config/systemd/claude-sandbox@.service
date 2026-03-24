@@ -1,0 +1,21 @@
+[Unit]
+Description=Claude Code Sandbox MCP Server
+Documentation=https://github.com/Calebmambwe/claude-super-setup
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=%h/.claude/mcp-servers
+ExecStart=/usr/local/bin/uv run --with mcp --with pydantic python3 %h/.claude/mcp-servers/sandbox-server.py
+Restart=on-failure
+RestartSec=10
+StartLimitIntervalSec=300
+StartLimitBurst=5
+EnvironmentFile=-%h/.claude/env
+Environment=HOME=%h
+MemoryMax=1G
+
+[Install]
+WantedBy=multi-user.target
