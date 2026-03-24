@@ -1,67 +1,148 @@
 {
   "version": 1,
-  "feature": "Enterprise Agent Platform Sprint 3: Enterprise dev process upgrades",
-  "created_at": "2026-03-24T22:45:00Z",
+  "feature": "Enterprise Agent Platform Sprint 4: Personal assistant + Manus patterns",
+  "created_at": "2026-03-24T23:15:00Z",
   "tasks": [
     {
       "id": 1,
-      "title": "Enhanced design doc templates (Alternatives Considered + Cross-Cutting Concerns)",
-      "description": "Add two new sections to commands/design-doc.md: 'Alternatives Considered' (options evaluated with trade-offs) and 'Cross-Cutting Concerns' (security, observability, testing, deployment, error handling).",
+      "title": "/morning-brief command — daily morning briefing",
+      "description": "Create commands/morning-brief.md: aggregates calendar events, overnight pipeline results, task status, open PRs, learning ledger into a structured daily briefing. Supports Telegram delivery and cron scheduling.",
       "status": "completed",
       "priority": "high",
       "risk": "low",
       "depends_on": [],
-      "files": ["commands/design-doc.md"]
+      "files": ["commands/morning-brief.md"],
+      "acceptance_criteria": [
+        "Command follows existing SKILL.md frontmatter pattern",
+        "Covers 6 data sources: calendar, overnight pipelines, tasks, PRs, learnings, priorities",
+        "Gracefully skips missing integrations with setup hints",
+        "Includes Telegram delivery section with 4096-char split",
+        "Includes recommended cron setup"
+      ]
     },
     {
       "id": 2,
-      "title": "SMURF test classification in /generate-tests",
-      "description": "Add SMURF (Smoke, Mutation, Unit, Regression, Functional) test classification taxonomy to commands/generate-tests.md. Each generated test gets a SMURF tag. Summary shows counts per category.",
+      "title": "/eod-summary command — end-of-day summary",
+      "description": "Create commands/eod-summary.md: captures today's commits, task completions, PRs, blockers, and tomorrow's plan. Supports Telegram delivery and weekday cron.",
       "status": "completed",
       "priority": "high",
       "risk": "low",
       "depends_on": [],
-      "files": ["commands/generate-tests.md"]
+      "files": ["commands/eod-summary.md"],
+      "acceptance_criteria": [
+        "Command follows existing SKILL.md frontmatter pattern",
+        "Pulls work done from git log (single source of truth)",
+        "Identifies blockers from tasks.json, ghost-config, and PRs",
+        "Generates actionable tomorrow plan",
+        "Includes metrics snapshot",
+        "Supports Telegram delivery and weekday-only cron"
+      ]
     },
     {
       "id": 3,
-      "title": "3-gate code review in /check",
-      "description": "Upgrade the code-reviewer agent in commands/check.md from a single pass to a 3-gate review: Gate A (Correctness), Gate B (Ownership/maintainability), Gate C (Readability). Each gate produces independent findings.",
+      "title": "/weekly-health command — cross-project health report",
+      "description": "Create commands/weekly-health.md: discovers active projects, reports per-project status, aggregate metrics with week-over-week trends, health indicators with thresholds, and actionable recommendations.",
       "status": "completed",
       "priority": "high",
       "risk": "low",
       "depends_on": [],
-      "files": ["commands/check.md"]
+      "files": ["commands/weekly-health.md"],
+      "acceptance_criteria": [
+        "Command follows existing SKILL.md frontmatter pattern",
+        "Auto-discovers active projects via git activity",
+        "Shows per-project task progress and PR status",
+        "Includes week-over-week trend comparison",
+        "Health indicators with green/yellow/red thresholds",
+        "Ends with actionable recommendations"
+      ]
     },
     {
       "id": 4,
-      "title": "Feature flag system (/flag command)",
-      "description": "Create commands/flag.md — a new skill for managing feature flags. Subcommands: create, enable, disable, list. Flags stored in a flags.json file. Integrates with code via a simple isEnabled() pattern.",
+      "title": "/pr-reminder command — PR nudge system",
+      "description": "Create commands/pr-reminder.md: scans open PRs, classifies by staleness (fresh/normal/stale/critical), generates actionable summary with merge-ready and review-requested prioritization.",
       "status": "completed",
       "priority": "high",
       "risk": "low",
       "depends_on": [],
-      "files": ["commands/flag.md"]
+      "files": ["commands/pr-reminder.md"],
+      "acceptance_criteria": [
+        "Command follows existing SKILL.md frontmatter pattern",
+        "Fetches both authored and review-requested PRs via gh CLI",
+        "Classifies PRs by age: fresh/normal/stale/critical",
+        "Leads with actions, not just data",
+        "Includes PR health metrics",
+        "Supports --all-repos, --notify, --threshold flags"
+      ]
     },
     {
       "id": 5,
-      "title": "Amazon PR/FAQ step in /brainstorm",
-      "description": "Add a PR/FAQ (Press Release / FAQ) step to commands/brainstorm.md after the brief is written. Generates a fake press release and anticipated FAQs to pressure-test the feature idea (Amazon's Working Backwards method).",
+      "title": "PROJECT_ANCHOR.md — attention anchoring system",
+      "description": "Create PROJECT_ANCHOR.md implementing Manus attention anchoring pattern: agents re-read this file every task iteration to prevent goal drift. Includes integration points for auto-build, auto-ship, ghost-run.",
       "status": "completed",
-      "priority": "medium",
+      "priority": "high",
       "risk": "low",
       "depends_on": [],
-      "files": ["commands/brainstorm.md"]
+      "files": ["PROJECT_ANCHOR.md"],
+      "acceptance_criteria": [
+        "Documents the attention anchoring pattern with Manus source attribution",
+        "Defines re-read frequency for each pipeline command",
+        "Includes template sections: Current Goal, Key Constraints, Success Criteria, Non-Goals",
+        "Rules section enforces read-only during builds",
+        "Integration table maps commands to re-read checkpoints"
+      ]
     },
     {
       "id": 6,
-      "title": "Enhanced /post-mortem with Google SRE template",
-      "description": "Upgrade commands/post-mortem.md to use the Google SRE post-mortem template: add Detection section, add Recurrence Assessment, add Support/Communication section, enhance Action Items with bug tracking integration.",
+      "title": "agents/core/verifier.md — independent verifier agent",
+      "description": "Create independent verifier agent following Manus 3-agent model. Accepts acceptance criteria + git diff, verifies independently without builder context. Checks criteria satisfaction, regressions, scope creep, structural patterns.",
+      "status": "completed",
+      "priority": "high",
+      "risk": "low",
+      "depends_on": [],
+      "files": ["agents/core/verifier.md", "agents/catalog.json"],
+      "acceptance_criteria": [
+        "Agent follows agents/core/*.md frontmatter pattern",
+        "Uses sonnet model tier (not opus — cost-efficient for verification)",
+        "Has NO access to builder context (intentional fresh perspective)",
+        "Verifies each acceptance criterion independently with PASS/PARTIAL/FAIL",
+        "Checks for regressions, scope creep, and structural violations",
+        "Output format includes programmatically parseable verdict line",
+        "Added to catalog.json in review and fullstack teams"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "HANDOVER.md — cross-session state preservation",
+      "description": "Create HANDOVER.md implementing Manus file-based context management. Preserves sprint state, active work, decisions, and context across Claude Code sessions. Defines update protocol for /reflect, /eod-summary, /auto-ship.",
+      "status": "completed",
+      "priority": "high",
+      "risk": "low",
+      "depends_on": [],
+      "files": ["HANDOVER.md"],
+      "acceptance_criteria": [
+        "Documents cross-session state pattern with Manus source attribution",
+        "Includes sections: Current Sprint, Active Work, Key Decisions, Context for Next Session, Pipeline State",
+        "Defines writer commands (/reflect, /eod-summary, /auto-ship, /ghost-run)",
+        "Defines reader protocol (HANDOVER → tasks.json → PROJECT_ANCHOR → work)",
+        "Integration table shows relationship with other state files",
+        "Rules enforce currency and minimum-viable-context principles"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Update AGENTS.md and catalog.json with Sprint 4 content",
+      "description": "Add Sprint 4 sections to AGENTS.md (Personal Assistant Commands, Manus Agent Patterns). Add verifier agent to catalog.json. Update tasks.json to Sprint 4.",
       "status": "completed",
       "priority": "medium",
       "risk": "low",
-      "depends_on": [],
-      "files": ["commands/post-mortem.md"]
+      "depends_on": [1, 2, 3, 4, 5, 6, 7],
+      "files": ["AGENTS.md", "agents/catalog.json", "tasks.json"],
+      "acceptance_criteria": [
+        "AGENTS.md has 'Personal Assistant Commands (Sprint 4)' section",
+        "AGENTS.md has 'Manus Agent Patterns (Sprint 4)' section",
+        "catalog.json includes verifier agent with correct teams",
+        "tasks.json updated to Sprint 4 feature with all 8 tasks completed"
+      ]
     }
   ]
 }
