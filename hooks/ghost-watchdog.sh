@@ -181,9 +181,9 @@ pipeline_is_done() {
 
 # ─── Restart loop ─────────────────────────────────────────────────────────────
 
-MAX_ATTEMPTS=5
+MAX_ATTEMPTS=3
 ATTEMPT=0
-BACKOFF=30
+BACKOFF=15
 
 while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
   ATTEMPT=$((ATTEMPT + 1))
