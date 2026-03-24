@@ -645,6 +645,11 @@ interface RunCommandRequest {
 }
 ```
 
+> **Input Validation (required):**
+> - `name` MUST be checked against a static command allowlist before execution.
+> - `args` MUST match `^[a-zA-Z0-9 _./-]{0,200}$` — reject anything else. Pass to `Command::arg()` as a discrete element, never interpolated into a shell string.
+> - `project_dir` MUST be canonicalized via `fs::canonicalize()` and checked against a set of permitted root directories before use as `cwd`.
+
 #### Response Schema
 
 ```typescript

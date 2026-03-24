@@ -153,7 +153,16 @@ Before spawning anything, the runner applies three guards:
 The runner uses a self-re-invocation pattern via a `--inner` flag:
 
 - **Outer call** (from listener session): spawns `screen -dmS <session_name>` and exits immediately.
-- **Inner call** (runs inside screen): registers the session, runs `claude -p --dangerously-skip-permissions "/<command> <args>"`, logs all output to `~/.claude/logs/dispatch-<session_name>.log`, updates session registry and queue on completion, then calls `notify_telegram`.
+- **Inner call** (runs inside screen): registers the session, runs `claude -p --dangerously-skip-permissions` with command and args passed as separate exec elements (never concatenated into a shell string), logs all output to `~/.claude/logs/dispatch-<session_name>.log`, updates session registry and queue on completion, then calls `notify_telegram`.
+
+> **Security:** Args MUST be validated against `^[a-zA-Z0-9 _./-]{0,200}$` at the dispatch layer before reaching the runner. The runner MUST pass args via exec array, never shell interpolation:
+> ```bash
+> # CORRECT — args as discrete exec elements:
+> exec claude -p --dangerously-skip-permissions "/$COMMAND" -- "$ARGS"
+>
+> # WRONG — shell injection risk:
+> # claude -p --dangerously-skip-permissions "/$COMMAND $ARGS"
+> ```
 
 The critical constraint: `claude -p` is used **without** `--channels`. The listener session retains the exclusive bot connection.
 
