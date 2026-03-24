@@ -83,6 +83,21 @@ Shared project context for Claude Code and Cursor agents.
 - Feature flag percentage rollout must hash `flagName + userId`, not `flagName` alone — flag-only hash produces all-or-nothing, not distributed rollout.
 - All `$ARGUMENTS`-accepting commands need prompt injection guards when reachable via Telegram dispatch.
 
+## Personal Assistant Commands (Sprint 4)
+- `/morning-brief` aggregates calendar, overnight pipeline results, tasks, open PRs, and learnings into a daily briefing. Designed for 7am cron delivery via Telegram.
+- `/eod-summary` captures today's commits, task completions, PRs, blockers, and tomorrow's plan. Designed for 6pm weekday cron.
+- `/weekly-health` produces cross-project health report with velocity trends, pipeline reliability, health indicators, and recommendations. Designed for Sunday evening cron.
+- `/pr-reminder` scans open PRs, classifies by staleness, and sends actionable nudges. Recommended as twice-daily cron (9am + 2pm weekdays).
+- All four commands gracefully skip missing integrations (Calendar MCP, etc.) with setup hints instead of failing.
+- Telegram delivery must respect 4096-char message limit — split long outputs into multiple messages.
+
+## Manus Agent Patterns (Sprint 4)
+- `PROJECT_ANCHOR.md` implements attention anchoring — agents re-read it every task iteration to prevent goal drift in long autonomous runs.
+- `agents/core/verifier.md` is an independent verifier agent (Manus 3-agent model: Planner → Executor → Verifier). It receives acceptance criteria + git diff and verifies independently.
+- `HANDOVER.md` preserves cross-session state — updated by `/reflect` and `/eod-summary`, read at session start.
+- New session protocol: Read HANDOVER.md → Read tasks.json → Read PROJECT_ANCHOR.md → Start work.
+- Verifier agent uses `sonnet` model tier and has NO access to builder context (intentional — fresh perspective catches blind spots).
+
 ## Maintenance
 - Update this file whenever durable project conventions change.
 - Re-run `/cursor-setup` after major setup updates.

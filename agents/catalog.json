@@ -804,6 +804,17 @@
       "capabilities": ["mobile-security", "owasp-mobile", "secure-storage", "cert-pinning", "biometric-auth"],
       "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
       "teams": ["mobile", "security"]
+    },
+    {
+      "name": "verifier",
+      "file": "agents/core/verifier.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Independent verification agent — reviews implementation against acceptance criteria using fresh context. Catches blind spots that self-review misses.",
+      "model_tier": "sonnet",
+      "capabilities": ["acceptance-verification", "regression-detection", "scope-creep-detection", "structural-review"],
+      "tools": ["Read", "Grep", "Glob", "Bash"],
+      "teams": ["review", "fullstack", "backend"]
     }
   ]
 }
