@@ -43,7 +43,7 @@ if [ -z "${GEMINI_API_KEY:-}" ]; then
   # Try loading from telegram .env
   TELEGRAM_ENV="$HOME/.claude/channels/telegram/.env"
   if [ -f "$TELEGRAM_ENV" ]; then
-    GEMINI_API_KEY=$(grep -s '^GEMINI_API_KEY=' "$TELEGRAM_ENV" | sed 's/^GEMINI_API_KEY=//' || true)
+    GEMINI_API_KEY=$(grep -s '^GEMINI_API_KEY=' "$TELEGRAM_ENV" | sed 's/^GEMINI_API_KEY=//' | sed 's/[[:space:]]*#.*//' | sed "s/^[\"']\(.*\)[\"']$/\1/" | tr -d '\r' || true)
   fi
 fi
 
@@ -73,7 +73,7 @@ if command -v claude &>/dev/null; then
     info "[DRY-RUN] Would run: claude mcp add gemini -s user -- env GEMINI_API_KEY=*** npx -y @rlabs-inc/gemini-mcp"
   else
     info "Adding Gemini MCP via claude CLI..."
-    claude mcp add gemini -s user -- env "GEMINI_API_KEY=$GEMINI_API_KEY" npx -y @rlabs-inc/gemini-mcp 2>/dev/null && \
+    GEMINI_API_KEY="$GEMINI_API_KEY" claude mcp add gemini -s user -- npx -y @rlabs-inc/gemini-mcp 2>/dev/null && \
       log "Gemini MCP added to Claude Code" || \
       warn "claude mcp add failed — may already exist. Check with: claude mcp list"
   fi
@@ -107,7 +107,7 @@ if $WITH_FAL; then
         info "[DRY-RUN] Would run: claude mcp add fal-ai --transport http https://mcp.fal.ai/mcp"
       else
         info "Adding fal.ai MCP via claude CLI..."
-        claude mcp add fal-ai --transport http "https://mcp.fal.ai/mcp" --header "Authorization: Bearer $FAL_KEY" -s user 2>/dev/null && \
+        FAL_KEY="$FAL_KEY" claude mcp add fal-ai --transport http "https://mcp.fal.ai/mcp" -s user 2>/dev/null && \
           log "fal.ai MCP added to Claude Code" || \
           warn "fal.ai MCP add failed — may already exist."
       fi

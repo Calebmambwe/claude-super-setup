@@ -57,7 +57,7 @@ if [ -z "${OPENAI_API_KEY:-}" ]; then
   # Try loading from telegram .env
   TELEGRAM_ENV="$HOME/.claude/channels/telegram/.env"
   if [ -f "$TELEGRAM_ENV" ]; then
-    OPENAI_API_KEY=$(grep -s '^OPENAI_API_KEY=' "$TELEGRAM_ENV" | sed 's/^OPENAI_API_KEY=//' || true)
+    OPENAI_API_KEY=$(grep -s '^OPENAI_API_KEY=' "$TELEGRAM_ENV" | sed 's/^OPENAI_API_KEY=//' | sed 's/[[:space:]]*#.*//' | sed "s/^[\"']\(.*\)[\"']$/\1/" | tr -d '\r' || true)
   fi
 fi
 
@@ -73,6 +73,7 @@ fi
 BASENAME=$(basename "$INPUT_FILE")
 BASENAME_NO_EXT="${BASENAME%.*}"
 TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 MP3_FILE="$TMP_DIR/${BASENAME_NO_EXT}.mp3"
 
 log "Converting to MP3..."
@@ -80,35 +81,27 @@ ffmpeg -i "$INPUT_FILE" -codec:a libmp3lame -qscale:a 4 -y "$MP3_FILE" 2>/dev/nu
 
 if [ ! -f "$MP3_FILE" ]; then
   err "ffmpeg conversion failed"
-  rm -rf "$TMP_DIR"
   exit 1
 fi
 
 # Call Whisper API
 log "Transcribing via Whisper API..."
-RESPONSE=$(curl -s -X POST "https://api.openai.com/v1/audio/transcriptions" \
+RESPONSE=$(curl -s --fail -X POST "https://api.openai.com/v1/audio/transcriptions" \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -F "file=@$MP3_FILE" \
   -F "model=whisper-1" \
   -F "language=$LANGUAGE" \
-  -F "response_format=text")
-
-# Clean up temp file
-rm -rf "$TMP_DIR"
+  -F "response_format=text") || { err "Whisper API request failed"; exit 1; }
 
 if [ -z "$RESPONSE" ]; then
   err "Whisper API returned empty response"
   exit 1
 fi
 
-# Check for API error (JSON error responses start with {)
-if echo "$RESPONSE" | grep -q '"error"'; then
-  err "Whisper API error: $RESPONSE"
-  exit 1
-fi
-
-# Save transcription alongside the original file
-TRANSCRIPT_FILE="${INPUT_FILE%.*}.txt"
+# Save transcription alongside the original file (restrict to same directory)
+INPUT_DIR=$(dirname "$(realpath "$INPUT_FILE")")
+INPUT_BASE=$(basename "${INPUT_FILE%.*}")
+TRANSCRIPT_FILE="$INPUT_DIR/${INPUT_BASE}.txt"
 echo "$RESPONSE" > "$TRANSCRIPT_FILE"
 log "Transcription saved to: $TRANSCRIPT_FILE"
 

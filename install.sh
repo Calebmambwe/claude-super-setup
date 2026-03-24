@@ -297,9 +297,9 @@ else
 fi
 
 # Step 5.55: Install media scripts (Gemini MCP, voice transcription)
+[ -f "$REPO_DIR/scripts/setup-gemini-mcp.sh" ] && chmod +x "$REPO_DIR/scripts/setup-gemini-mcp.sh"
+[ -f "$REPO_DIR/scripts/transcribe-voice.sh" ] && chmod +x "$REPO_DIR/scripts/transcribe-voice.sh"
 if [ -f "$REPO_DIR/scripts/setup-gemini-mcp.sh" ]; then
-  chmod +x "$REPO_DIR/scripts/setup-gemini-mcp.sh" 2>/dev/null || true
-  chmod +x "$REPO_DIR/scripts/transcribe-voice.sh" 2>/dev/null || true
   log "Media scripts available (run: bash scripts/setup-gemini-mcp.sh)"
 fi
 
