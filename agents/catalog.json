@@ -22,7 +22,8 @@
   "teams": {
     "review": {
       "description": "Code quality, security, and documentation review pipeline",
-      "agents": ["code-reviewer", "security-auditor", "doc-verifier", "tdd-test-writer", "verifier"]
+      "agents": ["code-reviewer", "security-auditor", "doc-verifier", "tdd-test-writer", "verifier"],
+      "preset": "agents/teams/review.json"
     },
     "frontend": {
       "description": "Frontend and UI development team",

@@ -88,7 +88,7 @@ interface PipelineStatusResponse {
 
 #### Source Files
 
-- `~/.claude/ghost-config.json` — status, feature, started_at, pr_url
+- `~/.claude/ghost-config.json` — status, feature, started, pr_url
 - `tasks.json` in project directory — progress counts, current in-progress task
 
 #### Example Response
@@ -736,7 +736,7 @@ interface TeamPreset {
   description: string;
   agents: TeamAgentRef[];
   workflow_steps: string[];       // Ordered list of workflow step labels
-  model_tier: 'haiku' | 'sonnet' | 'opus'; // Default tier for the team
+  model_tier: 'haiku' | 'sonnet' | 'opus' | 'custom'; // Default tier for the team
   file_path: string;              // Absolute path to the source .json file
 }
 
@@ -757,16 +757,15 @@ interface TeamAgentRef {
   "teams": [
     {
       "name": "review",
-      "description": "Code quality, security, and documentation review pipeline",
+      "description": "Code quality, security, and verification review pipeline. Use before merging any PR.",
       "agents": [
-        { "name": "code-reviewer",   "role": "Primary code quality reviewer" },
-        { "name": "security-auditor","role": "Security vulnerability scanner" },
-        { "name": "doc-verifier",    "role": "Documentation accuracy checker" },
-        { "name": "tdd-test-writer", "role": "Test coverage verifier" }
+        { "name": "code-reviewer",   "role": "lead" },
+        { "name": "security-auditor","role": "specialist" },
+        { "name": "verifier",        "role": "gatekeeper" }
       ],
-      "workflow_steps": ["read-diff", "review-code", "audit-security", "verify-docs", "write-summary"],
-      "model_tier": "sonnet",
-      "file_path": "/Users/calebmambwe/.claude-super-setup/agents/teams/review.json"
+      "workflow_steps": ["review-code", "audit-security", "verify-acceptance-criteria"],
+      "model_tier": "opus",
+      "file_path": "<project>/agents/teams/review.json"
     },
     {
       "name": "feature",
