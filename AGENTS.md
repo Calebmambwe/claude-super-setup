@@ -75,6 +75,13 @@ Shared project context for Claude Code and Cursor agents.
 ## Security Notes
 - Voice transcriptions and `/prototype` `$ARGUMENTS` are user-supplied — Telegram allowlist (`access.json`) is the primary injection boundary. Keep it restrictive.
 - `transcribe-voice.sh` suppresses API error bodies by default to avoid leaking partial API keys in logs. Use `VERBOSE=1` for debugging.
+- `/flag` should be `CONFIRM` tier in Telegram dispatch — it writes to filesystem. Validate flag names against `^[a-z][a-z0-9-]{1,49}$`; treat `--description` as data, never interpolate into shell commands.
+
+## Sprint 3 QA Gotchas
+- Multi-gate commands (like `/check` with 5 agents) must keep agent counts consistent between headings, instructions, and rules sections — contradictions cause silent agent omission.
+- Nested markdown code fences in templates (e.g., `` ```markdown `` inside `` ```markdown ``) easily produce duplicate closing fences that break parsing.
+- Feature flag percentage rollout must hash `flagName + userId`, not `flagName` alone — flag-only hash produces all-or-nothing, not distributed rollout.
+- All `$ARGUMENTS`-accepting commands need prompt injection guards when reachable via Telegram dispatch.
 
 ## Maintenance
 - Update this file whenever durable project conventions change.
