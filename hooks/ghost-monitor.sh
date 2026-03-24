@@ -23,7 +23,7 @@ TELEGRAM_ENV="$HOME/.claude/channels/telegram/.env"
 # Read Telegram credentials
 TELEGRAM_BOT_TOKEN=""
 if [[ -f "$TELEGRAM_ENV" ]]; then
-  TELEGRAM_BOT_TOKEN=$(grep 'TELEGRAM_BOT_TOKEN=' "$TELEGRAM_ENV" 2>/dev/null | sed 's/^TELEGRAM_BOT_TOKEN=//' || echo "")
+  TELEGRAM_BOT_TOKEN=$(grep -m1 '^TELEGRAM_BOT_TOKEN=' "$TELEGRAM_ENV" 2>/dev/null | sed 's/^TELEGRAM_BOT_TOKEN=//; s/[[:space:]]*#.*//; s/[[:space:]]*$//' || echo "")
 fi
 
 CHAT_ID=""

@@ -20,6 +20,13 @@ StartLimitBurst=5
 # Use systemctl edit claude-telegram@$USER to add secrets
 EnvironmentFile=-%h/.claude/env
 Environment=HOME=%h
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.claude %h/.claude-super-setup %h/claude_super_setup
+CapabilityBoundingSet=
 # Resource limits
 LimitNOFILE=65536
 MemoryMax=2G

@@ -33,9 +33,9 @@ dry()  { echo -e "${BLUE}[DRY-RUN]${NC} Would: $1"; }
 
 run_cmd() {
   if $DRY_RUN; then
-    dry "$1"
+    dry "$*"
   else
-    bash -c "$1"
+    eval "$@"
   fi
 }
 

@@ -18,6 +18,20 @@ PROJECT_DIR="${3:?Missing project_dir}"
 SESSION_NAME="${4:?Missing session_name}"
 CHAT_ID="${5:-}"
 
+# Security: validate SESSION_NAME — alphanumeric, hyphens, underscores only
+if [[ ! "$SESSION_NAME" =~ ^[a-zA-Z0-9_-]{1,64}$ ]]; then
+  echo "BLOCKED: SESSION_NAME contains illegal characters: $SESSION_NAME" >&2
+  exit 1
+fi
+
+# Security: validate PROJECT_DIR — must be a real path under $HOME
+REAL_PROJECT_DIR=$(realpath -e "$PROJECT_DIR" 2>/dev/null) || { echo "BLOCKED: invalid project dir: $PROJECT_DIR" >&2; exit 1; }
+if [[ "$REAL_PROJECT_DIR" != "$HOME"* ]]; then
+  echo "BLOCKED: project dir outside \$HOME: $REAL_PROJECT_DIR" >&2
+  exit 1
+fi
+PROJECT_DIR="$REAL_PROJECT_DIR"
+
 # Security: validate command against allowlist to prevent arbitrary execution
 ALLOWED_COMMANDS="ghost auto-ship auto-build auto-build-all auto-dev auto-plan check ship reflect pipeline-status ghost-status plan build dev spec code-review security-check generate-tests next-task"
 if ! echo "$ALLOWED_COMMANDS" | tr ' ' '\n' | grep -qx "$COMMAND"; then
@@ -47,7 +61,8 @@ register_session() {
   local now
   now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-  local tmp="${SESSION_FILE}.tmp.$$"
+  local tmp
+  tmp=$(mktemp "${SESSION_FILE}.tmp.XXXXXX")
   jq --arg name "$SESSION_NAME" \
      --arg screen "$SESSION_NAME" \
      --arg cmd "$COMMAND" \
@@ -67,7 +82,7 @@ register_session() {
        completed_at: null,
        exit_code: null,
        log_file: $log
-     }]' "$SESSION_FILE" > "$tmp" && mv "$tmp" "$SESSION_FILE"
+     }]' "$SESSION_FILE" > "$tmp" && mv "$tmp" "$SESSION_FILE" || rm -f "$tmp"
 }
 
 # ─── Mark session complete ────────────────────────────────────────────────────
@@ -77,14 +92,15 @@ complete_session() {
   local now
   now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-  local tmp="${SESSION_FILE}.tmp.$$"
+  local tmp
+  tmp=$(mktemp "${SESSION_FILE}.tmp.XXXXXX")
   jq --arg name "$SESSION_NAME" \
      --arg completed "$now" \
      --argjson code "$exit_code" \
      '(.sessions[] | select(.session_name == $name)) |= . + {
        completed_at: $completed,
        exit_code: $code
-     }' "$SESSION_FILE" > "$tmp" && mv "$tmp" "$SESSION_FILE"
+     }' "$SESSION_FILE" > "$tmp" && mv "$tmp" "$SESSION_FILE" || rm -f "$tmp"
 }
 
 # ─── Update queue status ─────────────────────────────────────────────────────
@@ -92,7 +108,8 @@ complete_session() {
 update_queue_status() {
   local status="$1"
   if [[ -f "$QUEUE_FILE" ]]; then
-    local tmp="${QUEUE_FILE}.tmp.$$"
+    local tmp
+    tmp=$(mktemp "${QUEUE_FILE}.tmp.XXXXXX")
     local now
     now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     jq --arg name "$SESSION_NAME" \
@@ -101,7 +118,7 @@ update_queue_status() {
        '(.queue[] | select(.screen_name == $name)) |= . + {
          status: $status,
          finished_at: (if $status == "completed" or $status == "failed" then $now else .finished_at end)
-       }' "$QUEUE_FILE" > "$tmp" && mv "$tmp" "$QUEUE_FILE" 2>/dev/null || true
+       }' "$QUEUE_FILE" > "$tmp" && mv "$tmp" "$QUEUE_FILE" 2>/dev/null || { rm -f "$tmp"; true; }
   fi
 }
 
@@ -113,7 +130,7 @@ notify_telegram() {
   local telegram_token=""
 
   if [[ -f "$telegram_env" ]]; then
-    telegram_token=$(grep 'TELEGRAM_BOT_TOKEN=' "$telegram_env" 2>/dev/null | sed 's/^TELEGRAM_BOT_TOKEN=//' || echo "")
+    telegram_token=$(grep -m1 '^TELEGRAM_BOT_TOKEN=' "$telegram_env" 2>/dev/null | sed 's/^TELEGRAM_BOT_TOKEN=//; s/[[:space:]]*#.*//; s/[[:space:]]*$//' || echo "")
   fi
 
   if [[ -z "$telegram_token" ]] || [[ -z "$CHAT_ID" ]]; then
@@ -141,7 +158,7 @@ notify_telegram() {
   curl -s -o /dev/null -X POST \
     "https://api.telegram.org/bot${telegram_token}/sendMessage" \
     --data-urlencode "chat_id=${CHAT_ID}" \
-    --data-urlencode "text=$(printf '%b' "$tg_text")" \
+    --data-urlencode "text=$(printf '%s' "$tg_text")" \
     --data-urlencode "parse_mode=Markdown" \
     --data-urlencode "disable_web_page_preview=true" \
     2>/dev/null || true

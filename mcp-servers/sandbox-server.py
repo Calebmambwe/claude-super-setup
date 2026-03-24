@@ -148,6 +148,11 @@ class SandboxClient:
         if not self._container_id:
             await self.start()
 
+        # Validate working_dir to prevent path traversal
+        allowed_prefixes = ("/workspace", "/home/ubuntu", "/tmp")
+        if not any(working_dir.startswith(p) for p in allowed_prefixes):
+            raise ValueError(f"working_dir {working_dir!r} is outside allowed paths: {allowed_prefixes}")
+
         proc = await asyncio.create_subprocess_exec(
             "docker", "exec", "--workdir", working_dir, self._container_id,
             "bash", "-c", command,
@@ -637,8 +642,9 @@ async def sandbox_deploy(
     await sandbox.exec(f"pkill -f 'python3 -m http.server {deploy_port}' || true")
 
     # Start HTTP server in background
+    safe_dir = shlex.quote(directory)
     await sandbox.exec(
-        f"cd '{directory}' && nohup python3 -m http.server {deploy_port} > /dev/null 2>&1 &"
+        f"cd {safe_dir} && nohup python3 -m http.server {deploy_port} > /dev/null 2>&1 &"
     )
 
     url = f"http://localhost:{deploy_port}"

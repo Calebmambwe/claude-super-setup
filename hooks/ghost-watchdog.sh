@@ -37,8 +37,9 @@ load_config() {
 update_config_field() {
   local field="$1"
   local value="$2"
-  local tmp="${CONFIG_FILE}.tmp.$$"
-  jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$CONFIG_FILE" > "$tmp" && mv "$tmp" "$CONFIG_FILE"
+  local tmp
+  tmp=$(mktemp "${CONFIG_FILE}.tmp.XXXXXX")
+  jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$CONFIG_FILE" > "$tmp" && mv "$tmp" "$CONFIG_FILE" || rm -f "$tmp"
 }
 
 # ─── Dry-run mode ─────────────────────────────────────────────────────────────

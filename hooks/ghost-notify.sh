@@ -24,7 +24,7 @@ fi
 TELEGRAM_BOT_TOKEN=""
 TELEGRAM_ENV="$HOME/.claude/channels/telegram/.env"
 if [[ -f "$TELEGRAM_ENV" ]]; then
-  TELEGRAM_BOT_TOKEN=$(grep 'TELEGRAM_BOT_TOKEN=' "$TELEGRAM_ENV" 2>/dev/null | sed 's/^TELEGRAM_BOT_TOKEN=//' || echo "")
+  TELEGRAM_BOT_TOKEN=$(grep -m1 '^TELEGRAM_BOT_TOKEN=' "$TELEGRAM_ENV" 2>/dev/null | sed 's/^TELEGRAM_BOT_TOKEN=//; s/[[:space:]]*#.*//; s/[[:space:]]*$//' || echo "")
 fi
 
 # Auto-detect Telegram chat ID from access.json if not in ghost config
@@ -73,7 +73,10 @@ case "$LEVEL" in
 esac
 
 # Channel 1: macOS notification (local, fails silently if not on macOS)
-osascript -e "display notification \"$MESSAGE\" with title \"$TITLE\" sound name \"$SOUND\"" 2>/dev/null || true
+# Escape double quotes to prevent AppleScript injection
+SAFE_MSG="${MESSAGE//\"/\\\"}"
+SAFE_TITLE="${TITLE//\"/\\\"}"
+osascript -e "display notification \"$SAFE_MSG\" with title \"$SAFE_TITLE\" sound name \"$SOUND\"" 2>/dev/null || true
 
 # Channel 2: ntfy.sh push notification (remote, fails silently if no URL)
 if [[ -n "$NOTIFY_URL" ]]; then
