@@ -74,10 +74,10 @@ send_update() {
   # Count tasks if tasks.json exists
   local task_info=""
   if [[ -n "$project_dir" ]] && [[ -f "$project_dir/tasks.json" ]]; then
-    local total done
+    local total completed_count
     total=$(jq '.tasks | length' "$project_dir/tasks.json" 2>/dev/null || echo "0")
-    done=$(jq '[.tasks[] | select(.status == "completed")] | length' "$project_dir/tasks.json" 2>/dev/null || echo "0")
-    task_info="\nTasks: ${done}/${total} completed"
+    completed_count=$(jq '[.tasks[] | select(.status == "completed")] | length' "$project_dir/tasks.json" 2>/dev/null || echo "0")
+    task_info="\nTasks: ${completed_count}/${total} completed"
   fi
 
   # Map status to emoji
