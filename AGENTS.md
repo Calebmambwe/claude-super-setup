@@ -42,7 +42,6 @@ Shared project context for Claude Code and Cursor agents.
 ## Gotchas
 - Telegram typing indicator (`sendChatAction`) expires after ~5s — must re-fire on interval for long tasks.
 - If Claude Code exits uncleanly, the old Telegram bot process lingers as a zombie holding the poll slot — causes 409 Conflict for new sessions. Always `pkill -f "bun.*telegram.*server.ts"` before starting.
-- `grep -oP` (Perl regex) is NOT available on macOS — use `grep + sed` instead in shell scripts.
 - `caffeinate -s` only prevents sleep on AC power, not battery. Wi-Fi power management is separate.
 - Bash variable named `done` conflicts with `done` keyword — use `completed_count` or similar instead (SC1010).
 - systemd template units MUST use `@.service` suffix for `%i`/`%h` specifiers to expand correctly. Without `@`, `User=%i` is literal.

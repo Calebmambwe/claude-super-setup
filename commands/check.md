@@ -16,9 +16,9 @@ This is the ONE command you run before merging. It replaces `/code-review`, `/se
 - If no branch: `git diff --staged` for staged changes, or `git diff` for unstaged
 - If nothing changed: "No changes to review. Commit or stage changes first."
 
-### Step 2: Run Parallel Review Agents (4 agents, 3 code review gates)
+### Step 2: Run Parallel Review Agents (5 agents, 3 code review gates)
 
-Launch ALL four agents in parallel using the Agent tool:
+Launch ALL five agents in parallel using the Agent tool:
 
 **Agent 1: Code Review — Gate A: Correctness (code-reviewer agent, Opus)**
 Focus ONLY on whether the code is correct:

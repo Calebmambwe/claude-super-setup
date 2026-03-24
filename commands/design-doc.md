@@ -109,7 +109,6 @@ Approach: **Precise, implementation-focused, diagram-driven.**
 - {Option C}: {Why not — e.g., "vendor lock-in, no self-host fallback"}
 **Revisit if:** {Condition that would reopen this decision}
 ```
-```
 
 **Store as:** `{{introduction}}`
 

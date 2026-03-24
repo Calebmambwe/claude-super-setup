@@ -29,6 +29,9 @@ Parse `$ARGUMENTS` to determine the subcommand:
 | `remove` | `/flag remove <name>` | Remove a flag and find all code references |
 | `status` | `/flag status <name>` | Show flag details and all code references |
 
+If `$ARGUMENTS` does not match any subcommand above, respond:
+"Unknown subcommand: `{argument}`. Valid subcommands: create, enable, disable, list, remove, status."
+
 ---
 
 ## Step 1: Load or Initialize Flag Store
@@ -91,12 +94,12 @@ cat flags.json 2>/dev/null || echo '{"flags":{}}'
 // utils/feature-flags.ts
 import flags from '../flags.json';
 
-export function isEnabled(flagName: string): boolean {
+export function isEnabled(flagName: string, userId?: string): boolean {
   const flag = flags.flags[flagName];
   if (!flag || !flag.enabled) return false;
   if (flag.percentage < 100) {
-    // Deterministic: hash the flag name for consistent behavior
-    const hash = flagName.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    // Deterministic per flag+user: hash both for stable distributed rollout
+    const hash = `${flagName}:${userId}`.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
     return (hash % 100) < flag.percentage;
   }
   return true;
@@ -111,13 +114,14 @@ from pathlib import Path
 
 _flags = json.loads((Path(__file__).parent.parent / "flags.json").read_text())
 
-def is_enabled(flag_name: str) -> bool:
+def is_enabled(flag_name: str, user_id: str = "") -> bool:
     flag = _flags.get("flags", {}).get(flag_name)
     if not flag or not flag.get("enabled"):
         return False
     pct = flag.get("percentage", 100)
     if pct < 100:
-        hash_val = sum(ord(c) for c in flag_name)
+        # Deterministic per flag+user: hash both for stable distributed rollout
+        hash_val = sum(ord(c) for c in f"{flag_name}:{user_id}")
         return (hash_val % 100) < pct
     return True
 ```
@@ -255,7 +259,7 @@ Stale flags (past expiry):
 - ALWAYS show code references when enabling, disabling, or removing a flag
 - ALWAYS warn about expired flags in `/flag list`
 - The `flags.json` file MUST be committed to version control (it's configuration, not secrets)
-- Percentage rollout is deterministic per flag name — not random per request
+- Percentage rollout is deterministic per flag+user combination — stable across requests, distributed across users
 - When creating the first flag, offer to scaffold the feature flag utility file
 - NEVER store user-specific flag overrides in `flags.json` — that's a runtime concern
 - The `/flag remove` command is a two-step process: remove from JSON, then clean up code references manually
