@@ -227,37 +227,33 @@ while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
     CHANNELS_FLAG="--channels plugin:telegram@claude-plugins-official"
   fi
 
-  # IMPORTANT: Do NOT pipe stdout through tee — piping breaks TTY detection
-  # and causes Claude to dump telemetry JSON instead of executing commands.
+  # IMPORTANT: Do NOT pipe stdout through tee — piping breaks TTY detection.
   # Use >> redirect instead. Same constraint as start-telegram-server.sh.
+  # NOTE: --output-format text suppresses telemetry JSON in stdout.
+  # NOTE: CHANNELS_FLAG must be word-split (no quotes) when non-empty.
 
+  # Build the prompt string safely
+  local PROMPT
   if [[ $ATTEMPT -eq 1 ]] && [[ -z "$SESSION_ID" || "$SESSION_ID" == "null" ]]; then
-    # First run: use /ghost-run
-    claude -p \
-      --dangerously-skip-permissions \
-      --max-budget-usd "$BUDGET" \
-      $CHANNELS_FLAG \
-      "/ghost-run $FEATURE" \
-      >> "$LOG_FILE" 2>&1 || true
+    PROMPT="/ghost-run ${FEATURE}"
+  elif [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" ]]; then
+    PROMPT="/auto-ship"
   else
-    # Restart: use --resume if we have a session ID, otherwise /auto-ship
-    if [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" ]]; then
-      claude -p \
-        --dangerously-skip-permissions \
-        --max-budget-usd "$BUDGET" \
-        $CHANNELS_FLAG \
-        --resume "$SESSION_ID" \
-        "/auto-ship" \
-        >> "$LOG_FILE" 2>&1 || true
-    else
-      claude -p \
-        --dangerously-skip-permissions \
-        --max-budget-usd "$BUDGET" \
-        $CHANNELS_FLAG \
-        "/auto-ship $FEATURE" \
-        >> "$LOG_FILE" 2>&1 || true
-    fi
+    PROMPT="/auto-ship ${FEATURE}"
   fi
+
+  # Build command array for proper quoting
+  local -a CMD=(claude -p --dangerously-skip-permissions --output-format text --max-budget-usd "$BUDGET")
+  if [[ -n "$CHANNELS_FLAG" ]]; then
+    CMD+=(--channels "plugin:telegram@claude-plugins-official")
+  fi
+  if [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" && $ATTEMPT -gt 1 ]]; then
+    CMD+=(--resume "$SESSION_ID")
+  fi
+  CMD+=("$PROMPT")
+
+  echo "[$(date)] Running: ${CMD[*]}" >> "$LOG_FILE"
+  "${CMD[@]}" >> "$LOG_FILE" 2>&1 || true
 
   END_TIME=$(date +%s)
   DURATION=$((END_TIME - START_TIME))
