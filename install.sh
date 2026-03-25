@@ -196,6 +196,8 @@ install_file() {
     return
   fi
 
+  mkdir -p "$(dirname "$dst")" 2>/dev/null || true
+
   if $DRY_RUN; then
     if [ "$MODE" = "symlink" ]; then
       dry "ln -sf $REPO_DIR/$src $dst ($label)"

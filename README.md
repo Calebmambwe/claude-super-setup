@@ -7,7 +7,7 @@ A portable, enterprise-grade, always-on AI development platform with 98+ command
 ## Quick Install
 
 ```bash
-git clone https://github.com/calebtala-zm/claude-super-setup.git ~/.claude-super-setup
+git clone https://github.com/Calebmambwe/claude-super-setup.git ~/.claude-super-setup
 ~/.claude-super-setup/install.sh
 ```
 
@@ -21,7 +21,7 @@ Or preview first:
 For safe autonomous operation — open in VS Code, then **Command Palette → "Reopen in Container"**:
 
 ```bash
-git clone https://github.com/calebtala-zm/claude-super-setup.git
+git clone https://github.com/Calebmambwe/claude-super-setup.git
 cd claude-super-setup
 code .
 ```
@@ -57,7 +57,7 @@ Built across 6 sprints, the Enterprise Agent Platform transforms claude-super-se
 | BMAD | /bmad:prd, /bmad:architecture, /bmad:sprint-planning | Product lifecycle |
 | Documentation | /design-doc, /spec, /api-docs, /adr | Technical documentation |
 | Observability | /pipeline-status, /metrics, /learning-dashboard | Pipeline monitoring |
-| Enterprise | /flag, /post-mortem, /morning-brief, /eod-summary | Enterprise dev process |
+| Enterprise | /flag, /post-mortem | Enterprise dev process |
 | Media | /prototype, /demo-video, /voice-brief | Gemini media + voice |
 | Assistant | /morning-brief, /eod-summary, /weekly-health, /pr-reminder | Proactive assistant |
 | Teams | /team-build, /design-review | Agent team orchestration |
@@ -117,7 +117,7 @@ Core agents across 8 departments plus community agents for language specialists,
 | fullstack | architect + backend-dev + frontend-dev + test-writer-fixer | — | Full feature |
 | mobile | mobile-app-builder + ui-designer + test-writer-fixer | — | Mobile dev |
 
-### Lifecycle Hooks (12)
+### Lifecycle Hooks (14)
 
 Auto-formatting, auto-testing, branch protection, SDLC gate enforcement, Ghost Mode supervision, and more.
 

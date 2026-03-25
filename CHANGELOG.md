@@ -79,9 +79,9 @@ All notable changes to claude-super-setup are documented here.
 - 82 slash commands across core workflow, autonomous, scaffolding, quality, BMAD, documentation, and observability
 - 50 core agents across 8 departments (engineering, testing, design, security, product, community)
 - 18+ community agents (language specialists, infrastructure, data/AI)
-- 12 lifecycle hooks (auto-formatting, auto-testing, branch protection, SDLC gates, Ghost Mode)
+- 14 lifecycle hooks (auto-formatting, auto-testing, branch protection, SDLC gates, Ghost Mode)
 - 16 stack templates (web, backend, mobile, specialized)
-- 13 path-scoped rules
+- 14 path-scoped rules
 - 6 skill modules (design-system, backend-architecture, docker, BMAD, meta-rules, self-learning)
 - 3 CI/CD workflows (ci.yml, release.yml, improve.yml)
 - Agent catalog with 4-tier model routing (haiku, sonnet, opus, custom)

@@ -41,32 +41,31 @@ The following sections should be populated per-sprint or per-feature. They form 
 
 ### Current Goal
 
-> Enterprise Agent Platform Sprint 5: VS Code Agent Teams (review, feature, debug presets), Remote Control architecture docs (worktree isolation, URI handler), Smart Hub web API spec, verifier team preset validation.
+> Enterprise Agent Platform Sprint 6 (FINAL): Polish, documentation, and release. All 8 pillars shipped across 6 sprints — this sprint closes the platform with documentation accuracy, install validation, and changelog.
 
 ### Key Constraints
 
 - Must build on existing architecture — extend, don't replace
 - Must not break existing functionality (Ghost Mode, Telegram, overnight.sh)
 - Solo developer — leverage AI agents for implementation
-- All commands must follow existing SKILL.md frontmatter pattern
-- Commands must gracefully skip missing integrations with setup hints
+- All documentation must reflect actual current state (counts, paths, URLs)
 
 ### Success Criteria
 
-- [x] VS Code Agent Teams presets (review, feature, debug) with JSON schema
-- [x] Remote Control architecture documentation
-- [x] Worktree isolation documentation
-- [x] URI handler integration documentation
-- [x] Smart Hub web API spec (10 endpoints)
-- [x] Verifier agent enhanced with team preset validation
-- [x] AGENTS.md and catalog.json updated with Sprint 5 content
+- [x] README.md updated with full feature list, correct URLs, accurate counts
+- [x] docs/FEATURES.md marking all features complete
+- [x] AGENTS.md updated with Sprint 6 section and all sprint patterns
+- [x] CHANGELOG.md created from git history
+- [x] install.sh handles agents/teams/, catalog.json, and schemas/
+- [x] inventory-check.sh passes all validation
+- [x] docs/enterprise-agent-platform/brief.md status set to Complete
 
 ### Non-Goals (Explicit)
 
 - Implementing Smart Hub Tauri frontend (spec only)
 - Implementing URI handler VS Code extension (docs only)
 - Running server code or API implementations
-- Modifying existing command behavior
+- Adding new features — this is a polish-only sprint
 
 ---
 
