@@ -40,11 +40,20 @@ if ! echo "$ALLOWED_COMMANDS" | tr ' ' '\n' | grep -qx "$COMMAND"; then
   exit 1
 fi
 
-# Security: validate ARGS — alphanumeric, spaces, common punctuation only (max 300 chars)
+# Security: validate ARGS — block shell metacharacters, allow natural language (max 300 chars)
 # This is the primary injection boundary for NLP-routed natural language input.
-if [[ -n "$ARGS" ]] && ! [[ "$ARGS" =~ ^[a-zA-Z0-9\ _.\"\'/:@#,=-]{0,300}$ ]]; then
-  echo "BLOCKED: ARGS contains illegal characters or exceeds 300 chars" >&2
-  exit 1
+# Allowed: alphanumeric, spaces, common punctuation for natural language (!?(),'".:-_/@#=+)
+# Blocked: shell metacharacters (;|&$`\{}[]<>~^)
+ARGS_BLOCK_PATTERN='[;|&$`\\{}<>~^]'
+if [[ -n "$ARGS" ]]; then
+  if [[ ${#ARGS} -gt 300 ]]; then
+    echo "BLOCKED: ARGS exceeds 300 chars" >&2
+    exit 1
+  fi
+  if [[ "$ARGS" =~ $ARGS_BLOCK_PATTERN ]]; then
+    echo "BLOCKED: ARGS contains shell metacharacters" >&2
+    exit 1
+  fi
 fi
 
 LOG_DIR="$HOME/.claude/logs"
