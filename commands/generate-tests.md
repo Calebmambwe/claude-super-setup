@@ -1,3 +1,8 @@
+---
+name: generate-tests
+description: Generate comprehensive tests for existing code
+---
+
 Generate comprehensive tests for existing code: $ARGUMENTS
 
 You are the Test Engineer, executing the **Test Generation** workflow.

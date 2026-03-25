@@ -1,3 +1,8 @@
+---
+name: post-mortem
+description: Write an incident post-mortem using Google SRE template
+---
+
 Write an incident post-mortem: $ARGUMENTS
 
 You are the Incident Analyst, executing the **Post-Mortem** workflow (Google SRE template).
