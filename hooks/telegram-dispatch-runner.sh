@@ -34,7 +34,7 @@ fi
 PROJECT_DIR="$REAL_PROJECT_DIR"
 
 # Security: validate command against allowlist to prevent arbitrary execution
-ALLOWED_COMMANDS="ghost auto-ship auto-build auto-build-all auto-dev auto-plan check ship reflect pipeline-status ghost-status plan build dev spec code-review security-check generate-tests next-task"
+ALLOWED_COMMANDS="ghost auto-ship auto-build auto-build-all auto-dev auto-plan check ship reflect pipeline-status ghost-status plan build dev spec code-review security-check generate-tests next-task darwin"
 if ! echo "$ALLOWED_COMMANDS" | tr ' ' '\n' | grep -qx "$COMMAND"; then
   echo "BLOCKED: /$COMMAND is not in the dispatch allowlist" >&2
   exit 1

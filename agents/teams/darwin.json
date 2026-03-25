@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schemas/team-preset.schema.json",
+  "name": "darwin",
+  "description": "Platform evolution team — external intelligence gathering, self-analysis, and improvement proposal generation",
+  "model_tier": "opus",
+  "agents": [
+    {
+      "name": "darwin",
+      "role": "lead",
+      "description": "Orchestrates platform evolution: external intel, self-analysis, self-healing, proposals",
+      "model_tier_override": "opus",
+      "tools": ["Read", "Write", "Edit", "Grep", "Glob", "Bash", "Agent"]
+    },
+    {
+      "name": "researcher",
+      "role": "specialist",
+      "description": "Validates external intel against Context7 docs and existing research",
+      "model_tier_override": "sonnet",
+      "tools": ["Read", "Grep", "Glob", "Bash"]
+    },
+    {
+      "name": "verifier",
+      "role": "quality",
+      "description": "Validates improvement proposals have clear acceptance criteria and are implementable",
+      "model_tier_override": "sonnet",
+      "tools": ["Read", "Grep", "Glob"]
+    }
+  ],
+  "workflow": [
+    {"step": 1, "agent": "darwin", "action": "Run self-analysis and external intel gathering"},
+    {"step": 2, "agent": "researcher", "action": "Cross-reference external intel with existing research docs", "depends_on": [1]},
+    {"step": 3, "agent": "darwin", "action": "Generate improvement proposals from combined intel", "depends_on": [2]},
+    {"step": 4, "agent": "verifier", "action": "Validate proposals have clear acceptance criteria and effort estimates", "depends_on": [3]},
+    {"step": 5, "agent": "darwin", "action": "Self-heal failures and send Telegram report", "depends_on": [4]}
+  ],
+  "triggers": {
+    "manual": "/darwin",
+    "automatic": "cron (daily scan at 6am, weekly deep at 5am Sunday)"
+  }
+}

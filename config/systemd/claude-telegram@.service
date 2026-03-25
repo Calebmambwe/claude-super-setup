@@ -1,8 +1,11 @@
 [Unit]
-Description=Claude Code Telegram Listener
+Description=Claude Code Telegram Listener (24/7)
 Documentation=https://github.com/Calebmambwe/claude-super-setup
 After=network-online.target
 Wants=network-online.target
+# Reset restart counter every 10 minutes — prevents permanent failure
+StartLimitIntervalSec=600
+StartLimitBurst=20
 
 [Service]
 Type=simple
@@ -11,11 +14,11 @@ WorkingDirectory=%h/.claude-super-setup
 ExecStart=/usr/local/bin/claude --dangerously-skip-permissions --channels plugin:telegram@claude-plugins-official
 StandardOutput=journal
 StandardError=journal
-Restart=on-failure
-RestartSec=30
-# Prevent rapid restart loops
-StartLimitIntervalSec=300
-StartLimitBurst=5
+# ALWAYS restart — whether clean exit, crash, or signal kill
+Restart=always
+RestartSec=5
+# Watchdog: process must notify every 120s or systemd kills and restarts it
+WatchdogSec=120
 # Environment — ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN must be set
 # Use systemctl edit claude-telegram@$USER to add secrets
 EnvironmentFile=-%h/.claude/env

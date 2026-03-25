@@ -58,9 +58,25 @@
       "description": "Debugging and troubleshooting team for failures and environment issues",
       "agents": ["env-doctor", "test-writer-fixer", "researcher"],
       "preset": "agents/teams/debug.json"
+    },
+    "darwin": {
+      "description": "Platform evolution team — external intelligence gathering and self-improvement",
+      "agents": ["darwin", "researcher", "verifier"],
+      "preset": "agents/teams/darwin.json"
     }
   },
   "agents": [
+    {
+      "name": "darwin",
+      "file": "agents/core/darwin.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Platform Evolution Agent — self-learns, talks to external AI platforms, self-heals, proposes improvements",
+      "model_tier": "opus",
+      "capabilities": ["self-analysis", "external-api-intel", "failure-pattern-mining", "improvement-proposals", "self-healing", "learning-ledger-analysis"],
+      "tools": ["Read", "Write", "Edit", "Grep", "Glob", "Bash", "Agent"],
+      "teams": ["darwin"]
+    },
     {
       "name": "api-architect",
       "file": "agents/core/api-architect.md",
