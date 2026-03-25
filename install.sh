@@ -33,7 +33,7 @@ Options:
   --mode=symlink|copy    Install mode (default: symlink)
   --dry-run              Show what would be changed without doing it
   --no-backup            Skip backing up existing ~/.claude/
-  --modules=LIST         Comma-separated: commands,agents,hooks,rules,skills,agent_docs,config (default: all)
+  --modules=LIST         Comma-separated: commands,agents,hooks,rules,skills,agent_docs,config,schemas (default: all)
   --prefix=PATH          Install to PATH instead of ~/.claude/
   --help                 Show this help
 
@@ -231,6 +231,23 @@ if should_install "agents"; then
   # Install core agents
   mkdir -p "$CLAUDE_DIR/agents" 2>/dev/null || true
   install_module "agents/core" "$CLAUDE_DIR/agents" "core agents"
+
+  # Install agent teams (VS Code presets)
+  if [ -d "$REPO_DIR/agents/teams" ]; then
+    mkdir -p "$CLAUDE_DIR/agents/teams" 2>/dev/null || true
+    install_module "agents/teams" "$CLAUDE_DIR/agents/teams" "agent team presets"
+  fi
+
+  # Install agent catalog
+  install_file "agents/catalog.json" "$CLAUDE_DIR/agents/catalog.json" "agent catalog"
+fi
+
+if should_install "schemas"; then
+  # Install JSON schemas for validation
+  if [ -d "$REPO_DIR/schemas" ]; then
+    mkdir -p "$CLAUDE_DIR/schemas" 2>/dev/null || true
+    install_module "schemas" "$CLAUDE_DIR/schemas" "JSON schemas"
+  fi
 fi
 
 if should_install "hooks"; then

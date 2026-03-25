@@ -109,6 +109,14 @@ Shared project context for Claude Code and Cursor agents.
 - `POST /api/commands/:name/run` uses async event streaming for live output.
 - All endpoints source data from existing files (ghost-config.json, tasks.json, metrics.jsonl, catalog.json).
 
+## Sprint 6: Polish, Documentation & Release
+
+- Enterprise Agent Platform is COMPLETE — all 8 pillars shipped across 6 sprints.
+- `CHANGELOG.md` now tracks all changes by sprint.
+- `install.sh` handles `agents/teams/`, `agents/catalog.json`, and `schemas/` directories.
+- `docs/FEATURES.md` registry tracks feature status (Draft → Design Doc → In Progress → Complete).
+- README.md reflects current counts: 98+ commands, 70+ agents, 14 hooks, 14 rules.
+
 ## Maintenance
 - Update this file whenever durable project conventions change.
 - Re-run `/cursor-setup` after major setup updates.
