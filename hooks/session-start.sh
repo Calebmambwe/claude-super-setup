@@ -18,6 +18,14 @@ if [ -f "$SESSION_LOG" ] && [ "$(wc -l < "$SESSION_LOG")" -gt 1000 ]; then
   tail -500 "$SESSION_LOG" > "$SESSION_LOG.tmp" && mv "$SESSION_LOG.tmp" "$SESSION_LOG"
 fi
 
+# Auto-sync: pull latest config from remote (runs in background, never blocks)
+for SYNC_DIR in "$HOME/.claude-super-setup" "$HOME/claude_super_setup"; do
+  if [ -d "$SYNC_DIR/.git" ]; then
+    (cd "$SYNC_DIR" && git pull -q origin main 2>/dev/null) &
+    break
+  fi
+done
+
 # Check for common environment issues
 WARNINGS=""
 
