@@ -25,7 +25,8 @@ if [[ ! "$SESSION_NAME" =~ ^[a-zA-Z0-9_-]{1,64}$ ]]; then
 fi
 
 # Security: validate PROJECT_DIR — must be a real path under $HOME
-REAL_PROJECT_DIR=$(realpath -e "$PROJECT_DIR" 2>/dev/null) || { echo "BLOCKED: invalid project dir: $PROJECT_DIR" >&2; exit 1; }
+# Use cd+pwd instead of realpath -e (not available on macOS)
+REAL_PROJECT_DIR=$(cd "$PROJECT_DIR" 2>/dev/null && pwd -P) || { echo "BLOCKED: invalid project dir: $PROJECT_DIR" >&2; exit 1; }
 if [[ "$REAL_PROJECT_DIR" != "$HOME"* ]]; then
   echo "BLOCKED: project dir outside \$HOME: $REAL_PROJECT_DIR" >&2
   exit 1
@@ -37,6 +38,27 @@ ALLOWED_COMMANDS="ghost auto-ship auto-build auto-build-all auto-dev auto-plan c
 if ! echo "$ALLOWED_COMMANDS" | tr ' ' '\n' | grep -qx "$COMMAND"; then
   echo "BLOCKED: /$COMMAND is not in the dispatch allowlist" >&2
   exit 1
+fi
+
+# Security: validate ARGS — block shell metacharacters, allow natural language (max 300 chars)
+# This is the primary injection boundary for NLP-routed natural language input.
+# Allowed: alphanumeric, spaces, common punctuation for natural language (!?(),'".:-_/@#=+)
+# Blocked: shell metacharacters (;|&$`\{}[]<>~^)
+ARGS_BLOCK_PATTERN='[;|&$`\\{}<>~^]'
+if [[ -n "$ARGS" ]]; then
+  if [[ ${#ARGS} -gt 300 ]]; then
+    echo "BLOCKED: ARGS exceeds 300 chars" >&2
+    exit 1
+  fi
+  # Block control characters (newlines, carriage returns, null bytes) — prevents prompt injection
+  if [[ "$ARGS" == *$'\n'* ]] || [[ "$ARGS" == *$'\r'* ]] || [[ "$ARGS" == *$'\0'* ]]; then
+    echo "BLOCKED: ARGS contains control characters" >&2
+    exit 1
+  fi
+  if [[ "$ARGS" =~ $ARGS_BLOCK_PATTERN ]]; then
+    echo "BLOCKED: ARGS contains shell metacharacters" >&2
+    exit 1
+  fi
 fi
 
 LOG_DIR="$HOME/.claude/logs"
@@ -150,7 +172,10 @@ notify_telegram() {
     log_tail=$(tail -10 "$LOG_FILE" 2>/dev/null | head -c 2000 || echo "")
   fi
 
-  local tg_text="${emoji} *Task ${status_text}*\n\nCommand: \`/${COMMAND} ${ARGS}\`\nSession: \`${SESSION_NAME}\`"
+  # Sanitize ARGS for Telegram Markdown display (escape backticks)
+  local safe_args
+  safe_args=$(printf '%s' "$ARGS" | tr '`' "'")
+  local tg_text="${emoji} *Task ${status_text}*\n\nCommand: \`/${COMMAND} ${safe_args}\`\nSession: \`${SESSION_NAME}\`"
   if [[ -n "$log_tail" ]]; then
     tg_text="${tg_text}\n\n\`\`\`\n${log_tail}\n\`\`\`"
   fi

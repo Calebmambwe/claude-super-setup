@@ -1,130 +1,175 @@
 {
   "version": 1,
-  "feature": "Enterprise Agent Platform Sprint 5: VS Code Agent Teams, Remote Control, Smart Hub API",
-  "created_at": "2026-03-24T23:25:00Z",
+  "feature": "Ghost Mode Hardening + Full Telegram Dev Parity + Local Models",
+  "created_at": "2026-03-25T01:00:00Z",
   "tasks": [
     {
       "id": 1,
-      "title": "VS Code Agent Teams presets — review, feature, debug teams",
-      "description": "Create agents/teams/ directory with team preset JSON configs for VS Code integration. Each preset defines agent composition, model tiers, tool permissions, and workflow steps.",
+      "title": "NLP natural language routing for telegram-dispatch.md",
+      "description": "Upgrade telegram-dispatch.md with NLP intent detection — 'build X' auto-routes to /ghost, 'fix X' to /debug, always-autonomous default.",
       "status": "completed",
       "priority": "P0",
       "risk": "low",
       "depends_on": [],
-      "files": ["agents/teams/review.json", "agents/teams/feature.json", "agents/teams/debug.json", "agents/teams/README.md"],
+      "files": ["commands/telegram-dispatch.md"],
       "acceptance_criteria": [
-        "agents/teams/ directory created with review.json, feature.json, debug.json",
-        "Each preset has: name, description, agents (with roles), workflow steps, model_tier",
-        "Agent references match catalog.json agent names",
-        "README.md explains the preset format, how to use in VS Code, and how to create custom presets",
-        "Presets reference existing agents from agents/core/ — no new agents invented"
+        "Natural language messages are classified by intent (BUILD, FIX, TEST, REVIEW, SHIP, etc.)",
+        "BUILD/PLAN intents route to /ghost (always-autonomous)",
+        "FIX intents route to /debug",
+        "High-confidence matches dispatch immediately, medium-confidence asks for confirmation",
+        "No-match falls back to conversational mode",
+        "Queue entries include nlp_routed flag",
+        "Prompt injection guard documented for NLP-extracted arguments"
       ]
     },
     {
       "id": 2,
-      "title": "Remote Control documentation",
-      "description": "Create docs/remote-control.md documenting the full remote control architecture.",
+      "title": "Auto quality gate hook",
+      "description": "Create hooks/auto-quality-gate.sh for auto lint+typecheck on code changes.",
       "status": "completed",
       "priority": "P0",
       "risk": "low",
       "depends_on": [],
-      "files": ["docs/remote-control.md"],
+      "files": ["hooks/auto-quality-gate.sh"],
       "acceptance_criteria": [
-        "Documents Telegram dispatch system (tiers, routing, safety)",
-        "Documents cron scheduling via /telegram-cron",
-        "Documents parallel session management (/telegram-parallel, screen sessions)",
-        "Documents Ghost Mode remote triggering and notification flow",
-        "Includes architecture diagram (mermaid) showing message flow",
-        "References existing commands and config files with correct paths"
+        "Triggers on Edit/Write tool for .ts/.tsx/.js/.jsx/.py files",
+        "Runs ESLint or Biome for JS/TS projects",
+        "Runs tsc --noEmit for TypeScript files",
+        "Runs ruff and mypy for Python files",
+        "Reports failures with formatted output",
+        "Script is executable"
       ]
     },
     {
       "id": 3,
-      "title": "Worktree isolation documentation",
-      "description": "Create docs/worktree-isolation.md documenting the git worktree isolation pattern for parallel agent execution.",
+      "title": "Telemetry hook",
+      "description": "Create hooks/telemetry.sh for observability logging of all tool calls.",
       "status": "completed",
       "priority": "P0",
       "risk": "low",
       "depends_on": [],
-      "files": ["docs/worktree-isolation.md"],
+      "files": ["hooks/telemetry.sh"],
       "acceptance_criteria": [
-        "Explains git worktree concept and why it enables parallel agent execution",
-        "Documents the isolation: worktree parameter in Agent tool",
-        "Covers merge strategies: auto-merge, conflict resolution, sequential fallback",
-        "Documents cleanup: automatic cleanup on no changes, manual cleanup commands",
-        "Includes decision matrix: when to use worktree vs sequential execution",
-        "References Claude Code's built-in worktree support"
+        "Logs structured JSON events to ~/.claude/logs/telemetry.jsonl",
+        "Captures tool name, type, file path, project, branch, session",
+        "Classifies tools into types (read/write/exec/agent/mcp)",
+        "Auto-rotates log at 10MB",
+        "Script is executable"
       ]
     },
     {
       "id": 4,
-      "title": "URI handler integration documentation",
-      "description": "Create docs/uri-handler.md documenting claude:// URI scheme for VS Code deep linking.",
-      "status": "completed",
-      "priority": "P1",
-      "risk": "low",
-      "depends_on": [],
-      "files": ["docs/uri-handler.md"],
-      "acceptance_criteria": [
-        "Defines claude:// URI scheme with path patterns for commands, tasks, agents",
-        "Documents URI examples: claude://command/plan, claude://task/3, claude://agent/verifier",
-        "Explains VS Code URI handler registration pattern",
-        "Covers security: URI validation, allowlisted paths, no arbitrary command execution",
-        "Includes integration with Smart Hub (clickable links in dashboard)"
-      ]
-    },
-    {
-      "id": 5,
-      "title": "Smart Hub web API spec — pipeline, tasks, metrics",
-      "description": "Create docs/smart-hub/api-spec.md with OpenAPI-style endpoint definitions for the Smart Hub web interface.",
+      "title": "Alert check hook with 4 mandatory alerts",
+      "description": "Create hooks/alert-check.sh with 4 alerts: test failure, build failure, disk low, timeout warning.",
       "status": "completed",
       "priority": "P0",
       "risk": "low",
       "depends_on": [],
-      "files": ["docs/smart-hub/api-spec.md"],
+      "files": ["hooks/alert-check.sh"],
       "acceptance_criteria": [
-        "OpenAPI 3.1-style endpoint definitions (not full YAML, readable markdown)",
-        "GET /api/pipeline/status — returns current pipeline state, phase, progress",
-        "GET /api/tasks — returns tasks.json contents with filtering/sorting",
-        "GET /api/metrics — returns metrics.jsonl aggregated data",
-        "GET /api/agents — returns catalog.json agent list with team membership",
-        "POST /api/commands/{name}/run — trigger a command execution",
-        "Each endpoint has: path, method, request params, response schema, example response",
-        "References Smart Hub design-doc.md Tauri IPC contracts"
+        "Alert 1: Test suite failure detection (pytest, vitest, jest)",
+        "Alert 2: Build/compile failure detection (tsc, cargo, go)",
+        "Alert 3: Disk space low (>90%) with 1h dedup",
+        "Alert 4: Ghost Mode timeout (exceeds max_hours)",
+        "All alerts log to ~/.claude/logs/alerts.jsonl",
+        "Alerts dispatch via ghost-notify.sh",
+        "Script is executable"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "5 integration tests",
+      "description": "Create 5 integration tests in tests/integration/ covering hooks, config, dispatch security, notifications, and VPS setup.",
+      "status": "completed",
+      "priority": "P0",
+      "risk": "low",
+      "depends_on": [1, 2, 3, 4],
+      "files": [
+        "tests/integration/test-hooks-exist.sh",
+        "tests/integration/test-config-valid.sh",
+        "tests/integration/test-dispatch-runner.sh",
+        "tests/integration/test-ghost-notify.sh",
+        "tests/integration/test-setup-vps-flags.sh"
+      ],
+      "acceptance_criteria": [
+        "test-hooks-exist.sh: verifies all hooks exist and are executable (15 checks)",
+        "test-config-valid.sh: validates all JSON configs parse correctly (12 checks)",
+        "test-dispatch-runner.sh: tests security validation rejects bad inputs (7 checks)",
+        "test-ghost-notify.sh: tests all notification levels exit cleanly (8 checks)",
+        "test-setup-vps-flags.sh: tests --with-ollama and other flags in dry-run (10 checks)",
+        "All 52 assertions pass"
       ]
     },
     {
       "id": 6,
-      "title": "Enhance verifier agent with team preset awareness",
-      "description": "Update agents/core/verifier.md to add team preset verification capabilities.",
+      "title": "Ollama local model support",
+      "description": "Create config/model-routing.json and update setup-vps.sh with --with-ollama flag.",
       "status": "completed",
       "priority": "P1",
       "risk": "low",
-      "depends_on": [1],
-      "files": ["agents/core/verifier.md"],
+      "depends_on": [],
+      "files": ["config/model-routing.json", "scripts/setup-vps.sh"],
       "acceptance_criteria": [
-        "Adds 'Team Preset Verification' section to verifier.md",
-        "Verifier can validate team preset JSON against catalog.json",
-        "Checks: all agents in preset exist in catalog, model tiers are valid, no circular dependencies",
-        "Preserves all existing verifier functionality (acceptance criteria, diff, regressions)",
-        "Updated invoked_by to include /team-build"
+        "model-routing.json defines providers (anthropic, ollama) with model mappings",
+        "Routing rules map task types (planning, implementation, review, testing, triage) to models",
+        "Fallback policy triggers on API errors or budget exceeded",
+        "Offline mode support documented",
+        "setup-vps.sh accepts --with-ollama flag",
+        "Phase 9/10 installs Ollama, pulls base model, copies config",
+        "Phase count updated from 9 to 10 across all phases"
       ]
     },
     {
       "id": 7,
-      "title": "Update AGENTS.md + catalog.json for Sprint 5",
-      "description": "Add Sprint 5 sections to AGENTS.md. Update catalog.json with new team presets.",
+      "title": "Observability dashboard command",
+      "description": "Create commands/dashboard.md for unified observability view.",
       "status": "completed",
       "priority": "P1",
       "risk": "low",
-      "depends_on": [1, 2, 3, 4, 5, 6],
-      "files": ["AGENTS.md", "agents/catalog.json"],
+      "depends_on": [3, 4],
+      "files": ["commands/dashboard.md"],
       "acceptance_criteria": [
-        "AGENTS.md has 'VS Code Agent Teams (Sprint 5)' section",
-        "AGENTS.md has 'Remote Control Architecture (Sprint 5)' section",
-        "AGENTS.md has 'Smart Hub API (Sprint 5)' section",
-        "catalog.json has feature and debug team definitions",
-        "All new entries reference correct file paths"
+        "Aggregates data from telemetry, alerts, tasks, queue, ghost-config, metrics",
+        "Computes tool usage breakdown, alert counts, task progress",
+        "Runs system health checks (disk, sessions, Ollama, budget)",
+        "Full terminal dashboard with box-drawing characters",
+        "Condensed Telegram version within 4096-char limit",
+        "Gracefully handles missing data sources"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Extend test-after-impl.sh for all source files",
+      "description": "Upgrade test-after-impl.sh to trigger on source file changes, not just test files.",
+      "status": "completed",
+      "priority": "P0",
+      "risk": "low",
+      "depends_on": [],
+      "files": ["hooks/test-after-impl.sh"],
+      "acceptance_criteria": [
+        "Triggers on .ts/.tsx/.js/.jsx/.py/.go/.rs files",
+        "For test files: runs that specific test (existing behavior)",
+        "For source files: finds corresponding test file using 6 search patterns",
+        "Supports co-located tests, __tests__ dirs, tests/ dir, Python test_ prefix",
+        "Silently skips if no corresponding test found",
+        "Reports which source file triggered the test run"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Update AGENTS.md for Sprint 6",
+      "description": "Add Sprint 6 sections to AGENTS.md covering hardening, NLP dispatch, and local models.",
+      "status": "completed",
+      "priority": "P1",
+      "risk": "low",
+      "depends_on": [1, 2, 3, 4, 5, 6, 7, 8],
+      "files": ["AGENTS.md"],
+      "acceptance_criteria": [
+        "Sprint 6 section documents NLP dispatch routing",
+        "Documents new hooks (auto-quality-gate, telemetry, alert-check)",
+        "Documents model-routing.json and Ollama support",
+        "Documents dashboard command",
+        "Documents test-after-impl.sh source file triggering"
       ]
     }
   ]

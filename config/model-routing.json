@@ -1,0 +1,85 @@
+{
+  "$comment": "Schema: schemas/model-routing.schema.json (to be created)",
+  "version": 1,
+  "description": "Model routing configuration — maps task types to models with local Ollama fallback support",
+  "providers": {
+    "anthropic": {
+      "enabled": true,
+      "priority": 1,
+      "models": {
+        "opus": "claude-opus-4-6",
+        "sonnet": "claude-sonnet-4-6",
+        "haiku": "claude-haiku-4-5"
+      }
+    },
+    "ollama": {
+      "enabled": false,
+      "priority": 2,
+      "base_url": "http://localhost:11434",
+      "health_check": "http://localhost:11434/api/tags",
+      "models": {
+        "large": "llama3.3:70b",
+        "medium": "llama3.3:8b",
+        "small": "llama3.2:3b",
+        "code": "qwen2.5-coder:32b",
+        "embed": "nomic-embed-text"
+      },
+      "pull_on_first_use": true,
+      "gpu_layers": -1,
+      "context_length": 32768
+    }
+  },
+  "routing": {
+    "planning": {
+      "primary": "anthropic:opus",
+      "fallback": "ollama:large",
+      "description": "Architecture, design, and strategic planning"
+    },
+    "implementation": {
+      "primary": "anthropic:sonnet",
+      "fallback": "ollama:code",
+      "description": "Code generation and editing"
+    },
+    "review": {
+      "primary": "anthropic:sonnet",
+      "fallback": "ollama:large",
+      "description": "Code review and security audit"
+    },
+    "testing": {
+      "primary": "anthropic:sonnet",
+      "fallback": "ollama:medium",
+      "description": "Test generation and debugging"
+    },
+    "triage": {
+      "primary": "anthropic:haiku",
+      "fallback": "ollama:small",
+      "description": "Quick classification, routing, status checks"
+    },
+    "embedding": {
+      "primary": "anthropic:haiku",
+      "fallback": "ollama:embed",
+      "description": "RAG embedding and similarity search"
+    }
+  },
+  "fallback_policy": {
+    "trigger": "api_error_or_budget_exceeded",
+    "conditions": [
+      "HTTP 429 (rate limit)",
+      "HTTP 529 (overloaded)",
+      "HTTP 500+ (server error)",
+      "Budget remaining < $1",
+      "Network timeout > 30s"
+    ],
+    "behavior": "If Anthropic API returns an error matching any condition above AND ollama.enabled is true, retry with the fallback model. Log the fallback event to telemetry."
+  },
+  "offline_mode": {
+    "enabled": false,
+    "description": "When true, skip Anthropic entirely and use only Ollama models. Useful for air-gapped environments or cost-zero development.",
+    "activate_command": "Set CLAUDE_OFFLINE=1 in environment or pass --offline to ghost/auto-dev"
+  },
+  "cost_tracking": {
+    "log_file": "~/.claude/logs/model-costs.jsonl",
+    "warn_at_usd": 40,
+    "hard_limit_usd": 50
+  }
+}

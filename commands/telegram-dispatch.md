@@ -1,15 +1,15 @@
 ---
 name: telegram-dispatch
-description: Route Telegram messages to slash commands — core dispatcher for remote mobile control
+description: Route Telegram messages to slash commands — core dispatcher with NLP natural language routing for remote mobile control
 ---
 
-Telegram Command Dispatcher — routes inbound Telegram messages to the appropriate slash command, manages task queue, and reports results.
+Telegram Command Dispatcher — routes inbound Telegram messages to the appropriate slash command using both explicit `/command` syntax and natural language intent detection. Manages task queue and reports results.
 
 ## When This Runs
 
 This logic activates when the persistent Telegram listener session receives a `<channel source="telegram" ...>` message. The listener session (started via `bash ~/.claude/start-telegram-server.sh`) runs Claude with `--channels plugin:telegram@claude-plugins-official`.
 
-**You do NOT need to be explicitly told to use this command.** When you receive a `<channel source="telegram">` message that starts with `/`, automatically apply this dispatch logic.
+**You do NOT need to be explicitly told to use this command.** When you receive a `<channel source="telegram">` message, automatically apply this dispatch logic — whether the message starts with `/` or is natural language.
 
 ## Process
 
@@ -21,11 +21,64 @@ Extract from the `<channel>` tag:
 - `user` — for logging
 - The message text content
 
-If the message does NOT start with `/`, treat it as **conversational** — respond normally via `mcp__plugin_telegram_telegram__reply` and stop. You are a helpful assistant in chat mode.
+**Two parsing paths:**
 
-If the message starts with `/`, extract:
+**Path A — Explicit command** (message starts with `/`):
 - **Command name**: the first word after `/` (e.g., `ghost`, `auto-ship`, `queue`)
 - **Arguments**: everything after the command name
+- Proceed to Step 2.
+
+**Path B — Natural language** (message does NOT start with `/`):
+- Apply NLP intent routing (Step 1.5) to determine if this is an actionable request or conversational.
+
+### Step 1.5: NLP Natural Language Routing
+
+When the message does NOT start with `/`, classify the user's intent using these pattern rules. The default mode is **always-autonomous** — if a message looks like a task, route it to the autonomous pipeline. Only fall back to conversational mode when no intent matches.
+
+#### Intent Detection Rules
+
+Match against these patterns (case-insensitive). The FIRST matching rule wins:
+
+| Pattern | Intent | Routes To | Example |
+|---------|--------|-----------|---------|
+| `build ...`, `create ...`, `add ...`, `implement ...`, `make ...` | BUILD | `/ghost "<captured args>"` | "build a dark mode toggle" → `/ghost "dark mode toggle"` |
+| `fix ...`, `debug ...`, `repair ...`, `solve ...` | FIX | `/debug <captured args>` | "fix the login bug" → `/debug the login bug` |
+| `test ...`, `run tests ...`, `check tests ...` | TEST | `/generate-tests <captured args>` | "test the auth module" → `/generate-tests auth module` |
+| `review ...`, `check code ...`, `audit ...` | REVIEW | `/check` | "review my latest changes" → `/check` |
+| `ship ...`, `deploy ...`, `push ...`, `release ...` | SHIP | `/auto-ship` | "ship it" → `/auto-ship` |
+| `plan ...`, `design ...`, `architect ...` | PLAN | `/ghost "<captured args>"` | "plan a notification system" → `/ghost "notification system"` |
+| `status`, `how's it going`, `progress`, `what's running` | STATUS | `/queue` | "what's running?" → `/queue` |
+| `refactor ...`, `clean up ...`, `improve ...` | REFACTOR | `/refactor <captured args>` | "refactor the auth service" → `/refactor auth service` |
+| `security ...`, `vulnerabilities ...`, `secure ...` | SECURITY | `/security-check` | "check for security issues" → `/security-check` |
+| `docs ...`, `document ...`, `explain ...` | DOCS | `/reverse-doc <captured args>` | "document the API" → `/reverse-doc API` |
+| `scaffold ...`, `bootstrap ...`, `new project ...`, `new app ...` | SCAFFOLD | `/new-app <captured args>` | "scaffold a todo app" → `/new-app todo app` |
+| `cancel ...`, `stop ...`, `kill ...`, `abort ...` | CANCEL | `/cancel <captured args>` | "stop the ghost run" → `/cancel` (latest running) |
+| `help`, `what can you do`, `commands` | HELP | `/help` | "what can you do?" → `/help` |
+
+#### Confidence & Confirmation
+
+When NLP routing matches an intent:
+
+1. **High confidence** (exact verb match at start of message): Route immediately. React with ⏳ and reply:
+   ```
+   🧠 Understood: "<original message>"
+   → Routing to: /<resolved-command> <args>
+   ```
+
+2. **Medium confidence** (verb found but not at start, or ambiguous args): Ask for confirmation:
+   ```
+   🤔 I think you want:
+   → /<resolved-command> <args>
+
+   Reply YES to confirm, or rephrase your request.
+   ```
+   Store as `status: "awaiting_nlp_confirm"` in the queue. On "YES", dispatch. Otherwise, treat as conversational.
+
+3. **No match**: Treat as conversational — respond normally as a helpful assistant via `mcp__plugin_telegram_telegram__reply`. Do NOT force-route unclear messages.
+
+#### Always-Autonomous Default
+
+When BUILD or PLAN intent is detected, ALWAYS route to `/ghost` (fully autonomous) rather than `/auto-dev` or `/plan` (which require interaction). The user is on mobile — they want fire-and-forget.
 
 ### Step 2: Check for Completed Sessions
 
@@ -60,7 +113,7 @@ Commands are organized into safety tiers:
 These are read-only or quick status commands:
 
 ```
-ghost-status, pipeline-status, metrics, learning-dashboard, consolidate
+ghost-status, pipeline-status, metrics, learning-dashboard, consolidate, dashboard
 ```
 
 **Action:** Execute the command directly using the Skill tool, then send the output via `mcp__plugin_telegram_telegram__reply`.
@@ -75,7 +128,7 @@ next-task, reflect, code-review, security-audit, security-check,
 generate-tests, changelog, test-plan, perf-audit, deps-audit,
 visual-verify, web-test, build, scaffold, api-endpoint, refactor,
 debug, new-app, new-project, ci-setup, auto-plan, review,
-team-build, parallel-implement, production-ready
+team-build, parallel-implement, production-ready, reverse-doc
 ```
 
 **Action:**
@@ -97,9 +150,11 @@ team-build, parallel-implement, production-ready
      "finished_at": null,
      "screen_name": "<session_name>",
      "log_file": "~/.claude/logs/dispatch-<session_name>.log",
-     "result_sent": false
+     "result_sent": false,
+     "nlp_routed": false
    }
    ```
+   Set `nlp_routed: true` if the command was resolved via NLP rather than explicit `/command`.
 5. Run the dispatch runner:
    ```bash
    bash hooks/telegram-dispatch-runner.sh "<command>" "<args>" "<project_dir>" "<session_name>" "<chat_id>"
@@ -151,6 +206,8 @@ Try instead:
 • /ghost "<feature>" — autonomous pipeline, no interaction needed
 • /auto-ship — if you already have tasks.json
 • /auto-build-all — build all pending tasks autonomously
+
+💡 Or just describe what you want in plain English — I'll route it autonomously.
 ```
 
 #### Meta-Commands (handled inline by this dispatcher)
@@ -159,14 +216,34 @@ Try instead:
 ```
 📋 Task Queue
 
-| # | Command | Status | Duration |
-|---|---------|--------|----------|
-| 1 | /ghost "dark mode" | ✅ completed | 45m |
-| 2 | /check | ⏳ running | 12m |
-| 3 | /auto-ship | ⏸ pending | — |
+| # | Command | Status | Duration | Source |
+|---|---------|--------|----------|--------|
+| 1 | /ghost "dark mode" | ✅ completed | 45m | NLP |
+| 2 | /check | ⏳ running | 12m | /cmd |
+| 3 | /auto-ship | ⏸ pending | — | /cmd |
 ```
 
-**`/help`** — Reply with the list of available remote commands grouped by tier.
+The "Source" column shows `NLP` for natural-language-routed tasks and `/cmd` for explicit commands.
+
+**`/help`** — Reply with the list of available remote commands grouped by tier, AND include the NLP natural language examples:
+```
+🤖 Remote Commands
+
+📌 Quick Status (inline):
+/ghost-status, /pipeline-status, /metrics, /dashboard
+
+🚀 Pipelines (spawned):
+/ghost, /auto-ship, /check, /build, /debug, ...
+
+⚠️ Destructive (confirm required):
+/rollback, /db-migrate
+
+📝 Or just type naturally:
+• "build a dark mode toggle"
+• "fix the login bug"
+• "ship it"
+• "what's running?"
+```
 
 **`/cancel <session_name_or_number>`** — Kill the screen session for a running task:
 ```bash
@@ -176,12 +253,14 @@ Update queue status to "cancelled". Reply confirming cancellation.
 
 **`/status`** — Alias for `/queue`.
 
+**`/dashboard`** — Execute the dashboard command and reply with the output.
+
 ### Step 4: Initialize Queue File if Absent
 
 If `~/.claude/telegram-queue.json` does not exist, create it:
 ```json
 {
-  "version": 1,
+  "version": 2,
   "queue": []
 }
 ```
@@ -200,6 +279,7 @@ If the command name doesn't match any known command, reply:
 ❓ Unknown command: /<command>
 
 Type /help to see available commands.
+💡 Or just describe what you want in plain English!
 ```
 
 ## Important Rules
@@ -215,6 +295,12 @@ Type /help to see available commands.
 5. **Log everything** — all dispatched tasks log to `~/.claude/logs/dispatch-<session_name>.log`.
 
 6. **Prune old sessions** — when the queue grows past 50 entries, remove completed entries older than 7 days.
+
+7. **NLP routing is fire-and-forget** — when natural language maps to a BUILD/PLAN intent, always use `/ghost` (autonomous). Never route to interactive commands from NLP.
+
+8. **No false positives** — if NLP confidence is low, default to conversational mode. A missed routing is better than a wrong one.
+
+9. **Prompt injection guard** — NLP-extracted arguments are user-supplied data. Never interpolate them into shell commands without sanitization. The dispatch runner validates against its allowlist.
 
 ## File Paths
 
