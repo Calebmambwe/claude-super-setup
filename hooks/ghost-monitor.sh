@@ -122,21 +122,32 @@ if $ONCE; then
   exit 0
 fi
 
-# Loop mode
-echo "Ghost Monitor started. Sending updates every ${INTERVAL}s to Telegram."
+# Loop mode — runs 24/7, only sends updates when ghost is active
+echo "Ghost Monitor started (24/7 mode). Checking every ${INTERVAL}s."
 echo "Stop with: kill $$"
 
 while true; do
-  send_update
-
-  # Check for terminal status
-  local_status=$(jq -r '.status // "unknown"' "$CONFIG_FILE" 2>/dev/null || echo "unknown")
-  case "$local_status" in
-    complete|stopped|stopped_emergency|exhausted|timeout|budget_exhausted)
-      echo "Terminal status: $local_status. Monitor exiting."
-      exit 0
-      ;;
-  esac
+  # Only send updates when ghost is actively running
+  if [[ -f "$CONFIG_FILE" ]]; then
+    local_status=$(jq -r '.status // "unknown"' "$CONFIG_FILE" 2>/dev/null || echo "unknown")
+    case "$local_status" in
+      running*|starting)
+        send_update
+        ;;
+      complete|stopped|stopped_emergency|exhausted|timeout|budget_exhausted)
+        # Terminal status — send ONE final update, then go quiet (don't exit)
+        if [[ ! -f "$HOME/.claude/logs/ghost-monitor-last-terminal" ]] || \
+           [[ "$(cat "$HOME/.claude/logs/ghost-monitor-last-terminal" 2>/dev/null)" != "$local_status" ]]; then
+          send_update
+          echo "$local_status" > "$HOME/.claude/logs/ghost-monitor-last-terminal"
+          echo "[$(date)] Ghost reached terminal status: $local_status. Waiting for next run."
+        fi
+        ;;
+      *)
+        # Unknown or no config — stay quiet
+        ;;
+    esac
+  fi
 
   sleep "$INTERVAL"
 done
