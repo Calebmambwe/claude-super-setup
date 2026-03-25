@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
-    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "65",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50",
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-4-6",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
@@ -156,7 +156,8 @@
       "mcp__plugin_playwright_playwright__browser_network_requests",
       "mcp__plugin_playwright_playwright__browser_navigate_back",
       "mcp__plugin_playwright_playwright__browser_wait_for",
-      "mcp__plugin_playwright_playwright__browser_drag"
+      "mcp__plugin_playwright_playwright__browser_drag",
+      "Bash(sudo *)"
     ],
     "deny": [
       "Read(.env*)",
@@ -173,7 +174,6 @@
       "Bash(rm -rf ~)",
       "Bash(rm -rf .)",
       "Bash(rm -rf /*)",
-      "Bash(sudo *)",
       "Bash(chmod 777 *)",
       "Bash(git push --force *)",
       "Bash(git reset --hard *)",
@@ -183,7 +183,10 @@
       "Bash(curl * | sh)",
       "Bash(curl * | bash)",
       "Bash(wget * | sh)",
-      "Bash(eval *)"
+      "Bash(eval *)",
+      "Bash(sudo rm *)",
+      "Bash(sudo shutdown *)",
+      "Bash(sudo reboot *)"
     ]
   },
   "hooks": {
@@ -267,8 +270,8 @@
         "hooks": [
           {
             "type": "prompt",
-            "timeout": 45,
-            "prompt": "A research brief was just created. Respond with {\"decision\": \"block\", \"reason\": \"Research complete. Tell the user: review the findings, then proceed with /plan or /full-pipeline. Architecture decisions must reference this research.\"}."
+            "prompt": "A research brief was just created. Respond with {\"decision\": \"block\", \"reason\": \"Research complete. Tell the user: review the findings, then proceed with /plan or /full-pipeline. Architecture decisions must reference this research.\"}.",
+            "timeout": 45
           }
         ]
       },
@@ -277,8 +280,8 @@
         "hooks": [
           {
             "type": "prompt",
-            "timeout": 45,
-            "prompt": "A feature brief was just created. Respond with {\"decision\": \"block\", \"reason\": \"Feature brief created. Tell the user: run /design-doc {feature-name} to create the design document next. The feature name is the folder name inside docs/. Do not proceed until user acknowledges.\"}."
+            "prompt": "A feature brief was just created. Respond with {\"decision\": \"block\", \"reason\": \"Feature brief created. Tell the user: run /design-doc {feature-name} to create the design document next. The feature name is the folder name inside docs/. Do not proceed until user acknowledges.\"}.",
+            "timeout": 45
           }
         ]
       },
@@ -287,8 +290,8 @@
         "hooks": [
           {
             "type": "prompt",
-            "timeout": 45,
-            "prompt": "An SDLC artifact was just written. Check which file it is:\n\n- If it is a reverse-doc: respond with {\"decision\": \"block\", \"reason\": \"reverse-doc created. You must now tell the user the next step: run /design-doc to create a full design document from this, or run /implement-design if the reverse-doc alone is sufficient. Do not proceed until the user acknowledges the next step.\"}\n- If it is a design-doc: count the milestones in the document. If 4 or more milestones, respond with {\"decision\": \"block\", \"reason\": \"Design doc created with N milestones. Tell the user: run /milestone-prompts to generate per-milestone implementation prompts for multi-session execution. Do not proceed until user acknowledges.\"}. If 1-3 milestones, respond with {\"decision\": \"block\", \"reason\": \"Design doc created. Tell the user: run /implement-design for a single-session implementation prompt. Do not proceed until user acknowledges.\"}."
+            "prompt": "An SDLC artifact was just written. Check which file it is:\n\n- If it is a reverse-doc: respond with {\"decision\": \"block\", \"reason\": \"reverse-doc created. You must now tell the user the next step: run /design-doc to create a full design document from this, or run /implement-design if the reverse-doc alone is sufficient. Do not proceed until the user acknowledges the next step.\"}\n- If it is a design-doc: count the milestones in the document. If 4 or more milestones, respond with {\"decision\": \"block\", \"reason\": \"Design doc created with N milestones. Tell the user: run /milestone-prompts to generate per-milestone implementation prompts for multi-session execution. Do not proceed until user acknowledges.\"}. If 1-3 milestones, respond with {\"decision\": \"block\", \"reason\": \"Design doc created. Tell the user: run /implement-design for a single-session implementation prompt. Do not proceed until user acknowledges.\"}.",
+            "timeout": 45
           }
         ]
       },
@@ -297,8 +300,8 @@
         "hooks": [
           {
             "type": "prompt",
-            "timeout": 45,
-            "prompt": "An implementation prompt file was just created. Respond with {\"decision\": \"block\", \"reason\": \"Implementation prompt ready. Tell the user: run /implement-meta-prompt <path> to execute this prompt in a new session. The prompt is self-contained and can also be copy-pasted into any LLM. Do not proceed until user acknowledges.\"}."
+            "prompt": "An implementation prompt file was just created. Respond with {\"decision\": \"block\", \"reason\": \"Implementation prompt ready. Tell the user: run /implement-meta-prompt <path> to execute this prompt in a new session. The prompt is self-contained and can also be copy-pasted into any LLM. Do not proceed until user acknowledges.\"}.",
+            "timeout": 45
           }
         ]
       },
@@ -307,8 +310,8 @@
         "hooks": [
           {
             "type": "prompt",
-            "timeout": 45,
-            "prompt": "A PRD or architecture doc was just written. Check if BOTH docs/*/prd.md AND docs/*/architecture.md now exist for this project. If both exist and no design-doc.md exists yet, respond with {\"decision\": \"block\", \"reason\": \"PRD and architecture are both ready. Tell the user: run /design-doc to create the implementation-ready design document. Do not proceed until user acknowledges.\"}. If only one exists, respond with {\"decision\": \"allow\"}."
+            "prompt": "A PRD or architecture doc was just written. Check if BOTH docs/*/prd.md AND docs/*/architecture.md now exist for this project. If both exist and no design-doc.md exists yet, respond with {\"decision\": \"block\", \"reason\": \"PRD and architecture are both ready. Tell the user: run /design-doc to create the implementation-ready design document. Do not proceed until user acknowledges.\"}. If only one exists, respond with {\"decision\": \"allow\"}.",
+            "timeout": 45
           }
         ]
       }
@@ -328,8 +331,8 @@
         "hooks": [
           {
             "type": "prompt",
-            "timeout": 45,
-            "prompt": "Before committing, verify: 1) Have tests been run and do they pass? 2) Has linting been run? 3) Is the commit message using conventional format (feat:, fix:, test:, etc.)? If tests or lint haven't been run in this session, respond with {\"decision\": \"block\", \"reason\": \"Run tests and lint before committing.\"}. Otherwise {\"decision\": \"allow\"}."
+            "prompt": "Before committing, verify: 1) Have tests been run and do they pass? 2) Has linting been run? 3) Is the commit message using conventional format (feat:, fix:, test:, etc.)? If tests or lint haven't been run in this session, respond with {\"decision\": \"block\", \"reason\": \"Run tests and lint before committing.\"}. Otherwise {\"decision\": \"allow\"}.",
+            "timeout": 45
           }
         ]
       },
@@ -391,8 +394,8 @@
         "hooks": [
           {
             "type": "prompt",
-            "timeout": 45,
-            "prompt": "A subagent just finished. Verify: 1) Did it complete all assigned tasks? 2) If it wrote code, did it run tests? 3) Are there any TODO/FIXME left in files it modified? If incomplete, respond with {\"decision\": \"block\", \"reason\": \"Subagent incomplete: [details]\"}. Otherwise {\"decision\": \"allow\"}."
+            "prompt": "A subagent just finished. Verify: 1) Did it complete all assigned tasks? 2) If it wrote code, did it run tests? 3) Are there any TODO/FIXME left in files it modified? If incomplete, respond with {\"decision\": \"block\", \"reason\": \"Subagent incomplete: [details]\"}. Otherwise {\"decision\": \"allow\"}.",
+            "timeout": 45
           }
         ]
       }
@@ -407,8 +410,8 @@
           },
           {
             "type": "prompt",
-            "timeout": 60,
-            "prompt": "Before stopping, verify ALL of the following:\n\n1. TASK COMPLETION: All tasks from the task list are completed or explicitly deferred with a reason.\n2. NO LOOSE ENDS: No TODO items remain in modified files without a linked issue.\n3. TESTS RAN: If code was written or modified, tests were run and pass.\n4. NO RATIONALIZATION: Check your last response — did you say 'we can address this later', 'this is good enough for now', 'we can defer this to a follow-up', or similar? If so, STOP. Either fix the issue now or explicitly flag it as a known limitation.\n5. VERIFICATION: If implementation was done, were the verification commands run? (test, lint, typecheck)\n6. AGENTS.MD: If you discovered a pattern, gotcha, or resolved a non-trivial error during this session, did you update AGENTS.md? If AGENTS.md exists and you learned something new, update it before stopping.\n\nIf anything is incomplete, respond with {\"decision\": \"block\", \"reason\": \"Incomplete: [what remains]\"}.\nOtherwise respond with {\"decision\": \"allow\"}.\nAlso remind the user to run /reflect."
+            "prompt": "Before stopping, verify ALL of the following:\n\n1. TASK COMPLETION: All tasks from the task list are completed or explicitly deferred with a reason.\n2. NO LOOSE ENDS: No TODO items remain in modified files without a linked issue.\n3. TESTS RAN: If code was written or modified, tests were run and pass.\n4. NO RATIONALIZATION: Check your last response — did you say 'we can address this later', 'this is good enough for now', 'we can defer this to a follow-up', or similar? If so, STOP. Either fix the issue now or explicitly flag it as a known limitation.\n5. VERIFICATION: If implementation was done, were the verification commands run? (test, lint, typecheck)\n6. AGENTS.MD: If you discovered a pattern, gotcha, or resolved a non-trivial error during this session, did you update AGENTS.md? If AGENTS.md exists and you learned something new, update it before stopping.\n\nIf anything is incomplete, respond with {\"decision\": \"block\", \"reason\": \"Incomplete: [what remains]\"}.\nOtherwise respond with {\"decision\": \"allow\"}.\nAlso remind the user to run /reflect.",
+            "timeout": 60
           }
         ]
       }

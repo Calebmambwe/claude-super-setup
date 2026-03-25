@@ -1,15 +1,78 @@
 {
   "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
+      }
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
     "code-review-graph": {
       "command": "uvx",
-      "args": ["code-review-graph", "serve"]
+      "args": [
+        "code-review-graph",
+        "serve"
+      ]
     },
     "knowledge-rag": {
       "command": "npx",
-      "args": ["-y", "knowledge-rag", "serve"],
+      "args": [
+        "-y",
+        "knowledge-rag",
+        "serve"
+      ],
       "env": {
         "KNOWLEDGE_RAG_DIR": "./docs:./agent_docs",
         "KNOWLEDGE_RAG_EXTENSIONS": ".md,.mdx,.txt,.yaml,.yml"
+      }
+    },
+    "learning": {
+      "command": "python3",
+      "args": [
+        "/home/claude/.claude/mcp-servers/learning-server.py"
+      ],
+      "env": {
+        "OPENAI_API_KEY": ""
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    },
+    "gemini": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/claude-code-gemini-mcp"
+      ],
+      "env": {
+        "GEMINI_API_KEY": ""
       }
     }
   }
