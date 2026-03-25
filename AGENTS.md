@@ -109,6 +109,41 @@ Shared project context for Claude Code and Cursor agents.
 - `POST /api/commands/:name/run` uses async event streaming for live output.
 - All endpoints source data from existing files (ghost-config.json, tasks.json, metrics.jsonl, catalog.json).
 
+## Sprint 6: Ghost Mode Hardening + Telegram Dev Parity + Local Models
+
+### NLP Natural Language Routing
+- `telegram-dispatch.md` now supports natural language intent detection alongside explicit `/commands`.
+- Pattern-based routing: "build X" → `/ghost "X"`, "fix X" → `/debug X`, "ship it" → `/auto-ship`, "what's running?" → `/queue`.
+- Always-autonomous default: BUILD/PLAN intents route to `/ghost` (fire-and-forget from mobile).
+- High-confidence matches dispatch immediately; medium-confidence asks for confirmation.
+- No-match falls back to conversational mode — no false positives.
+- Queue entries include `nlp_routed: true/false` flag for observability.
+
+### New Hooks
+- `hooks/auto-quality-gate.sh` — PostToolUse hook that runs lint (ESLint/Biome/ruff) and typecheck (tsc/mypy) after Edit/Write on source files. Supports JS/TS/Python.
+- `hooks/telemetry.sh` — PostToolUse hook that logs structured JSON events to `~/.claude/logs/telemetry.jsonl`. Classifies tool types (read/write/exec/agent/mcp). Auto-rotates at 10MB.
+- `hooks/alert-check.sh` — PostToolUse hook (Bash) with 4 mandatory alerts: (1) test suite failure, (2) build/compile failure, (3) disk space >90%, (4) Ghost Mode timeout exceeding max_hours. All alerts log to `~/.claude/logs/alerts.jsonl` and dispatch via `ghost-notify.sh`.
+
+### Local Model Support (Ollama)
+- `config/model-routing.json` — routing config mapping task types (planning, implementation, review, testing, triage, embedding) to models with Anthropic primary and Ollama fallback.
+- Fallback triggers: HTTP 429/529/500+, budget < $1, network timeout > 30s.
+- Offline mode: `CLAUDE_OFFLINE=1` skips Anthropic entirely, uses only Ollama.
+- `setup-vps.sh --with-ollama` — Phase 9/10 installs Ollama, pulls llama3.2:3b, copies model-routing.json with Ollama enabled.
+
+### Observability Dashboard
+- `commands/dashboard.md` — unified view aggregating pipeline status, task progress, tool usage, alerts, system health, and queue.
+- Full terminal version with box-drawing characters, condensed Telegram version under 4096 chars.
+- Sources: ghost-config.json, tasks.json, telemetry.jsonl, alerts.jsonl, model-costs.jsonl, telegram-queue.json.
+
+### Extended Test-After-Impl
+- `hooks/test-after-impl.sh` now triggers on ALL source file changes (.ts/.tsx/.js/.jsx/.py/.go/.rs), not just test files.
+- For source files: searches 6 patterns to find corresponding test file (co-located, __tests__, tests/ mirror, Python test_ prefix).
+- Silently skips if no corresponding test found. Reports which source file triggered the test.
+
+### Integration Tests
+- 5 integration tests in `tests/integration/`: hooks existence (15 checks), config validation (12 checks), dispatch runner security (7 checks), ghost-notify levels (8 checks), setup-vps flags (10 checks).
+- Total: 52 assertions, all passing.
+
 ## Maintenance
 - Update this file whenever durable project conventions change.
 - Re-run `/cursor-setup` after major setup updates.

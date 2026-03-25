@@ -24,6 +24,7 @@ DRY_RUN=false
 SKIP_DOCKER=false
 SKIP_TAILSCALE=false
 SKIP_CHEZMOI=false
+WITH_OLLAMA=false
 
 log()  { echo -e "${GREEN}[OK]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
@@ -50,6 +51,7 @@ Options:
   --skip-docker      Skip Docker installation
   --skip-tailscale   Skip Tailscale installation
   --skip-chezmoi     Skip chezmoi dotfiles setup
+  --with-ollama      Install Ollama for local model inference
   --help             Show this help
 
 Supports: Ubuntu 22.04+, Debian 12+, macOS (partial)
@@ -64,6 +66,7 @@ for arg in "$@"; do
     --skip-docker)    SKIP_DOCKER=true ;;
     --skip-tailscale) SKIP_TAILSCALE=true ;;
     --skip-chezmoi)   SKIP_CHEZMOI=true ;;
+    --with-ollama)    WITH_OLLAMA=true ;;
     --help|-h)        usage ;;
     *) err "Unknown argument: $arg"; usage ;;
   esac
@@ -97,7 +100,7 @@ fi
 
 # ── Phase 1: System dependencies ────────────────────────────────────────────
 
-info "Phase 1/9: Installing system dependencies..."
+info "Phase 1/10: Installing system dependencies..."
 
 if [[ "$OS" == "macos" ]]; then
   if ! command -v brew &>/dev/null; then
@@ -114,7 +117,7 @@ log "System dependencies installed."
 
 # ── Phase 2: Node.js via nvm ────────────────────────────────────────────────
 
-info "Phase 2/9: Installing Node.js 22 via nvm..."
+info "Phase 2/10: Installing Node.js 22 via nvm..."
 
 if command -v node &>/dev/null && [[ "$(node -v)" == v22* ]]; then
   log "Node.js 22 already installed: $(node -v)"
@@ -137,7 +140,7 @@ fi
 
 # ── Phase 3: Python via uv ──────────────────────────────────────────────────
 
-info "Phase 3/9: Installing Python toolchain (uv)..."
+info "Phase 3/10: Installing Python toolchain (uv)..."
 
 if command -v uv &>/dev/null; then
   log "uv already installed: $(uv --version)"
@@ -152,9 +155,9 @@ fi
 # ── Phase 4: Docker (optional) ──────────────────────────────────────────────
 
 if $SKIP_DOCKER; then
-  info "Phase 4/9: Docker installation skipped (--skip-docker)"
+  info "Phase 4/10: Docker installation skipped (--skip-docker)"
 else
-  info "Phase 4/9: Installing Docker..."
+  info "Phase 4/10: Installing Docker..."
 
   if command -v docker &>/dev/null; then
     log "Docker already installed: $(docker --version)"
@@ -185,7 +188,7 @@ fi
 
 # ── Phase 5: Claude Code CLI ────────────────────────────────────────────────
 
-info "Phase 5/9: Installing Claude Code CLI..."
+info "Phase 5/10: Installing Claude Code CLI..."
 
 if command -v claude &>/dev/null; then
   log "Claude Code already installed: $(claude --version 2>/dev/null || echo 'installed')"
@@ -210,7 +213,7 @@ echo ""
 
 # ── Phase 6: Clone repos ────────────────────────────────────────────────────
 
-info "Phase 6/9: Cloning repositories..."
+info "Phase 6/10: Cloning repositories..."
 
 if [[ -d "$REPO_DIR" ]]; then
   info "Repository exists at $REPO_DIR — pulling latest..."
@@ -231,7 +234,7 @@ fi
 
 # ── Phase 7: MCP servers ────────────────────────────────────────────────────
 
-info "Phase 7/9: Setting up MCP servers..."
+info "Phase 7/10: Setting up MCP servers..."
 
 MCP_DIR="$CLAUDE_DIR/mcp-servers"
 if [[ ! -d "$MCP_DIR" ]]; then
@@ -262,7 +265,7 @@ log "MCP servers configured."
 # ── Phase 8: systemd services (Linux only) ──────────────────────────────────
 
 if [[ "$OS" != "macos" ]]; then
-  info "Phase 8/9: Installing systemd services..."
+  info "Phase 8/10: Installing systemd services..."
 
   SYSTEMD_SRC="$REPO_DIR/config/systemd"
   if [[ -d "$SYSTEMD_SRC" ]]; then
@@ -291,16 +294,62 @@ if [[ "$OS" != "macos" ]]; then
     warn "No systemd service files found at $SYSTEMD_SRC"
   fi
 else
-  info "Phase 8/9: Skipped — systemd not available on macOS"
+  info "Phase 8/10: Skipped — systemd not available on macOS"
   info "Use launchd or manual 'screen' sessions instead."
 fi
 
-# ── Phase 9: Tailscale (optional) ───────────────────────────────────────────
+# ── Phase 9: Ollama (optional) ──────────────────────────────────────────────
+
+if $WITH_OLLAMA; then
+  info "Phase 9/10: Installing Ollama for local model inference..."
+
+  if command -v ollama &>/dev/null; then
+    log "Ollama already installed: $(ollama --version 2>/dev/null || echo 'installed')"
+  else
+    run_cmd "curl -fsSL https://ollama.com/install.sh | sh"
+    log "Ollama installed."
+  fi
+
+  # Pull recommended models for code tasks
+  if ! $DRY_RUN && command -v ollama &>/dev/null; then
+    info "Pulling recommended models (this may take a while)..."
+    run_cmd "ollama pull llama3.2:3b 2>/dev/null || true"
+    log "Pulled llama3.2:3b (fast triage model)"
+
+    # Copy model routing config
+    if [[ -f "$REPO_DIR/config/model-routing.json" ]]; then
+      ROUTING_DEST="$CLAUDE_DIR/model-routing.json"
+      run_cmd "cp \"$REPO_DIR/config/model-routing.json\" \"$ROUTING_DEST\""
+      # Enable Ollama in the config
+      if command -v jq &>/dev/null; then
+        OLLAMA_TMP=$(mktemp)
+        jq '.providers.ollama.enabled = true' "$ROUTING_DEST" > "$OLLAMA_TMP" && mv "$OLLAMA_TMP" "$ROUTING_DEST"
+      fi
+      log "Model routing config installed with Ollama enabled"
+    fi
+  else
+    dry "ollama pull llama3.2:3b"
+    dry "Copy model-routing.json with Ollama enabled"
+  fi
+
+  # Enable Ollama systemd service on Linux
+  if [[ "$OS" != "macos" ]] && ! $DRY_RUN; then
+    if systemctl list-unit-files ollama.service &>/dev/null; then
+      run_cmd "sudo systemctl enable ollama"
+      run_cmd "sudo systemctl start ollama"
+      log "Ollama systemd service enabled and started"
+    fi
+  fi
+else
+  info "Phase 9/10: Ollama installation skipped (use --with-ollama to enable)"
+fi
+
+# ── Phase 10: Tailscale (optional) ──────────────────────────────────────────
 
 if $SKIP_TAILSCALE; then
-  info "Phase 9/9: Tailscale installation skipped (--skip-tailscale)"
+  info "Phase 10/10: Tailscale installation skipped (--skip-tailscale)"
 else
-  info "Phase 9/9: Installing Tailscale..."
+  info "Phase 10/10: Installing Tailscale..."
 
   if command -v tailscale &>/dev/null; then
     log "Tailscale already installed."
