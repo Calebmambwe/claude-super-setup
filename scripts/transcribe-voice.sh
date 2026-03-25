@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Transcribe a voice message (OGG/OGA) to text via OpenAI Whisper API
-# Usage: bash scripts/transcribe-voice.sh <input-file> [--language en]
+# Transcribe a voice message (OGG/OGA) to text
+# Uses Gemini (free) as primary, falls back to OpenAI Whisper ($0.006/min)
+# Usage: bash scripts/transcribe-voice.sh <input-file> [--language en] [--provider gemini|whisper]
 #
-# Requires: OPENAI_API_KEY environment variable, ffmpeg, curl
-# Cost: ~$0.006 per minute of audio
+# Requires: GEMINI_API_KEY or OPENAI_API_KEY, ffmpeg, curl, base64
 #
 # Outputs the transcription text to stdout.
 # Saves the transcription to a .txt file alongside the input.
@@ -19,6 +19,7 @@ log() { echo -e "${GREEN}[OK]${NC} $1" >&2; }
 
 INPUT_FILE=""
 LANGUAGE="en"
+PROVIDER=""
 
 # Parse all args (flags can appear in any order)
 while [ $# -gt 0 ]; do
@@ -29,6 +30,12 @@ while [ $# -gt 0 ]; do
         exit 1
       fi
       LANGUAGE="$2"; shift 2 ;;
+    --provider)
+      if [ $# -lt 2 ]; then
+        err "--provider requires a value (gemini or whisper)"
+        exit 1
+      fi
+      PROVIDER="$2"; shift 2 ;;
     --*) err "Unknown flag: $1"; exit 1 ;;
     *)
       if [ -n "$INPUT_FILE" ]; then
@@ -75,27 +82,33 @@ if ! command -v curl &>/dev/null; then
   exit 1
 fi
 
-# Find OPENAI_API_KEY
-if [ -z "${OPENAI_API_KEY:-}" ]; then
-  # Try loading from telegram .env
-  TELEGRAM_ENV="$HOME/.claude/channels/telegram/.env"
-  if [ -f "$TELEGRAM_ENV" ]; then
-    OPENAI_API_KEY=$(grep -s '^OPENAI_API_KEY=' "$TELEGRAM_ENV" | head -1 | sed 's/^OPENAI_API_KEY=//' | sed 's/[[:space:]]*#.*//' | sed "s/^[\"']\(.*\)[\"']$/\1/" | tr -d '\r' || true)
+# Find API keys — try Gemini first (free), then Whisper (paid)
+GEMINI_API_KEY="${GEMINI_API_KEY:-}"
+OPENAI_API_KEY="${OPENAI_API_KEY:-}"
+
+# Load from .env.local or .env
+for ENV_FILE in "$HOME/.claude/.env.local" "$HOME/.claude/.env"; do
+  if [ -f "$ENV_FILE" ]; then
+    [ -z "$GEMINI_API_KEY" ] && GEMINI_API_KEY=$(grep -s '^GEMINI_API_KEY=' "$ENV_FILE" | head -1 | sed 's/^GEMINI_API_KEY=//' | tr -d '[:space:]' || true)
+    [ -z "$OPENAI_API_KEY" ] && OPENAI_API_KEY=$(grep -s '^OPENAI_API_KEY=' "$ENV_FILE" | head -1 | sed 's/^OPENAI_API_KEY=//' | tr -d '[:space:]' || true)
+  fi
+done
+
+# Auto-select provider if not specified
+if [ -z "$PROVIDER" ]; then
+  if [ -n "$GEMINI_API_KEY" ]; then
+    PROVIDER="gemini"
+  elif [ -n "$OPENAI_API_KEY" ]; then
+    PROVIDER="whisper"
+  else
+    err "No API key found. Set GEMINI_API_KEY (free) or OPENAI_API_KEY (paid)."
+    echo "  Add to ~/.claude/.env.local:" >&2
+    echo "  GEMINI_API_KEY=your-key-here" >&2
+    exit 1
   fi
 fi
 
-if [ -z "${OPENAI_API_KEY:-}" ]; then
-  err "OPENAI_API_KEY not found."
-  echo "  Set it with: export OPENAI_API_KEY=your-key-here" >&2
-  echo "  Or add to ~/.claude/channels/telegram/.env:" >&2
-  echo "  OPENAI_API_KEY=your-key-here" >&2
-  exit 1
-fi
-
-if ! [[ "$OPENAI_API_KEY" =~ ^[A-Za-z0-9_-]{10,}$ ]]; then
-  err "OPENAI_API_KEY contains unexpected characters. Expected alphanumeric, hyphens, underscores."
-  exit 1
-fi
+log "Using provider: $PROVIDER"
 
 # Convert OGG/OGA to MP3 (Whisper API accepts mp3, mp4, mpeg, mpga, m4a, wav, webm)
 # Validate input is a local file path, not a URL (prevent ffmpeg SSRF)
@@ -121,23 +134,61 @@ trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 MP3_FILE="$TMP_DIR/${BASENAME_NO_EXT}.mp3"
 
 log "Converting to MP3..."
-ffmpeg -i -- "$INPUT_FILE" -codec:a libmp3lame -qscale:a 4 -y "$MP3_FILE" 2>/dev/null
+ffmpeg -i "$INPUT_FILE" -codec:a libmp3lame -qscale:a 4 -y "$MP3_FILE" 2>/dev/null
 
 if [ ! -f "$MP3_FILE" ]; then
   err "ffmpeg conversion failed"
   exit 1
 fi
 
-# Call Whisper API (use curl config file to avoid exposing API key in process args)
-log "Transcribing via Whisper API..."
-CURL_CONFIG="$TMP_DIR/.curlrc"
-printf 'header = "Authorization: Bearer %s"\n' "$OPENAI_API_KEY" > "$CURL_CONFIG"
-chmod 600 "$CURL_CONFIG"
-RESPONSE=$(curl -s --fail-with-body --config "$CURL_CONFIG" -X POST "https://api.openai.com/v1/audio/transcriptions" \
-  -F "file=@$MP3_FILE" \
-  -F "model=whisper-1" \
-  -F "language=$LANGUAGE" \
-  -F "response_format=text" 2>&1) || { err "Whisper API request failed (HTTP error). Re-run with VERBOSE=1 for details."; [ "${VERBOSE:-0}" = "1" ] && echo "$RESPONSE" >&2; exit 1; }
+# Transcribe based on provider
+RESPONSE=""
+
+if [ "$PROVIDER" = "gemini" ]; then
+  log "Transcribing via Gemini (free)..."
+  AUDIO_B64=$(base64 -i "$MP3_FILE" 2>/dev/null || base64 "$MP3_FILE" 2>/dev/null)
+
+  GEMINI_RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"contents\": [{
+        \"parts\": [
+          {\"text\": \"Transcribe this audio exactly as spoken. Return ONLY the transcription text, no commentary, no formatting, no quotes.\"},
+          {\"inline_data\": {\"mime_type\": \"audio/mp3\", \"data\": \"${AUDIO_B64}\"}}
+        ]
+      }]
+    }" 2>&1)
+
+  RESPONSE=$(echo "$GEMINI_RESPONSE" | python3 -c "
+import json, sys
+try:
+    r = json.load(sys.stdin)
+    text = r['candidates'][0]['content']['parts'][0]['text']
+    print(text.strip())
+except Exception as e:
+    print(f'ERROR: {e}', file=sys.stderr)
+    sys.exit(1)
+" 2>&1) || {
+    err "Gemini transcription failed. Falling back to Whisper..."
+    PROVIDER="whisper"
+  }
+fi
+
+if [ "$PROVIDER" = "whisper" ]; then
+  if [ -z "$OPENAI_API_KEY" ]; then
+    err "Whisper fallback failed — no OPENAI_API_KEY set."
+    exit 1
+  fi
+  log "Transcribing via Whisper API..."
+  CURL_CONFIG="$TMP_DIR/.curlrc"
+  printf 'header = "Authorization: Bearer %s"\n' "$OPENAI_API_KEY" > "$CURL_CONFIG"
+  chmod 600 "$CURL_CONFIG"
+  RESPONSE=$(curl -s --fail-with-body --config "$CURL_CONFIG" -X POST "https://api.openai.com/v1/audio/transcriptions" \
+    -F "file=@$MP3_FILE" \
+    -F "model=whisper-1" \
+    -F "language=$LANGUAGE" \
+    -F "response_format=text" 2>&1) || { err "Whisper API request failed."; exit 1; }
+fi
 
 if [ -z "$RESPONSE" ]; then
   err "Whisper API returned empty response"
