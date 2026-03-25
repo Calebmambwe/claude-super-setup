@@ -115,7 +115,7 @@ Shared project context for Claude Code and Cursor agents.
 - `CHANGELOG.md` now tracks all changes by sprint.
 - `install.sh` handles `agents/teams/`, `agents/catalog.json`, and `schemas/` directories.
 - `docs/FEATURES.md` registry tracks feature status (Draft → Design Doc → In Progress → Complete).
-- README.md reflects current counts: 98+ commands, 70+ agents, 14 hooks, 14 rules.
+- README.md reflects current counts: 98+ commands, 68+ agents, 14 hooks, 14 rules.
 
 ## Maintenance
 - Update this file whenever durable project conventions change.

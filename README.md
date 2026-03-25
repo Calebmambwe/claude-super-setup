@@ -1,6 +1,6 @@
 # claude-super-setup
 
-A portable, enterprise-grade, always-on AI development platform with 98+ commands, 70+ agents, 16 stack templates, autonomous CI/CD, sandboxed development, RAG-powered planning, and mobile-first remote control via Telegram.
+A portable, enterprise-grade, always-on AI development platform with 98+ commands, 68+ agents, 16 stack templates, autonomous CI/CD, sandboxed development, RAG-powered planning, and mobile-first remote control via Telegram.
 
 **[Full Usage Guide](docs/USAGE.md)** | **[Contributing](CONTRIBUTING.md)** | **[Upgrading](UPGRADING.md)**
 
@@ -157,7 +157,7 @@ Deploy the full stack to a remote Ubuntu VPS for always-on operation:
 
 ```bash
 # On your VPS (Ubuntu 24.04 LTS)
-curl -fsSL https://raw.githubusercontent.com/calebtala-zm/claude-super-setup/main/scripts/setup-vps.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Calebmambwe/claude-super-setup/main/scripts/setup-vps.sh | bash
 
 # Authenticate Claude
 claude setup-token
@@ -191,7 +191,7 @@ With symlink mode, pulling updates the live config instantly.
 ~/.claude-super-setup/          (git repo)
 ├── config/                     (CLAUDE.md, settings.json, stack templates, systemd units)
 ├── commands/                   (98+ slash commands)
-├── agents/core/                (50+ core agents)
+├── agents/core/                (50 core agents)
 ├── agents/community/           (18+ community agents)
 ├── agents/teams/               (VS Code team presets: review, feature, debug)
 ├── agents/catalog.json         (agent registry + model routing)

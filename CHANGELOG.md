@@ -2,7 +2,7 @@
 
 All notable changes to claude-super-setup are documented here.
 
-## [Unreleased] — Sprint 6: Polish, Documentation & Release
+## [Sprint 6] — 2026-03-24: Polish, Documentation & Release
 
 ### Changed
 - Updated README.md with full Enterprise Agent Platform feature list and setup instructions
