@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# VPS Telegram Supervisor — Simple bash supervisor loop
-# Runs the startup script forever, restarting on crash.
-# This is the fallback if supervisord is not available.
-# Run this inside a tmux/screen session or via systemd.
+# VPS Telegram Supervisor — Manages Claude listener via tmux
+# Claude Code REQUIRES a TTY — cannot run under supervisord directly.
+# This script launches Claude inside tmux and monitors it, restarting on crash.
+# Designed to be run by supervisord (which restarts THIS script if it dies).
 
 LOG_FILE="$HOME/.claude/logs/telegram-supervisor.log"
 mkdir -p "$(dirname "$LOG_FILE")"
@@ -27,62 +27,89 @@ notify() {
   fi
 }
 
-STARTUP_SCRIPT="$(dirname "$0")/vps-telegram-start.sh"
-if [ ! -f "$STARTUP_SCRIPT" ]; then
-  STARTUP_SCRIPT="$HOME/.claude-super-setup/scripts/vps-telegram-start.sh"
-fi
+# --- NVM setup ---
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+export PATH="$HOME/.nvm/versions/node/v22.22.2/bin:$HOME/.bun/bin:$PATH"
 
-if [ ! -f "$STARTUP_SCRIPT" ]; then
-  log "FATAL: Cannot find vps-telegram-start.sh"
-  exit 1
-fi
+CLAUDE_BIN=$(which claude 2>/dev/null || echo "$HOME/.nvm/versions/node/v22.22.2/bin/claude")
+SESSION_NAME="claude-telegram"
 
 RESTART_COUNT=0
 MAX_RAPID_RESTARTS=20
 LAST_START=0
 
-log "=== Supervisor starting ==="
-log "Startup script: $STARTUP_SCRIPT"
+log "=== Supervisor starting (tmux mode) ==="
+
+start_tmux_session() {
+  # Kill any existing session
+  tmux kill-session -t "$SESSION_NAME" 2>/dev/null || true
+  pkill -f "bun.*server.ts" 2>/dev/null || true
+  sleep 2
+
+  # Launch Claude in tmux (provides the TTY it needs)
+  tmux new-session -d -s "$SESSION_NAME" "$CLAUDE_BIN --dangerously-skip-permissions --channels plugin:telegram@claude-plugins-official"
+  sleep 5
+
+  # Auto-approve trust prompt
+  tmux send-keys -t "$SESSION_NAME" Enter 2>/dev/null || true
+  sleep 3
+
+  # Auto-approve effort prompt
+  tmux send-keys -t "$SESSION_NAME" Enter 2>/dev/null || true
+  sleep 5
+}
+
+is_healthy() {
+  # Check tmux session exists
+  tmux has-session -t "$SESSION_NAME" 2>/dev/null || return 1
+  # Check bun telegram server is running
+  pgrep -f "bun.*server.ts" > /dev/null 2>&1 || return 1
+  return 0
+}
 
 while true; do
   NOW=$(date +%s)
+
+  # Check if listener is already running and healthy
+  if is_healthy; then
+    # All good — sleep and check again
+    sleep 30
+    continue
+  fi
+
+  # Not healthy — need to start/restart
   UPTIME=$(( NOW - LAST_START ))
   LAST_START=$NOW
 
-  # Rate limit: if last run was < 30s, it's a rapid restart
-  if [ "$UPTIME" -lt 30 ] && [ "$LAST_START" -gt 0 ]; then
+  # Rate limit rapid restarts
+  if [ "$UPTIME" -lt 60 ] && [ "$LAST_START" -gt 0 ]; then
     RESTART_COUNT=$((RESTART_COUNT + 1))
-    BACKOFF=$(( RESTART_COUNT * 10 ))
-    # Cap backoff at 5 minutes
+    BACKOFF=$(( RESTART_COUNT * 15 ))
     [ "$BACKOFF" -gt 300 ] && BACKOFF=300
 
     log "Rapid restart #$RESTART_COUNT (ran for ${UPTIME}s). Backing off ${BACKOFF}s..."
 
     if [ "$RESTART_COUNT" -ge "$MAX_RAPID_RESTARTS" ]; then
       log "FATAL: $MAX_RAPID_RESTARTS rapid restarts — giving up"
-      notify "ALERT: VPS Telegram supervisor gave up after $MAX_RAPID_RESTARTS rapid restarts. Manual intervention required."
+      notify "ALERT: VPS Telegram supervisor gave up after $MAX_RAPID_RESTARTS rapid restarts. Manual intervention needed."
       exit 1
     fi
 
     sleep "$BACKOFF"
   else
-    # Healthy run — reset counter
     RESTART_COUNT=0
   fi
 
-  log "Starting Claude Telegram listener (attempt $((RESTART_COUNT + 1)))..."
+  log "Starting Claude Telegram listener in tmux (attempt $((RESTART_COUNT + 1)))..."
+  start_tmux_session
 
-  # Run the startup script
-  bash "$STARTUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE"
-  EXIT_CODE=${PIPESTATUS[0]}
-
-  log "Claude exited with code $EXIT_CODE after ${UPTIME}s"
-
-  # Alert on crash (but not on first start)
-  if [ "$EXIT_CODE" -ne 0 ]; then
-    notify "VPS supervisor: Claude listener crashed (exit $EXIT_CODE). Auto-restarting..."
+  # Wait and verify
+  sleep 10
+  if is_healthy; then
+    log "Listener started successfully"
+    notify "VPS supervisor: Telegram listener restarted successfully."
+  else
+    log "WARNING: Listener may not have started properly"
   fi
-
-  # Brief pause before restart
-  sleep 5
 done
