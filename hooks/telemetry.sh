@@ -50,21 +50,29 @@ case "$TOOL_NAME" in
 esac
 
 # Write structured event (one JSON line)
-# Use printf to avoid echo -n portability issues
-printf '{"ts":"%s","tool":"%s","type":"%s","file":"%s","project":"%s","branch":"%s","session":"%s"}\n' \
-  "$NOW" \
-  "$TOOL_NAME" \
-  "$TOOL_TYPE" \
-  "$FILE_PATH" \
-  "$PROJECT_DIR" \
-  "$BRANCH" \
-  "$SESSION_ID" \
-  >> "$LOG_FILE" 2>/dev/null
+# Use jq for proper JSON escaping of all values (file paths may contain quotes/special chars)
+if command -v jq >/dev/null 2>&1; then
+  jq -n -c \
+    --arg ts "$NOW" \
+    --arg tool "$TOOL_NAME" \
+    --arg type "$TOOL_TYPE" \
+    --arg file "$FILE_PATH" \
+    --arg project "$PROJECT_DIR" \
+    --arg branch "$BRANCH" \
+    --arg session "$SESSION_ID" \
+    '{ts:$ts,tool:$tool,type:$type,file:$file,project:$project,branch:$branch,session:$session}' \
+    >> "$LOG_FILE" 2>/dev/null
+else
+  # Fallback: printf with values that should not contain special chars in practice
+  printf '{"ts":"%s","tool":"%s","type":"%s","file":"%s","project":"%s","branch":"%s","session":"%s"}\n' \
+    "$NOW" "$TOOL_NAME" "$TOOL_TYPE" "$FILE_PATH" "$PROJECT_DIR" "$BRANCH" "$SESSION_ID" \
+    >> "$LOG_FILE" 2>/dev/null
+fi
 
 # Rotate log if over 10MB
 LOG_SIZE=$(stat -f%z "$LOG_FILE" 2>/dev/null || stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)
 if [ "$LOG_SIZE" -gt 10485760 ] 2>/dev/null; then
-  mv "$LOG_FILE" "${LOG_FILE}.$(date +%Y%m%d)" 2>/dev/null || true
+  mv "$LOG_FILE" "${LOG_FILE}.$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
 fi
 
 exit 0

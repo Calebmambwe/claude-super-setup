@@ -11,12 +11,12 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 [ -z "$FILE_PATH" ] && exit 0
 
 # Validate file path contains only safe characters
-if ! [[ "$FILE_PATH" =~ ^/[a-zA-Z0-9_./@\ -]+$ ]]; then
+if ! [[ "$FILE_PATH" =~ ^/[a-zA-Z0-9_./@ -]+$ ]]; then
   exit 0
 fi
 
 FILE_PATH=$(realpath -- "$FILE_PATH" 2>/dev/null || echo "$FILE_PATH")
-if ! [[ "$FILE_PATH" =~ ^/[a-zA-Z0-9_./@\ -]+$ ]]; then
+if ! [[ "$FILE_PATH" =~ ^/[a-zA-Z0-9_./@ -]+$ ]]; then
   exit 0
 fi
 

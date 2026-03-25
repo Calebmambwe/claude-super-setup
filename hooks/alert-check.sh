@@ -24,15 +24,25 @@ NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 log_alert() {
   local alert_type="$1"
   local message="$2"
-  printf '{"ts":"%s","alert":"%s","message":"%s","command":"%s"}\n' \
-    "$NOW" "$alert_type" "$message" "$(echo "$COMMAND" | head -c 200)" \
-    >> "$ALERT_LOG" 2>/dev/null
+  if command -v jq >/dev/null 2>&1; then
+    jq -n -c \
+      --arg ts "$NOW" \
+      --arg alert "$alert_type" \
+      --arg msg "$message" \
+      --arg cmd "$(printf '%s' "$COMMAND" | head -c 200)" \
+      '{ts:$ts,alert:$alert,message:$msg,command:$cmd}' \
+      >> "$ALERT_LOG" 2>/dev/null
+  else
+    printf '{"ts":"%s","alert":"%s","message":"%s","command":"%s"}\n' \
+      "$NOW" "$alert_type" "$message" "$(printf '%s' "$COMMAND" | head -c 200)" \
+      >> "$ALERT_LOG" 2>/dev/null
+  fi
 }
 
 send_alert() {
   local level="$1"
   local message="$2"
-  if [ -x "$NOTIFY_SCRIPT" ] || [ -f "$NOTIFY_SCRIPT" ]; then
+  if [ -x "$NOTIFY_SCRIPT" ]; then
     bash "$NOTIFY_SCRIPT" "$level" "$message" 2>/dev/null &
   fi
 }

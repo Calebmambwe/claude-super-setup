@@ -54,6 +54,19 @@ assert_blocked "Rejects command injection in session name" \
 assert_blocked "Rejects path traversal in project dir" \
   bash "$RUNNER" "ghost" "" "$HOME/../../etc" "test-traversal" ""
 
+# Test 8: Reject ARGS with shell metacharacters (injection prevention)
+assert_blocked "Rejects ARGS with semicolons" \
+  bash "$RUNNER" "ghost" "feature; rm -rf ~" "$HOME" "test-args-inj" ""
+
+# Test 9: Reject ARGS with backticks
+assert_blocked "Rejects ARGS with backticks" \
+  bash "$RUNNER" "ghost" 'build $(whoami)' "$HOME" "test-args-bt" ""
+
+# Test 10: Reject ARGS exceeding 300 chars
+LONG_ARGS=$(printf 'a%.0s' {1..301})
+assert_blocked "Rejects ARGS over 300 chars" \
+  bash "$RUNNER" "ghost" "$LONG_ARGS" "$HOME" "test-args-long" ""
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 

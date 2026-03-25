@@ -1,5 +1,5 @@
 {
-  "$schema": "./schemas/model-routing.schema.json",
+  "$comment": "Schema: schemas/model-routing.schema.json (to be created)",
   "version": 1,
   "description": "Model routing configuration — maps task types to models with local Ollama fallback support",
   "providers": {
@@ -9,7 +9,7 @@
       "models": {
         "opus": "claude-opus-4-6",
         "sonnet": "claude-sonnet-4-6",
-        "haiku": "claude-haiku-4-5-20251001"
+        "haiku": "claude-haiku-4-5"
       }
     },
     "ollama": {
