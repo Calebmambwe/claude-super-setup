@@ -253,6 +253,10 @@
           {
             "type": "command",
             "command": "jq -r '\"[\" + (now | todate) + \"] \" + .tool_input.command' >> ~/.claude/command-audit.log 2>/dev/null; tail -500 ~/.claude/command-audit.log > ~/.claude/command-audit.log.tmp && mv ~/.claude/command-audit.log.tmp ~/.claude/command-audit.log 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/alert-check.sh"
           }
         ]
       },
@@ -384,7 +388,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f ~/.claude/ghost-config.json ] && jq -e '.status | test(\"running|starting\")' ~/.claude/ghost-config.json >/dev/null 2>&1; then bash ~/.claude/hooks/ghost-notify.sh phase \"Claude Code needs attention\"; else osascript -e 'display notification \"Claude Code needs your attention\" with title \"Claude Code\"'; fi"
+            "command": "bash ~/.claude-super-setup/hooks/ghost-notify.sh phase \"Claude Code needs attention\""
           }
         ]
       }
@@ -405,7 +409,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f ~/.claude/ghost-config.json ] && jq -e '.status | test(\"running|starting\")' ~/.claude/ghost-config.json >/dev/null 2>&1; then echo '{\"decision\": \"allow\"}'; else osascript -e 'display notification \"Claude finished\" with title \"Claude Code\"' 2>/dev/null; fi",
+            "command": "bash ~/.claude-super-setup/hooks/ghost-notify.sh success \"Claude session complete\" 2>/dev/null || true",
             "async": false
           },
           {
