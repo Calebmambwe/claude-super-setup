@@ -141,8 +141,8 @@ Shared project context for Claude Code and Cursor agents.
 - Silently skips if no corresponding test found. Reports which source file triggered the test.
 
 ### Integration Tests
-- 5 integration tests in `tests/integration/`: hooks existence (15 checks), config validation (12 checks), dispatch runner security (10 checks), ghost-notify levels (8 checks), setup-vps flags (10 checks).
-- Total: 55 assertions, all passing.
+- 5 integration tests in `tests/integration/`: hooks existence (15 checks), config validation (12 checks), dispatch runner security (12 checks), ghost-notify levels (8 checks), setup-vps flags (10 checks).
+- Total: 57 assertions, all passing.
 
 ## Maintenance
 - Update this file whenever durable project conventions change.

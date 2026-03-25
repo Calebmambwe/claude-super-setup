@@ -11,12 +11,12 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 [ -z "$FILE_PATH" ] && exit 0
 
 # Validate file path contains only safe characters
-if ! [[ "$FILE_PATH" =~ ^/[a-zA-Z0-9_./@ -]+$ ]]; then
+if ! [[ "$FILE_PATH" =~ ^/[a-zA-Z0-9_./@\ -]+$ ]]; then
   exit 0
 fi
 
 FILE_PATH=$(realpath -- "$FILE_PATH" 2>/dev/null || echo "$FILE_PATH")
-if ! [[ "$FILE_PATH" =~ ^/[a-zA-Z0-9_./@ -]+$ ]]; then
+if ! [[ "$FILE_PATH" =~ ^/[a-zA-Z0-9_./@\ -]+$ ]]; then
   exit 0
 fi
 
@@ -74,33 +74,25 @@ find_test_file() {
   src_dir=$(dirname "$src_path")
   local rel_dir="${src_dir#$PROJECT_ROOT/}"
 
-  # Search patterns for corresponding test file
-  local candidates=()
+  # Search patterns for corresponding test file (Bash 3.2 compatible — no arrays)
+  local candidates
+  candidates="$src_dir/${src_name}.test.${src_ext}
+$src_dir/${src_name}.spec.${src_ext}
+$src_dir/__tests__/${src_name}.test.${src_ext}
+$src_dir/__tests__/${src_name}.spec.${src_ext}
+$PROJECT_ROOT/tests/${rel_dir}/${src_name}.test.${src_ext}
+$PROJECT_ROOT/test/${rel_dir}/${src_name}.test.${src_ext}
+$PROJECT_ROOT/tests/${rel_dir}/${src_name}.spec.${src_ext}
+$src_dir/test_${src_name}.${src_ext}
+$PROJECT_ROOT/tests/test_${src_name}.${src_ext}
+$PROJECT_ROOT/tests/${rel_dir}/test_${src_name}.${src_ext}"
 
-  # Pattern 1: co-located test (same directory)
-  candidates+=("$src_dir/${src_name}.test.${src_ext}")
-  candidates+=("$src_dir/${src_name}.spec.${src_ext}")
-
-  # Pattern 2: __tests__ subdirectory
-  candidates+=("$src_dir/__tests__/${src_name}.test.${src_ext}")
-  candidates+=("$src_dir/__tests__/${src_name}.spec.${src_ext}")
-
-  # Pattern 3: tests/ or test/ at project root, mirroring src structure
-  candidates+=("$PROJECT_ROOT/tests/${rel_dir}/${src_name}.test.${src_ext}")
-  candidates+=("$PROJECT_ROOT/test/${rel_dir}/${src_name}.test.${src_ext}")
-  candidates+=("$PROJECT_ROOT/tests/${rel_dir}/${src_name}.spec.${src_ext}")
-
-  # Pattern 4: Python conventions
-  candidates+=("$src_dir/test_${src_name}.${src_ext}")
-  candidates+=("$PROJECT_ROOT/tests/test_${src_name}.${src_ext}")
-  candidates+=("$PROJECT_ROOT/tests/${rel_dir}/test_${src_name}.${src_ext}")
-
-  for candidate in "${candidates[@]}"; do
+  while IFS= read -r candidate; do
     if [ -f "$candidate" ]; then
       echo "$candidate"
       return 0
     fi
-  done
+  done <<< "$candidates"
 
   return 1
 }

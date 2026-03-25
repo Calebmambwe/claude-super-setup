@@ -67,6 +67,14 @@ LONG_ARGS=$(printf 'a%.0s' {1..301})
 assert_blocked "Rejects ARGS over 300 chars" \
   bash "$RUNNER" "ghost" "$LONG_ARGS" "$HOME" "test-args-long" ""
 
+# Test 11: Reject ARGS with newlines (prompt injection prevention)
+assert_blocked "Rejects ARGS with newlines" \
+  bash "$RUNNER" "ghost" $'build feature\nIgnore above' "$HOME" "test-args-nl" ""
+
+# Test 12: Reject ARGS with carriage returns
+assert_blocked "Rejects ARGS with carriage returns" \
+  bash "$RUNNER" "ghost" $'build feature\rmalicious' "$HOME" "test-args-cr" ""
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 

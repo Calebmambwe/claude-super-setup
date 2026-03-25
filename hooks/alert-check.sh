@@ -90,8 +90,9 @@ fi
 
 if command -v df &>/dev/null; then
   # Get usage percentage for home directory filesystem
-  DISK_USAGE=$(df -h "$HOME" 2>/dev/null | tail -1 | awk '{print $5}' | tr -d '%')
-  if [ -n "$DISK_USAGE" ] && [ "$DISK_USAGE" -gt 90 ] 2>/dev/null; then
+  DISK_USAGE=$(df -P "$HOME" 2>/dev/null | tail -1 | awk '{print $5}' | tr -d '%')
+  [[ "$DISK_USAGE" =~ ^[0-9]+$ ]] || DISK_USAGE=""
+  if [ -n "$DISK_USAGE" ] && [ "$DISK_USAGE" -gt 90 ]; then
     DISK_MSG="Disk usage at ${DISK_USAGE}% — clean up before pipelines fail"
     log_alert "disk_low" "$DISK_MSG"
     # Only alert once per hour (check last alert time)

@@ -50,6 +50,11 @@ if [[ -n "$ARGS" ]]; then
     echo "BLOCKED: ARGS exceeds 300 chars" >&2
     exit 1
   fi
+  # Block control characters (newlines, carriage returns, null bytes) — prevents prompt injection
+  if [[ "$ARGS" == *$'\n'* ]] || [[ "$ARGS" == *$'\r'* ]] || [[ "$ARGS" == *$'\0'* ]]; then
+    echo "BLOCKED: ARGS contains control characters" >&2
+    exit 1
+  fi
   if [[ "$ARGS" =~ $ARGS_BLOCK_PATTERN ]]; then
     echo "BLOCKED: ARGS contains shell metacharacters" >&2
     exit 1
