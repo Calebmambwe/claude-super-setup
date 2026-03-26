@@ -74,6 +74,15 @@
       "env": {
         "GEMINI_API_KEY": ""
       }
+    },
+    "hostinger": {
+      "command": "npx",
+      "args": [
+        "hostinger-api-mcp@latest"
+      ],
+      "env": {
+        "API_TOKEN": "alYURveYZp2AcEOCc0FhcS60QXOARp2dhPoIuks5424bd60c"
+      }
     }
   }
 }
