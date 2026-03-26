@@ -422,6 +422,46 @@ gitignore_extra: |
   .wrangler
   worker-configuration.d.ts
 
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version-file: '.nvmrc'
+                cache: 'pnpm'
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm lint
+            - run: pnpm typecheck
+            - run: pnpm test
+            - run: pnpm build
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": {
+          "ghcr.io/devcontainers/features/github-cli:1": {}
+        },
+        "postCreateCommand": "pnpm install",
+        "customizations": {
+          "vscode": {
+            "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+          }
+        }
+      }
+
 claude_md: |
   # CLAUDE.md
 
@@ -450,6 +490,39 @@ claude_md: |
   - Always `return json(...)` from loaders; use `redirect(...)` after successful mutations.
   - Validate all form data with Zod in actions before processing.
   - NEVER use `any` type — use `unknown` + type guard.
+
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version-file: '.nvmrc'
+                cache: 'pnpm'
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm exec tsc --noEmit
+            - run: pnpm exec vitest run
+            - run: pnpm build
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Remix Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": { "ghcr.io/devcontainers/features/github-cli:1": {} },
+        "postCreateCommand": "pnpm install",
+        "customizations": { "vscode": { "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"] } }
+      }
 
 agents_md: |
   # AGENTS.md

@@ -1,0 +1,13 @@
+{
+  "id": "reg-005",
+  "tier": 2,
+  "category": "test-writing",
+  "description": "Write a Jest unit test for this function:\n\nfunction calculateDiscount(price: number, discountPercent: number): number {\n  if (discountPercent < 0 || discountPercent > 100) {\n    throw new Error('Discount must be between 0 and 100');\n  }\n  return price * (1 - discountPercent / 100);\n}\n\nInclude tests for: normal discount, 0% discount, 100% discount, negative discount (should throw), discount > 100 (should throw).",
+  "expected_output": {
+    "type": "code",
+    "language": "typescript",
+    "contains": ["describe", "it(", "expect", "toThrow", "calculateDiscount"],
+    "not_contains": ["any"]
+  },
+  "time_limit_seconds": 90
+}

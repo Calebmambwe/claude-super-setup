@@ -1,0 +1,352 @@
+---
+description: " Production design system — tokens, animations, accessibility, 25+ component patterns. The design system is LAW."
+alwaysApply: false
+globs: ["**/*.tsx", "**/*.jsx", "**/*.css", "**/*.scss"]
+---
+
+
+## Golden Rule (from Lovable — non-negotiable)
+
+The design system is law. NEVER write custom styles in components. NEVER use direct color classes like `text-white` or `bg-black`. Every visual property traces back to a token. If a token doesn't exist for what you need, add it here first, then use it.
+
+
+## Color Palette (Template — customize per project)
+
+### Base Tokens
+- Primary: #6366f1 (Indigo) — CTAs, links, active states
+- Primary Dark: #4f46e5 — hover states
+- Primary Light: #818cf8 — backgrounds, badges
+- Secondary: #f59e0b (Amber) — accents, highlights, ratings
+- Background: #0f172a (Slate 900) — page background
+- Surface: #1e293b (Slate 800) — cards, panels
+- Surface Elevated: #334155 (Slate 700) — dropdowns, popovers
+- Text: #f8fafc (Slate 50) — primary text
+- Muted: #94a3b8 (Slate 400) — secondary text, placeholders
+- Border: rgba(255, 255, 255, 0.1) — subtle borders
+- Accent: #22d3ee (Cyan) — badges, highlights, data viz
+- Error: #ef4444 — errors, destructive actions
+- Success: #22c55e — success states, positive indicators
+- Warning: #f59e0b — warnings (shares with Secondary)
+
+### Dark/Light Mode
+Use `next-themes` for mode switching. Prevent FOUC with `suppressHydrationWarning` on `<html>`. Define tokens as CSS variables in `globals.css` under `:root` (light) and `.dark` (dark). NEVER use conditional class logic in components — let the theme provider handle it.
+
+
+## Typography
+
+- Headings: Space Grotesk (variable), font-weight 700
+- Body: DM Sans (variable), font-weight 400/500
+- Mono: JetBrains Mono (variable)
+- Scale: 12 / 14 / 16 / 18 / 20 / 24 / 30 / 36 / 48 / 60
+- Line heights: tight (1.1) for display, snug (1.3) for headings, relaxed (1.6) for body
+- Fluid type for hero headlines: `clamp(2.5rem, 5vw, 3.75rem)`
+- Load via `next/font` with `display: 'swap'` — NEVER use `<link>` tags for fonts
+
+
+## Icon System
+
+- Library: Lucide React (`lucide-react`)
+- Sizes: 16px (inline text), 20px (buttons, nav), 24px (section icons), 32px (feature cards)
+- Stroke width: 1.5 (consistent across all uses)
+- Color: inherit from parent text color — NEVER hardcode icon colors
+- Import individually: `import { ArrowRight } from 'lucide-react'` — NEVER import the barrel
+
+
+## Spacing Scale
+
+Use Tailwind's default scale. Consistent patterns:
+- Inline gaps: gap-1.5 (6px) for tight, gap-2 (8px) default, gap-4 (16px) for groups
+- Cards: p-6 internal padding
+- Sections: py-16 md:py-24
+- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Between sections: space-y-0 (sections manage own py)
+- Page vertical rhythm: consistent py-16 md:py-24 on all sections
+
+
+## Border Radius
+- Buttons: rounded-lg
+- Cards: rounded-xl
+- Inputs: rounded-md
+- Modals/Drawers: rounded-2xl
+- Badges: rounded-full
+- Avatars: rounded-full
+- Tooltips: rounded-md
+
+
+## Shadows
+- Cards: shadow-lg shadow-black/10
+- Cards hover: shadow-xl shadow-primary/5
+- Elevated (dropdowns, modals): shadow-xl shadow-black/20
+- Buttons hover: shadow-md shadow-primary/10
+- Subtle (inputs): shadow-sm
+
+
+## Z-Index Scale
+- 10: Sticky navbar
+- 20: Dropdown menus, popovers
+- 30: Modal/dialog overlay (backdrop)
+- 40: Modal/dialog content
+- 50: Toast notifications
+- 60: Tooltips
+
+
+## Animation Tokens
+
+### Duration Scale
+- 100ms: Micro-interactions (opacity, color changes)
+- 200ms: Transitions (hover states, focus rings)
+- 300ms: UI elements (dropdowns, accordions, modals)
+- 500ms: Page/section transitions (scroll reveals)
+- 1000ms: Skeleton shimmer cycle
+
+### Easing Curves
+- Default: `ease-out` — most UI transitions
+- Spring: `[0.25, 0.46, 0.45, 0.94]` — bouncy elements (Framer Motion)
+- Smooth: `[0.4, 0, 0.2, 1]` — Material-style smooth
+
+### Reduced Motion
+ALWAYS wrap animations with `prefers-reduced-motion`:
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+```
+In Framer Motion: use `useReducedMotion()` hook to disable animations.
+
+
+## Micro-Interactions
+
+- **Button press**: `scale: 0.97` on active, duration 100ms
+- **Button hover**: `scale: 1.02` + shadow increase, duration 200ms
+- **Card hover**: `translateY: -2px` + shadow increase, duration 200ms
+- **Link hover**: color transition + optional underline slide, duration 200ms
+- **Focus ring**: `ring-2 ring-primary/50 ring-offset-2 ring-offset-background`, transition 150ms
+- **Form field focus**: border color change to primary, duration 150ms
+- **Toggle/switch**: spring animation with Framer Motion, duration 300ms
+- **Toast enter**: slide up + fade in, duration 300ms
+- **Toast exit**: slide right + fade out, duration 200ms
+- **Checkbox**: scale bounce on check, duration 200ms
+
+
+## Framer Motion Patterns
+
+### Scroll Reveal (most common)
+```tsx
+const fadeInUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
+// Usage: <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+```
+
+### Stagger Children (for grids/lists)
+```tsx
+const staggerContainer = { hidden: {}, visible: { transition: { staggerChildren: 0.1 } } };
+// Usage: <motion.div variants={staggerContainer} initial="hidden" whileInView="visible">
+```
+
+### Exit Animations
+```tsx
+// Wrap with <AnimatePresence> for exit animations on route changes and modal dismiss
+<AnimatePresence mode="wait"><motion.div key={key} exit={{ opacity: 0, y: -10 }} /></AnimatePresence>
+```
+
+### Layout Animations
+```tsx
+// Use layoutId for shared element transitions between states
+<motion.div layoutId="active-tab" className="bg-primary rounded-full" />
+```
+
+### Reusable animation variants file: `src/lib/animations.ts`
+Every project should have this file with: fadeInUp, fadeInDown, fadeInLeft, fadeInRight, scaleIn, staggerContainer, slideInFromBottom.
+
+
+## Responsive Breakpoints
+
+Use Tailwind's defaults: sm (640px), md (768px), lg (1024px), xl (1280px), 2xl (1536px).
+
+- Mobile-first: write base styles for mobile, enhance upward
+- Container queries: use `@container` for components that need to adapt to their container, not the viewport
+- Fluid typography: use `clamp()` for hero headings that scale smoothly
+- Touch targets: minimum 44x44px on mobile (WCAG 2.5.8)
+- Navigation: hamburger menu below md, horizontal nav at md+
+
+
+## Accessibility (WCAG 2.1 AA — Non-Negotiable)
+
+- **Contrast**: 4.5:1 for normal text, 3:1 for large text (18px+ or 14px+ bold)
+- **Focus visible**: every interactive element must show `focus-visible:ring-2 ring-primary/50`
+- **Touch targets**: minimum 44x44px on mobile
+- **Semantic HTML**: `<nav>`, `<main>`, `<section>`, `<article>`, `<footer>`, `<header>`
+- **Alt text**: descriptive for informational images, `alt=""` for decorative
+- **ARIA**: use only when semantic HTML is insufficient. Prefer native elements.
+- **Keyboard**: all interactions navigable via Tab, Enter, Escape, Arrow keys
+- **Reduced motion**: respect `prefers-reduced-motion` (see Animation Tokens)
+- **Screen readers**: test with content hidden via `sr-only` class where visual-only info exists
+
+
+## Skeleton Screens (mandatory for async content)
+
+- Match the layout dimensions of loaded content precisely
+- Use pulsing animation: `animate-pulse` with `bg-muted/50 rounded`
+- Duration: show skeleton immediately, content replaces when ready
+- NEVER use spinners for content areas — spinners are only for button loading states
+- Skeleton components: `<Skeleton className="h-4 w-[200px]" />` from shadcn/ui
+
+
+## Loading States
+
+- **Page level**: `loading.tsx` in Next.js App Router — shows full page skeleton
+- **Component level**: `Suspense` boundary with skeleton fallback
+- **Button loading**: disable + spinner icon replacing text, NEVER change button size
+- **Inline loading**: small spinner next to the action that triggered it
+- **Data tables**: row-level skeleton matching column widths
+
+
+## Error States
+
+- **Inline form errors**: red text below field, `aria-describedby` linking error to input, border-error on the field
+- **Page-level errors**: `error.tsx` with illustration, clear message, and retry CTA
+- **Toast errors**: brief message + optional action button, auto-dismiss after 5s
+- **Empty states**: illustration or icon + descriptive text + primary CTA to fix the emptiness
+- **404 page**: `not-found.tsx` with personality, search suggestion, and home link
+
+
+## Glassmorphism Recipe
+```
+backdrop-blur-xl bg-white/5 border border-white/10 shadow-xl shadow-black/10
+```
+Add noise texture for depth: `bg-[url('/noise.svg')] bg-repeat opacity-[0.02]`
+
+
+## Gradient Patterns
+
+- **Hero background**: `bg-gradient-to-br from-primary/20 via-background to-accent/10`
+- **Radial glow**: `bg-[radial-gradient(ellipse_at_top_right,_var(--primary)_0%,_transparent_50%)] opacity-10`
+- **CTA section**: `bg-gradient-to-br from-primary to-primary/80`
+- **Text gradient**: `bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent`
+- NEVER use more than 2 gradient layers on a single section
+
+
+## Component Patterns
+
+### Navbar
+- Sticky `top-0 z-10`, transparent with `bg-background/80 backdrop-blur-lg`
+- Border bottom: `border-b border-border`
+- Logo left, nav center, CTA right
+- Mobile: hamburger icon → slide-out menu with `AnimatePresence`
+- Height: `h-16` consistent
+
+### Hero Section
+- `min-h-[80vh]` with gradient background
+- Headline: `font-heading text-5xl md:text-6xl font-bold` with fluid `clamp()`
+- Subheadline: `text-xl text-muted-foreground max-w-2xl leading-relaxed`
+- CTA group: Two buttons (primary filled, secondary outline) with `gap-4`
+- Social proof strip below CTAs (checkmarks, stats, trust badges)
+- Scroll-reveal animation on content
+
+### Cards
+- `bg-card rounded-xl border border-border p-6`
+- Hover: `hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/5 transition-all duration-200`
+- Icon container: `size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary`
+- Title: `font-heading text-lg font-bold`
+- Description: `text-sm text-muted-foreground leading-relaxed`
+
+### Buttons (use shadcn/ui Button — NEVER create custom)
+- Primary: `bg-primary text-primary-foreground hover:bg-primary/90`
+- Secondary/Outline: `border-border hover:bg-muted`
+- Ghost: `hover:bg-muted`
+- ALWAYS include: `focus-visible:ring-2`, `transition-all duration-200`
+- Loading state: spinner icon + disabled, same dimensions
+
+### Dialog/Modal
+- Overlay: `bg-black/50 backdrop-blur-sm z-30`
+- Content: `bg-card rounded-2xl shadow-xl z-40 p-6`
+- Entry: fade + scale from 0.95, duration 200ms
+- Exit: fade + scale to 0.95, duration 150ms
+- Close on Escape and overlay click
+- Use shadcn/ui `Dialog` — NEVER create custom modals
+
+### Toast/Notification
+- Position: `fixed bottom-4 right-4 z-50`
+- Entry: slide up from bottom + fade
+- Auto-dismiss: 5s default, persistent for errors
+- Use shadcn/ui `Sonner` or `Toast`
+
+### Form Fields
+- Label above input, `text-sm font-medium mb-1.5`
+- Input: `rounded-md border-border bg-background focus:border-primary focus:ring-1 focus:ring-primary/50`
+- Error: `border-error` + red message below with `aria-describedby`
+- Helper text: `text-xs text-muted-foreground mt-1`
+- Required indicator: `*` after label in `text-error`
+
+### Tabs
+- Use shadcn/ui `Tabs` — underline style or pill style
+- Active indicator: animated with `layoutId` (Framer Motion)
+- Content: fade transition between panels
+
+### Accordion
+- Use shadcn/ui `Accordion`
+- Chevron rotation animation on open/close
+- Content: height animation with `overflow-hidden`
+
+### Avatar
+- Sizes: `size-8` (small), `size-10` (default), `size-12` (large)
+- Fallback: initials on `bg-primary/20 text-primary font-bold`
+- Always `rounded-full`
+
+### Tooltip
+- `z-60` above everything
+- `bg-card border border-border rounded-md px-3 py-1.5 text-xs shadow-lg`
+- Delay: 500ms before showing
+- Use shadcn/ui `Tooltip`
+
+### Table
+- Header: `bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider`
+- Rows: `border-b border-border hover:bg-muted/30`
+- Responsive: horizontal scroll on mobile with `overflow-x-auto`
+
+### Pagination
+- Use shadcn/ui `Pagination`
+- Show: Previous, 1 2 3 ... N, Next
+- Active page: `bg-primary text-primary-foreground`
+
+### Badge
+- Use shadcn/ui `Badge`
+- Variants: default (muted bg), primary, secondary, destructive, outline
+- `rounded-full px-2.5 py-0.5 text-xs font-medium`
+
+### Footer
+- Multi-column grid: `grid-cols-2 md:grid-cols-5`
+- Logo + description in first column
+- Link columns with `text-sm text-muted-foreground hover:text-foreground`
+- Separator before copyright bar
+- Social icons in copyright row
+- `border-t border-border` at top
+
+### Pricing Cards
+- 3-column grid, center card highlighted with `ring-2 ring-primary`
+- "Most Popular" badge: positioned `absolute -top-3` center
+- Price: `font-heading text-4xl font-bold`
+- Feature list with check icons in `text-success`
+- CTA button full width at bottom
+
+### Testimonials
+- Star ratings in `text-secondary` (amber)
+- Quote: `text-sm text-foreground leading-relaxed`
+- Avatar + name + role below quote
+- Card layout with same card tokens
+
+
+## Anti-Patterns (NEVER DO)
+
+- NEVER use pure black (#000) — use Slate 900 or the background token
+- NEVER mix border-radius styles on the same page
+- NEVER use more than 3 font weights
+- NEVER put text directly on images without overlay
+- NEVER use default browser blue links
+- NEVER skip hover/focus states on interactive elements
+- NEVER hardcode hex values outside of design tokens
+- NEVER use `text-white` or `bg-black` — use token classes
+- NEVER create custom button/modal/toast components — use shadcn/ui
+- NEVER use spinners for content loading — use skeleton screens
+- NEVER skip `prefers-reduced-motion` handling
+- NEVER use `<img>` tags — use `next/image` for optimization
+- NEVER import entire icon libraries — import individually from lucide-react

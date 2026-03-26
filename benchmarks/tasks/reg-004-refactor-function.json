@@ -1,0 +1,13 @@
+{
+  "id": "reg-004",
+  "tier": 2,
+  "category": "refactoring",
+  "description": "Refactor this function to remove side effects and make it a pure function:\n\nlet total = 0;\nfunction addToTotal(items: number[]): void {\n  for (let i = 0; i < items.length; i++) {\n    total += items[i];\n  }\n  console.log('Total:', total);\n}\n\nThe refactored function should accept an array of numbers, return the sum, and not modify any external state or produce side effects.",
+  "expected_output": {
+    "type": "code",
+    "language": "typescript",
+    "contains": ["function", "return", "reduce"],
+    "not_contains": ["console.log", "total +=", "let total"]
+  },
+  "time_limit_seconds": 60
+}

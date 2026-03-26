@@ -254,6 +254,45 @@ gitignore_extra: |
   .wrangler
   dist/
 
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version-file: '.nvmrc'
+                cache: 'pnpm'
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm lint
+            - run: pnpm build
+            - run: pnpm test
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": {
+          "ghcr.io/devcontainers/features/github-cli:1": {}
+        },
+        "postCreateCommand": "pnpm install",
+        "customizations": {
+          "vscode": {
+            "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode", "astro-build.astro-vscode"]
+          }
+        }
+      }
+
 claude_md: |
   # CLAUDE.md
 
@@ -282,6 +321,39 @@ claude_md: |
   - Render post body with `render(post)` then `<Content />`, NOT `post.render()`.
   - Env vars: `PUBLIC_` prefix for client-accessible, validate with Zod in `src/lib/env.ts`.
   - NEVER use `any` type — use `unknown` + type guard.
+
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version-file: '.nvmrc'
+                cache: 'pnpm'
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm exec tsc --noEmit
+            - run: pnpm exec vitest run
+            - run: pnpm astro build
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Astro Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": { "ghcr.io/devcontainers/features/github-cli:1": {} },
+        "postCreateCommand": "pnpm install",
+        "customizations": { "vscode": { "extensions": ["astro-build.astro-vscode", "dbaeumer.vscode-eslint", "esbenp.prettier-vscode"] } }
+      }
 
 agents_md: |
   # AGENTS.md

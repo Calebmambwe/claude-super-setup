@@ -1,0 +1,13 @@
+{
+  "id": "reg-003",
+  "tier": 2,
+  "category": "code-generation",
+  "description": "Write a Zod schema to validate a CreateUserInput object with: email (valid email string), name (string, min 2 chars, max 100 chars), role (one of 'admin', 'user', 'viewer'), password (string, min 8 chars). Export the schema as createUserSchema and infer the type as CreateUserInput.",
+  "expected_output": {
+    "type": "code",
+    "language": "typescript",
+    "contains": ["z.object", "email", "z.string", "name", "role", "password", "createUserSchema", "CreateUserInput"],
+    "not_contains": ["any"]
+  },
+  "time_limit_seconds": 90
+}

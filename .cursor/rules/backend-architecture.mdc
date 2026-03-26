@@ -1,0 +1,82 @@
+---
+description: " Backend layering rules, API patterns, and quality standards"
+alwaysApply: false
+globs: ["**/*.ts", "**/*.py", "**/routes/**", "**/services/**"]
+---
+
+
+## Layered Architecture (MANDATORY)
+
+Route/Controller -> Service -> Repository -> Database
+
+**Routes:** HTTP concerns ONLY (parse, validate, respond). No business logic.
+**Services:** ALL business logic. No HTTP imports. Raise domain exceptions.
+**Repositories:** Data access ONLY. Parameterized queries. Return domain objects.
+**Schemas:** Pydantic/Zod models matching OpenAPI spec exactly.
+
+## Response Envelope (ALL endpoints)
+
+Success: `{ "data": { ... }, "meta": { ... } }`
+Error: `{ "error": { "code": "ERROR_CODE", "message": "...", "details": [...] } }`
+
+## Error Handling
+- Global exception handler -- never try/except in routes
+- Domain exceptions in app/exceptions.py
+- Map to HTTP status codes in middleware
+- Standard codes: VALIDATION_ERROR, NOT_FOUND, UNAUTHORIZED, FORBIDDEN, CONFLICT, INTERNAL_ERROR
+
+## Implementation Order (per endpoint)
+1. Pydantic/Zod schema (matching OpenAPI spec)
+2. Repository (data access)
+3. Service (business logic)
+4. Route handler (HTTP only)
+5. Tests (unit + integration + contract)
+
+## Testing (EVERY endpoint)
+1. Unit tests for service (mock repository)
+2. Integration tests for route (full request/response)
+3. Response matches OpenAPI schema
+4. Edge cases: invalid input, unauthorized, not found, conflict
+
+## Authentication & Authorization
+- JWT bearer tokens, validated in middleware
+- RBAC checked at service layer, not route layer
+- Never trust client-provided user IDs -- extract from token
+
+## Database Patterns
+- Alembic (Python) or Prisma (TypeScript) for migrations
+- NEVER use raw SQL with string interpolation
+- Always use parameterized queries through the repository layer
+- Prevent N+1 queries: use eager loading or batch queries
+- Transactions wrap service-level operations, not individual queries
+
+## Security
+- Passwords hashed with bcrypt/argon2 (never MD5/SHA)
+- Sensitive fields excluded from responses
+- CORS configured restrictively
+- Rate limiting on auth endpoints
+
+## File Structure (FastAPI)
+```
+app/
+  main.py           # App factory, middleware, exception handlers
+  config.py         # Settings via pydantic-settings
+  dependencies.py   # Dependency injection (db session, current user)
+  exceptions.py     # Domain exception classes
+  routes/           # HTTP layer
+  services/         # Business logic
+  repositories/     # Data access
+  models/           # ORM models
+  schemas/          # Request/Response Pydantic models
+  middleware/        # Auth, error handling
+```
+
+## Anti-Patterns (NEVER DO)
+- Never put business logic in route handlers
+- Never return raw ORM objects -- always map to response schemas
+- Never use string interpolation in SQL
+- Never skip input validation
+- Never return inconsistent error formats
+- Never hardcode secrets -- use environment variables
+- Never skip migrations -- no manual DB changes
+- Never catch generic exceptions silently

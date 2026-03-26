@@ -1,0 +1,315 @@
+# Mobile Gluestack Stack Template
+# Expo SDK 54 + Expo Router v4 + Gluestack UI v3 + NativeWind v4 + Supabase
+
+name: mobile-gluestack
+description: "Expo SDK 54 + Expo Router v4 + Gluestack UI v3 + NativeWind v4 + Supabase"
+short_label: "gluestack"
+
+init_commands:
+  - "npx create-expo-app@latest . --template blank-typescript"
+  - "npx gluestack-ui@latest init"
+  - "npx gluestack-ui@latest add button input text"
+  - "npx expo install nativewind tailwindcss react-native-reanimated react-native-gesture-handler react-native-safe-area-context"
+  - "npx expo install @supabase/supabase-js react-native-url-polyfill expo-secure-store zod"
+  - "npx expo install expo-router expo-linking expo-constants expo-status-bar"
+  - "pnpm add -D prettier eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser"
+
+directories:
+  - app
+  - app/(tabs)
+  - src/components
+  - src/components/ui
+  - src/lib
+  - src/hooks
+  - src/types
+  - src/__tests__
+
+starter_files:
+  global.css: |
+    @import "tailwindcss/theme.css" layer(theme);
+    @import "tailwindcss/preflight.css" layer(base);
+    @import "tailwindcss/utilities.css";
+    @import "nativewind/theme";
+
+  tailwind.config.js: |
+    import nativewind from "nativewind/plugin";
+
+    export default {
+      content: [
+        "./app/**/*.{js,jsx,ts,tsx}",
+        "./src/components/**/*.{js,jsx,ts,tsx}",
+      ],
+      plugins: [nativewind],
+    };
+
+  metro.config.js: |
+    const { getDefaultConfig } = require("expo/metro-config");
+    const { withNativeWind } = require("nativewind/metro");
+
+    const config = getDefaultConfig(__dirname);
+
+    module.exports = withNativeWind(config, { input: "./global.css" });
+
+  babel.config.js: |
+    module.exports = function (api) {
+      api.cache(true);
+      return {
+        presets: [
+          ["babel-preset-expo", { jsxImportSource: "nativewind" }],
+          "nativewind/babel",
+        ],
+      };
+    };
+
+  nativewind-env.d.ts: |
+    /// <reference types="nativewind/types" />
+
+  src/lib/env.ts: |
+    import { z } from "zod";
+
+    const envSchema = z.object({
+      EXPO_PUBLIC_SUPABASE_URL: z.string().url(),
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+    });
+
+    export const env = envSchema.parse({
+      EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    });
+
+  src/lib/supabase.ts: |
+    import "react-native-url-polyfill/auto";
+    import { createClient } from "@supabase/supabase-js";
+    import * as SecureStore from "expo-secure-store";
+    import { env } from "./env";
+
+    const ExpoSecureStoreAdapter = {
+      getItem: (key: string) => SecureStore.getItemAsync(key),
+      setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
+      removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+    };
+
+    export const supabase = createClient(env.EXPO_PUBLIC_SUPABASE_URL, env.EXPO_PUBLIC_SUPABASE_ANON_KEY, {
+      auth: {
+        storage: ExpoSecureStoreAdapter,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    });
+
+  src/types/database.ts: |
+    // Generate with: npx supabase gen types typescript --project-id <id> > src/types/database.ts
+    export type Database = Record<string, never>;
+
+  src/components/ui/Button.tsx: |
+    // Gluestack UI Button — copy-paste component (do not hand-write primitives)
+    // Run: npx gluestack-ui@latest add button
+    // Then import from here for consistent usage across the app
+    export { Button, ButtonText, ButtonSpinner, ButtonIcon } from "@/components/ui/button";
+
+  app/_layout.tsx: |
+    import "./global.css";
+    import { Stack } from "expo-router";
+    import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+
+    export default function RootLayout() {
+      return (
+        <GluestackUIProvider mode="light">
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </GluestackUIProvider>
+      );
+    }
+
+  app/(tabs)/_layout.tsx: |
+    import { Tabs } from "expo-router";
+
+    export default function TabLayout() {
+      return (
+        <Tabs>
+          <Tabs.Screen name="index" options={{ title: "Home" }} />
+          <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+        </Tabs>
+      );
+    }
+
+  app/(tabs)/index.tsx: |
+    import { View } from "react-native";
+    import { Text } from "@/components/ui/text";
+    import { Button, ButtonText } from "@/components/ui/button";
+
+    export default function HomeScreen() {
+      return (
+        <View className="flex-1 items-center justify-center bg-white gap-4">
+          <Text size="2xl" bold>Welcome</Text>
+          <Text size="md" className="text-gray-500">Gluestack UI + Expo Router</Text>
+          <Button size="md" variant="solid" action="primary">
+            <ButtonText>Get Started</ButtonText>
+          </Button>
+        </View>
+      );
+    }
+
+  app/(tabs)/profile.tsx: |
+    import { View } from "react-native";
+    import { Text } from "@/components/ui/text";
+
+    export default function ProfileScreen() {
+      return (
+        <View className="flex-1 items-center justify-center bg-white">
+          <Text size="2xl" bold>Profile</Text>
+          <Text size="md" className="text-gray-500">Your account details</Text>
+        </View>
+      );
+    }
+
+  eas.json: |
+    {
+      "cli": { "version": ">= 3.0.0" },
+      "build": {
+        "development": {
+          "developmentClient": true,
+          "distribution": "internal"
+        },
+        "preview": {
+          "distribution": "internal"
+        },
+        "production": {}
+      },
+      "submit": {
+        "production": {}
+      }
+    }
+
+  src/__tests__/smoke.test.tsx: |
+    import { describe, it, expect } from "@jest/globals";
+
+    describe("Smoke test", () => {
+      it("should pass", () => {
+        expect(true).toBe(true);
+      });
+    });
+
+commands:
+  dev: "npx expo start"
+  test: "npx jest"
+  build_ios: "npx expo run:ios"
+  build_android: "npx expo run:android"
+  lint: "npx expo lint"
+  typecheck: "npx tsc --noEmit"
+
+package_json_scripts:
+  test: "jest"
+  typecheck: "tsc --noEmit"
+  lint: "eslint src/"
+
+env_example: |
+  EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+gitignore_extra: |
+  .expo/
+  ios/
+  android/
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Expo SDK 54 + Expo Router v4 + Gluestack UI v3 + NativeWind v4 + Supabase
+  - Styling: NativeWind (Tailwind CSS via className) + Gluestack UI component props
+  - Navigation: Expo Router v4 (file-based routing in app/ directory)
+
+  ## Commands
+  - Dev: `npx expo start`
+  - Test: `npx jest`
+  - Build iOS: `npx expo run:ios`
+  - Build Android: `npx expo run:android`
+  - Typecheck: `npx tsc --noEmit`
+
+  ## Architecture
+  - `app/` — Expo Router pages and layouts (file-based routing)
+  - `app/(tabs)/` — Tab navigator screens
+  - `src/components/` — reusable React Native components
+  - `src/components/ui/` — Gluestack UI copy-paste components (generated by CLI)
+  - `src/lib/` — utilities, Supabase client
+  - `src/hooks/` — custom hooks
+  - `src/types/` — TypeScript types
+
+  ## Conventions
+  - Gluestack UI components live in src/components/ui/ — generated by `npx gluestack-ui add`
+  - Use Gluestack component props (size, variant, action) for UI — NOT hand-written primitives
+  - Use className prop (NativeWind) for layout and spacing
+  - Credential storage: ALWAYS use expo-secure-store — NEVER AsyncStorage for auth tokens
+  - global.css must be imported in app/_layout.tsx only
+  - GluestackUIProvider wraps the entire app in app/_layout.tsx
+  - Supabase client uses SecureStore adapter (not AsyncStorage)
+  - NEVER use `any` type
+
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version: '22'
+                cache: 'npm'
+            - run: npm ci
+            - run: npm run lint
+            - run: npx tsc --noEmit
+            - run: npm test -- --passWithNoTests
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Gluestack Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": { "ghcr.io/devcontainers/features/github-cli:1": {} },
+        "postCreateCommand": "npm install",
+        "customizations": { "vscode": { "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"] } }
+      }
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: React Native + Expo SDK 54 (managed workflow)
+  - UI: Gluestack UI v3 (shadcn-style copy-paste components)
+  - Styling: NativeWind v4 (Tailwind CSS via className prop)
+  - Animation: Reanimated v3 + Gesture Handler v2
+  - Language: TypeScript (strict)
+  - Navigation: Expo Router v4 (file-based)
+  - Backend: Supabase (auth, database, storage)
+  - Storage: expo-secure-store (credentials), NOT AsyncStorage
+  - Testing: Jest + React Native Testing Library
+
+  ## Patterns & Conventions
+  - Gluestack components: add via `npx gluestack-ui add <component>` — never hand-write them
+  - Use Gluestack props (size, variant, action) for component styling
+  - Use className for layout, spacing, and custom overrides (NativeWind)
+  - File-based routing in app/ directory; tabs in app/(tabs)/
+  - Import global.css in root _layout.tsx only
+  - GluestackUIProvider must wrap the root layout
+
+  ## Gotchas
+  - Gluestack UI v3 is shadcn-style — components are copied INTO src/components/ui/, not imported from npm
+  - expo-secure-store is async — always await SecureStore calls
+  - NativeWind className and Gluestack style props coexist — use className for layout, Gluestack props for component variants
+  - Must import "react-native-url-polyfill/auto" before Supabase client
+  - NEVER use AsyncStorage for auth tokens — security risk; use expo-secure-store
+  - babel.config.js jsxImportSource must be "nativewind"
+  - Metro config must wrap with withNativeWind pointing to global.css
+  - Reanimated v3 requires the Babel plugin — already included in expo preset
+
+  ## Resolved Issues

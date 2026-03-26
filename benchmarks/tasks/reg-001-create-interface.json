@@ -1,0 +1,13 @@
+{
+  "id": "reg-001",
+  "tier": 1,
+  "category": "code-generation",
+  "description": "Create a TypeScript interface for User with id (string), email (string), name (string), role ('admin' | 'user' | 'viewer'), createdAt (Date)",
+  "expected_output": {
+    "type": "code",
+    "language": "typescript",
+    "contains": ["interface User", "id:", "email:", "name:", "role:", "createdAt:"],
+    "not_contains": ["any"]
+  },
+  "time_limit_seconds": 60
+}

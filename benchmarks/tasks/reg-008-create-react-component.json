@@ -1,0 +1,13 @@
+{
+  "id": "reg-008",
+  "tier": 3,
+  "category": "code-generation",
+  "description": "Create a React functional component called UserCard that accepts props: user (object with id, name, email, role), onEdit (callback with user id), onDelete (callback with user id). The component should display the user's name, email, and role in a card layout. Include TypeScript prop types (no 'any'). Add an Edit button that calls onEdit and a Delete button that calls onDelete.",
+  "expected_output": {
+    "type": "code",
+    "language": "typescript",
+    "contains": ["UserCard", "interface", "onEdit", "onDelete", "onClick", "return ("],
+    "not_contains": ["any"]
+  },
+  "time_limit_seconds": 120
+}

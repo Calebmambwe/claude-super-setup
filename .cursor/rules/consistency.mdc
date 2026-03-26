@@ -1,0 +1,62 @@
+---
+description: " Enforce resource audit before any implementation — skills, templates, components, patterns"
+alwaysApply: true
+---
+
+
+# Resource Consistency Rules
+
+Before writing ANY code, run the Resource Audit matching your task size. This is a PRECONDITION, not a suggestion.
+
+## Full Audit (tasks touching 3+ files)
+
+Run ALL four checks in order. Do not write code until complete.
+
+### 1. Skills Check
+Does this task involve UI, backend architecture, or Docker?
+- UI work → read `~/.claude/skills/design-system/SKILL.md` first
+- Backend structure → read `~/.claude/skills/backend-architecture/SKILL.md` first
+- Containers → read `~/.claude/skills/docker/SKILL.md` first
+- BMAD workflow → read `~/.claude/skills/bmad/core/bmad-master/SKILL.md` first
+
+### 2. Templates Check
+Is this a new project, feature doc, or SDLC artifact?
+- New app/service → check `~/.claude/config/stacks/` for a matching template BEFORE scaffolding
+  Available: `web-app`, `api-service`, `mobile-app`, `saas-starter`, `ai-ml-app`, `web-t3`, `web-astro`, `web-sveltekit`, `web-remix`, `api-fastapi`, `api-hono-edge`, `mobile-expo-revenucat`, `mobile-nativewind`, `mobile-flutter`, `chrome-extension`, `cli-tool`
+  Action: read the matching `.yaml` and use it as your starting point
+- New PRD/architecture/brief → read the matching BMAD template first:
+  `~/.claude/config/bmad/templates/prd.md`, `architecture.md`, `tech-spec.md`, `product-brief.md`
+- New SDLC prompt → read `~/.claude/config/prompts/` first (brainstorm-brief, design-document, milestone-prompts, single-implementation, reverse-documentation)
+
+### 3. Component / Pattern Check
+Search THIS project for existing implementations before creating new ones:
+- Existing components: `Grep pattern="ComponentName|similar-concept" glob="**/*.tsx"`
+- Existing utilities: `Grep pattern="function.*similar" glob="**/*.ts"`
+- Existing routes/API patterns: `ls src/routes/ src/api/ src/controllers/ 2>/dev/null`
+- If a match exists: EXTEND or REUSE it — do NOT create a parallel implementation
+
+### 4. AGENTS.md Check
+- If AGENTS.md exists: read it in full (project-specific gotchas and patterns)
+- If absent: create one after the first non-trivial task
+
+## Lightweight Audit (tiny changes: 1-2 files)
+
+Even for small changes, check two things:
+1. **Component reuse** — search the project for existing components/utilities that do what you need. If one exists, use it. Never duplicate.
+2. **Design token compliance** (UI changes only) — colors, spacing, and radius values MUST come from the design system. Never hardcode hex values or arbitrary pixel values.
+
+## Anti-Patterns (NEVER DO)
+
+- [critical] NEVER scaffold a new project without reading the matching stack template from `~/.claude/config/stacks/`
+- [critical] NEVER build a UI component without reading `~/.claude/skills/design-system/SKILL.md`
+- [critical] NEVER create a duplicate component — search the project before creating
+- [critical] NEVER hardcode colors, fonts, or spacing that exist in the design system tokens
+- [critical] NEVER write a BMAD artifact (PRD, architecture, brief) without reading the matching template
+- [critical] NEVER write an SDLC prompt from scratch — derive from `~/.claude/config/prompts/`
+- [critical] NEVER ignore project AGENTS.md — it contains hard-won lessons from prior sessions
+
+## Enforcement
+
+If you find yourself writing code without having completed the applicable audit, STOP immediately. Complete the audit. Then resume.
+
+This applies to ALL pipeline modes: `/plan`, `/build`, `/dev`, `/auto-dev`, `/auto-build`, `/ghost-run`. No exemptions. The audit adds minutes. Inconsistent output costs hours.
