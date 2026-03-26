@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SessionEnd hook — auto-extract learning signals from the latest transcript.
 # Runs in background so it doesn't block session teardown.
+set -euo pipefail
 
 LOG_DIR="$HOME/.claude/logs"
 SCRIPTS_DIR="$HOME/.claude/skills/reflect/scripts"

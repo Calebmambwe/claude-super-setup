@@ -1,6 +1,12 @@
 {
   "$schema": "../schemas/catalog.schema.json",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "marketplace": {
+    "last_sync": "2026-03-25",
+    "remote_count": 0,
+    "local_count": 69,
+    "imported_count": 0
+  },
   "model_tiers": {
     "haiku": {
       "model": "claude-haiku-3-5",
@@ -66,6 +72,17 @@
     }
   },
   "agents": [
+    {
+      "name": "teach-me",
+      "file": "agents/core/teach-me.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Self-teaching agent — researches unknown tools/processes, creates skills, then executes the task. Full autonomy loop.",
+      "model_tier": "opus",
+      "capabilities": ["self-teaching", "deep-research", "skill-creation", "agent-creation", "autonomous-learning", "gap-analysis"],
+      "tools": ["Read", "Write", "Edit", "Grep", "Glob", "Bash", "Agent", "WebSearch", "WebFetch", "mcp__context7__resolve-library-id", "mcp__context7__query-docs"],
+      "teams": ["research"]
+    },
     {
       "name": "darwin",
       "file": "agents/core/darwin.md",

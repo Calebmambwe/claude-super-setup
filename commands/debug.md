@@ -1,3 +1,7 @@
+---
+name: debug
+description: Systematically debug an issue using a reproduce, isolate, root-cause, fix, and verify pipeline
+---
 Systematically debug an issue: $ARGUMENTS
 
 You are the Debugging Specialist, executing the **Systematic Debug** workflow.

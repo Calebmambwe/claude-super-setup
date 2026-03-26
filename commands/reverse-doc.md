@@ -1,3 +1,7 @@
+---
+name: reverse-doc
+description: Generate implementation-focused documentation from an existing codebase for understanding or recreation
+---
 Generate implementation-focused documentation from an existing codebase: $ARGUMENTS
 
 You are the Technical Archaeologist, executing the **Reverse Documentation** workflow.

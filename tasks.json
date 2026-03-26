@@ -1,176 +1,335 @@
 {
-  "version": 1,
-  "feature": "Ghost Mode Hardening + Full Telegram Dev Parity + Local Models",
-  "created_at": "2026-03-25T01:00:00Z",
+  "project": "lobehub-marketplace-integration",
+  "description": "Integrate claude-super-setup with LobeHub ecosystem \u2014 MCP registry client, agent/skill import, knowledge RAG, and community contributions",
+  "stack": "python + shell + markdown",
+  "created": "2026-03-26T00:30:00Z",
+  "source": "docs/lobehub-marketplace/design-doc.md",
   "tasks": [
     {
       "id": 1,
-      "title": "NLP natural language routing for telegram-dispatch.md",
-      "description": "Upgrade telegram-dispatch.md with NLP intent detection — 'build X' auto-routes to /ghost, 'fix X' to /debug, always-autonomous default.",
+      "title": "Create MCP registry cache schema and fetch script",
+      "description": "Build scripts/mcp-registry-fetch.py that fetches MCP server listings from LobeHub, Official MCP Registry, and Smithery. Normalizes to common MCPServerEntry format. Creates schemas/mcp-registry-cache.schema.json. Stores cache at ~/.claude/mcp-registry/cache.json with 24h TTL.",
       "status": "completed",
       "priority": "P0",
-      "risk": "low",
+      "risk": "medium",
+      "acceptance": [
+        "scripts/mcp-registry-fetch.py fetches from at least 2 registries (LobeHub + Official)",
+        "Cache file created at ~/.claude/mcp-registry/cache.json with valid schema",
+        "schemas/mcp-registry-cache.schema.json validates the cache structure",
+        "Graceful per-registry failure (one registry down doesn't block others)",
+        "Cache includes server name, description, transport, install config, and registry source"
+      ],
+      "files": [
+        "scripts/mcp-registry-fetch.py",
+        "schemas/mcp-registry-cache.schema.json"
+      ],
       "depends_on": [],
-      "files": ["commands/telegram-dispatch.md"],
-      "acceptance_criteria": [
-        "Natural language messages are classified by intent (BUILD, FIX, TEST, REVIEW, SHIP, etc.)",
-        "BUILD/PLAN intents route to /ghost (always-autonomous)",
-        "FIX intents route to /debug",
-        "High-confidence matches dispatch immediately, medium-confidence asks for confirmation",
-        "No-match falls back to conversational mode",
-        "Queue entries include nlp_routed flag",
-        "Prompt injection guard documented for NLP-extracted arguments"
-      ]
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 2,
-      "title": "Auto quality gate hook",
-      "description": "Create hooks/auto-quality-gate.sh for auto lint+typecheck on code changes.",
+      "title": "Create /mcp-search command",
+      "description": "Build commands/mcp-search.md that searches the MCP registry cache by query string. Searches across name, description, tags, and categories. Displays results in a formatted table with name, registry, transport, stars, and install status.",
       "status": "completed",
       "priority": "P0",
       "risk": "low",
-      "depends_on": [],
-      "files": ["hooks/auto-quality-gate.sh"],
-      "acceptance_criteria": [
-        "Triggers on Edit/Write tool for .ts/.tsx/.js/.jsx/.py files",
-        "Runs ESLint or Biome for JS/TS projects",
-        "Runs tsc --noEmit for TypeScript files",
-        "Runs ruff and mypy for Python files",
-        "Reports failures with formatted output",
-        "Script is executable"
-      ]
+      "acceptance": [
+        "commands/mcp-search.md exists and is a valid slash command",
+        "Searches cached MCP servers by name, description, tags",
+        "Displays results in formatted table with source registry",
+        "Shows install status (installed/available) by checking settings.json",
+        "Auto-refreshes cache if stale (>24h) or missing"
+      ],
+      "files": [
+        "commands/mcp-search.md"
+      ],
+      "depends_on": [
+        1
+      ],
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 3,
-      "title": "Telemetry hook",
-      "description": "Create hooks/telemetry.sh for observability logging of all tool calls.",
+      "title": "Create /mcp-install and /mcp-remove commands",
+      "description": "Build commands/mcp-install.md that installs an MCP server by adding it to settings.json with correct transport config. Prompts for required env vars. Build commands/mcp-remove.md that removes an MCP server entry. Build commands/mcp-list.md that shows installed servers.",
       "status": "completed",
       "priority": "P0",
-      "risk": "low",
-      "depends_on": [],
-      "files": ["hooks/telemetry.sh"],
-      "acceptance_criteria": [
-        "Logs structured JSON events to ~/.claude/logs/telemetry.jsonl",
-        "Captures tool name, type, file path, project, branch, session",
-        "Classifies tools into types (read/write/exec/agent/mcp)",
-        "Auto-rotates log at 10MB",
-        "Script is executable"
-      ]
+      "risk": "medium",
+      "acceptance": [
+        "commands/mcp-install.md resolves server from cache and adds to settings.json",
+        "Prompts user for required environment variables before install",
+        "commands/mcp-remove.md removes server entry from settings.json",
+        "commands/mcp-list.md shows all installed MCP servers with source",
+        "Install does not overwrite existing settings.json entries (merge only)"
+      ],
+      "files": [
+        "commands/mcp-install.md",
+        "commands/mcp-remove.md",
+        "commands/mcp-list.md"
+      ],
+      "depends_on": [
+        1
+      ],
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 4,
-      "title": "Alert check hook with 4 mandatory alerts",
-      "description": "Create hooks/alert-check.sh with 4 alerts: test failure, build failure, disk low, timeout warning.",
+      "title": "Update agent catalog schema to v2",
+      "description": "Update schemas/catalog.schema.json to v2 with new marketplace fields (source_repo, lobehub_id, version, author, tags, downloads, rating, install_method). Backward compatible \u2014 all new fields optional. Migrate agents/catalog.json to v2 format.",
       "status": "completed",
       "priority": "P0",
       "risk": "low",
+      "acceptance": [
+        "schemas/catalog.schema.json updated with v2 fields (all optional for backward compat)",
+        "agents/catalog.json version bumped to 2.0.0 with marketplace metadata section",
+        "Existing agent entries unchanged (pure additive migration)",
+        "New fields: source_repo, lobehub_id, version, author, tags, install_method"
+      ],
+      "files": [
+        "schemas/catalog.schema.json",
+        "agents/catalog.json"
+      ],
       "depends_on": [],
-      "files": ["hooks/alert-check.sh"],
-      "acceptance_criteria": [
-        "Alert 1: Test suite failure detection (pytest, vitest, jest)",
-        "Alert 2: Build/compile failure detection (tsc, cargo, go)",
-        "Alert 3: Disk space low (>90%) with 1h dedup",
-        "Alert 4: Ghost Mode timeout (exceeds max_hours)",
-        "All alerts log to ~/.claude/logs/alerts.jsonl",
-        "Alerts dispatch via ghost-notify.sh",
-        "Script is executable"
-      ]
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 5,
-      "title": "5 integration tests",
-      "description": "Create 5 integration tests in tests/integration/ covering hooks, config, dispatch security, notifications, and VPS setup.",
+      "title": "Build agent format converter (LobeHub JSON -> our MD)",
+      "description": "Create scripts/agent-converter.py that converts LobeHub JSON agent format to our Markdown agent format. Maps systemRole to body content, meta fields to YAML frontmatter, plugins to tools list. Import direction only.",
       "status": "completed",
-      "priority": "P0",
+      "priority": "P1",
       "risk": "low",
-      "depends_on": [1, 2, 3, 4],
-      "files": [
-        "tests/integration/test-hooks-exist.sh",
-        "tests/integration/test-config-valid.sh",
-        "tests/integration/test-dispatch-runner.sh",
-        "tests/integration/test-ghost-notify.sh",
-        "tests/integration/test-setup-vps-flags.sh"
+      "acceptance": [
+        "scripts/agent-converter.py converts LobeHub JSON to our Markdown format",
+        "Correctly maps: systemRole -> body, meta.title -> name, meta.tags -> tags, config.model -> model_tier",
+        "Output validates against schemas/agent-frontmatter.schema.json",
+        "Handles edge cases: missing fields, empty systemRole, special characters"
       ],
-      "acceptance_criteria": [
-        "test-hooks-exist.sh: verifies all hooks exist and are executable (15 checks)",
-        "test-config-valid.sh: validates all JSON configs parse correctly (12 checks)",
-        "test-dispatch-runner.sh: tests security validation rejects bad inputs (7 checks)",
-        "test-ghost-notify.sh: tests all notification levels exit cleanly (8 checks)",
-        "test-setup-vps-flags.sh: tests --with-ollama and other flags in dry-run (10 checks)",
-        "All 52 assertions pass"
-      ]
+      "files": [
+        "scripts/agent-converter.py"
+      ],
+      "depends_on": [],
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 6,
-      "title": "Ollama local model support",
-      "description": "Create config/model-routing.json and update setup-vps.sh with --with-ollama flag.",
+      "title": "Create /agent-search and /agent-import commands",
+      "description": "Build commands/agent-search.md to search local catalog + LobeHub agents. Build commands/agent-import.md to import a LobeHub agent into local Markdown format using the converter.",
       "status": "completed",
       "priority": "P1",
       "risk": "low",
-      "depends_on": [],
-      "files": ["config/model-routing.json", "scripts/setup-vps.sh"],
-      "acceptance_criteria": [
-        "model-routing.json defines providers (anthropic, ollama) with model mappings",
-        "Routing rules map task types (planning, implementation, review, testing, triage) to models",
-        "Fallback policy triggers on API errors or budget exceeded",
-        "Offline mode support documented",
-        "setup-vps.sh accepts --with-ollama flag",
-        "Phase 9/10 installs Ollama, pulls base model, copies config",
-        "Phase count updated from 9 to 10 across all phases"
-      ]
+      "acceptance": [
+        "commands/agent-search.md searches local catalog and LobeHub agent index",
+        "commands/agent-import.md downloads LobeHub agent and converts to local MD format",
+        "Imported agents saved to agents/community/imported/ directory",
+        "Imported agents added to catalog.json with source='imported' and lobehub_id set"
+      ],
+      "files": [
+        "commands/agent-search.md",
+        "commands/agent-import.md"
+      ],
+      "depends_on": [
+        4,
+        5
+      ],
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 7,
-      "title": "Observability dashboard command",
-      "description": "Create commands/dashboard.md for unified observability view.",
+      "title": "Create skill registry and /skill-search command",
+      "description": "Create schemas/skill-registry.schema.json and ~/.claude/skill-registry.json to track installed skills with source metadata. Build commands/skill-search.md to search local + LobeHub skills.",
       "status": "completed",
       "priority": "P1",
       "risk": "low",
-      "depends_on": [3, 4],
-      "files": ["commands/dashboard.md"],
-      "acceptance_criteria": [
-        "Aggregates data from telemetry, alerts, tasks, queue, ghost-config, metrics",
-        "Computes tool usage breakdown, alert counts, task progress",
-        "Runs system health checks (disk, sessions, Ollama, budget)",
-        "Full terminal dashboard with box-drawing characters",
-        "Condensed Telegram version within 4096-char limit",
-        "Gracefully handles missing data sources"
-      ]
+      "acceptance": [
+        "schemas/skill-registry.schema.json defines skill tracking format",
+        "commands/skill-search.md searches local skills and LobeHub marketplace",
+        "Results show: name, description, source (local/lobehub), installed status",
+        "Local skills auto-discovered from ~/.claude/skills/"
+      ],
+      "files": [
+        "schemas/skill-registry.schema.json",
+        "commands/skill-search.md"
+      ],
+      "depends_on": [],
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 8,
-      "title": "Extend test-after-impl.sh for all source files",
-      "description": "Upgrade test-after-impl.sh to trigger on source file changes, not just test files.",
-      "status": "completed",
-      "priority": "P0",
-      "risk": "low",
-      "depends_on": [],
-      "files": ["hooks/test-after-impl.sh"],
-      "acceptance_criteria": [
-        "Triggers on .ts/.tsx/.js/.jsx/.py/.go/.rs files",
-        "For test files: runs that specific test (existing behavior)",
-        "For source files: finds corresponding test file using 6 search patterns",
-        "Supports co-located tests, __tests__ dirs, tests/ dir, Python test_ prefix",
-        "Silently skips if no corresponding test found",
-        "Reports which source file triggered the test run"
-      ]
-    },
-    {
-      "id": 9,
-      "title": "Update AGENTS.md for Sprint 6",
-      "description": "Add Sprint 6 sections to AGENTS.md covering hardening, NLP dispatch, and local models.",
+      "title": "Create /skill-import command",
+      "description": "Build commands/skill-import.md that imports a skill from LobeHub or GitHub. Downloads SKILL.md + bundled resources. Installs to ~/.claude/skills/imported/<name>/. Updates skill registry.",
       "status": "completed",
       "priority": "P1",
       "risk": "low",
-      "depends_on": [1, 2, 3, 4, 5, 6, 7, 8],
-      "files": ["AGENTS.md"],
-      "acceptance_criteria": [
-        "Sprint 6 section documents NLP dispatch routing",
-        "Documents new hooks (auto-quality-gate, telemetry, alert-check)",
-        "Documents model-routing.json and Ollama support",
-        "Documents dashboard command",
-        "Documents test-after-impl.sh source file triggering"
-      ]
+      "acceptance": [
+        "commands/skill-import.md accepts LobeHub skill ID or GitHub URL",
+        "Downloads SKILL.md and bundled resources to ~/.claude/skills/imported/<name>/",
+        "Updates ~/.claude/skill-registry.json with new entry",
+        "Imported skills have correct SKILL.md frontmatter and are usable by Claude Code"
+      ],
+      "files": [
+        "commands/skill-import.md"
+      ],
+      "depends_on": [
+        7
+      ],
+      "attempts": 0,
+      "max_attempts": 3
+    },
+    {
+      "id": 9,
+      "title": "Build Knowledge RAG MCP server \u2014 core ingestion",
+      "description": "Create mcp-servers/knowledge-rag-server.py with knowledge_ingest and knowledge_status MCP tools. Uses SQLite + FTS5 for text indexing. Chunks markdown and source code files. Implements hash-based change detection.",
+      "status": "completed",
+      "priority": "P0",
+      "risk": "high",
+      "acceptance": [
+        "mcp-servers/knowledge-rag-server.py implements knowledge_ingest MCP tool",
+        "SQLite database created per-project at ~/.claude/knowledge/{project-hash}.db",
+        "Documents table and chunks table created with FTS5 index",
+        "Markdown files chunked by headings then paragraphs (max 512 tokens)",
+        "Source code files chunked by function/class boundaries",
+        "Hash-based change detection skips unchanged files",
+        "knowledge_status tool returns DB stats (doc count, chunk count, size)"
+      ],
+      "files": [
+        "mcp-servers/knowledge-rag-server.py"
+      ],
+      "depends_on": [],
+      "attempts": 0,
+      "max_attempts": 3
+    },
+    {
+      "id": 10,
+      "title": "Add semantic search to Knowledge RAG server",
+      "description": "Add knowledge_search and knowledge_clear MCP tools. Implement FTS5 BM25 search as baseline. Add optional sqlite-vss vector search when available. Add sentence-transformers embedding support.",
+      "status": "completed",
+      "priority": "P0",
+      "risk": "high",
+      "acceptance": [
+        "knowledge_search MCP tool returns top-k relevant chunks for a query",
+        "FTS5 BM25 ranking works as baseline search (no extra deps required)",
+        "sqlite-vss vector search works when sqlite-vss is installed",
+        "knowledge_clear MCP tool deletes all data for a project",
+        "Search results include: file_path, chunk content, relevance score"
+      ],
+      "files": [
+        "mcp-servers/knowledge-rag-server.py"
+      ],
+      "depends_on": [
+        9
+      ],
+      "attempts": 0,
+      "max_attempts": 3
+    },
+    {
+      "id": 11,
+      "title": "Create /knowledge-ingest and /knowledge-search commands",
+      "description": "Build slash commands that wrap the Knowledge RAG MCP tools. /knowledge-ingest triggers ingestion of current project. /knowledge-search queries the knowledge base.",
+      "status": "completed",
+      "priority": "P1",
+      "risk": "low",
+      "acceptance": [
+        "commands/knowledge-ingest.md triggers knowledge_ingest for current project directory",
+        "commands/knowledge-search.md queries knowledge base and displays results",
+        "Both commands handle the case where knowledge-rag-server is not configured"
+      ],
+      "files": [
+        "commands/knowledge-ingest.md",
+        "commands/knowledge-search.md"
+      ],
+      "depends_on": [
+        10
+      ],
+      "attempts": 0,
+      "max_attempts": 3
+    },
+    {
+      "id": 12,
+      "title": "Create community contribution schema and validation",
+      "description": "Create schemas/community-package.schema.json for community contributions. Build commands/community-validate.md that validates agent/skill contributions locally. Create scripts/validate-contribution.sh for CI.",
+      "status": "completed",
+      "priority": "P2",
+      "risk": "low",
+      "acceptance": [
+        "schemas/community-package.schema.json defines package manifest format",
+        "commands/community-validate.md validates contributions against schema",
+        "scripts/validate-contribution.sh runs validation checks (frontmatter, naming, duplicates)",
+        "Validation checks: required fields, kebab-case naming, no duplicate identifiers"
+      ],
+      "files": [
+        "schemas/community-package.schema.json",
+        "commands/community-validate.md",
+        "scripts/validate-contribution.sh"
+      ],
+      "depends_on": [
+        4,
+        7
+      ],
+      "attempts": 0,
+      "max_attempts": 3
+    },
+    {
+      "id": 13,
+      "title": "Update install.sh and register Knowledge RAG MCP server",
+      "description": "Update install.sh to create ~/.claude/mcp-registry/ and ~/.claude/knowledge/ directories. Add knowledge-rag-server.py to MCP server configuration. Update config/settings.json template.",
+      "status": "completed",
+      "priority": "P1",
+      "risk": "low",
+      "acceptance": [
+        "install.sh creates ~/.claude/mcp-registry/ directory",
+        "install.sh creates ~/.claude/knowledge/ directory",
+        "knowledge-rag-server registered in config/settings.json template",
+        "Optional dependencies documented (sentence-transformers, sqlite-vss)"
+      ],
+      "files": [
+        "install.sh",
+        "config/settings.json"
+      ],
+      "depends_on": [
+        1,
+        10
+      ],
+      "attempts": 0,
+      "max_attempts": 3
+    },
+    {
+      "id": 14,
+      "title": "Integration testing and documentation",
+      "description": "Update AGENTS.md with new patterns. Update README.md marketplace section. Add all new commands to Telegram dispatch routing. Run integration smoke tests for all new commands.",
+      "status": "completed",
+      "priority": "P1",
+      "risk": "low",
+      "acceptance": [
+        "AGENTS.md updated with marketplace patterns and gotchas",
+        "README.md has marketplace features section",
+        "All new commands accessible via Telegram dispatch",
+        "Smoke test: /mcp-search returns results",
+        "Smoke test: /knowledge-ingest completes without error"
+      ],
+      "files": [
+        "AGENTS.md",
+        "README.md",
+        "commands/telegram-dispatch.md"
+      ],
+      "depends_on": [
+        2,
+        3,
+        6,
+        8,
+        11,
+        12,
+        13
+      ],
+      "attempts": 0,
+      "max_attempts": 3
     }
   ]
 }

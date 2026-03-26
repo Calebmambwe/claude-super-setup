@@ -53,6 +53,15 @@ Match against these patterns (case-insensitive). The FIRST matching rule wins:
 | `docs ...`, `document ...`, `explain ...` | DOCS | `/reverse-doc <captured args>` | "document the API" → `/reverse-doc API` |
 | `scaffold ...`, `bootstrap ...`, `new project ...`, `new app ...` | SCAFFOLD | `/new-app <captured args>` | "scaffold a todo app" → `/new-app todo app` |
 | `cancel ...`, `stop ...`, `kill ...`, `abort ...` | CANCEL | `/cancel <captured args>` | "stop the ghost run" → `/cancel` (latest running) |
+| `teach me ...`, `learn ...`, `figure out ...`, `how to use ...` | TEACH | `/teach-me <captured args>` | "teach me Hono and build an API" → `/teach-me Hono and build an API` |
+| `search mcp ...`, `find mcp ...`, `find server ...` | MCP_SEARCH | `/mcp-search <captured args>` | "search mcp github" → `/mcp-search github` |
+| `install mcp ...`, `add mcp ...`, `add server ...` | MCP_INSTALL | `/mcp-install <captured args>` | "install mcp github" → `/mcp-install github` |
+| `search agent ...`, `find agent ...` | AGENT_SEARCH | `/agent-search <captured args>` | "find agent for coding" → `/agent-search coding` |
+| `import agent ...` | AGENT_IMPORT | `/agent-import <captured args>` | "import agent translator" → `/agent-import translator` |
+| `search skill ...`, `find skill ...` | SKILL_SEARCH | `/skill-search <captured args>` | "search skill testing" → `/skill-search testing` |
+| `import skill ...` | SKILL_IMPORT | `/skill-import <captured args>` | "import skill from github" → `/skill-import <url>` |
+| `ingest ...`, `index project ...`, `index docs ...` | INGEST | `/knowledge-ingest <captured args>` | "index this project" → `/knowledge-ingest .` |
+| `knowledge ...`, `search docs ...`, `search knowledge ...` | KNOWLEDGE | `/knowledge-search <captured args>` | "search knowledge auth" → `/knowledge-search auth` |
 | `help`, `what can you do`, `commands` | HELP | `/help` | "what can you do?" → `/help` |
 
 #### Confidence & Confirmation
@@ -113,7 +122,8 @@ Commands are organized into safety tiers:
 These are read-only or quick status commands:
 
 ```
-ghost-status, pipeline-status, metrics, learning-dashboard, consolidate, dashboard
+ghost-status, pipeline-status, metrics, learning-dashboard, consolidate, dashboard,
+mcp-search, mcp-list, skill-search, agent-search, knowledge-search, community-validate
 ```
 
 **Action:** Execute the command directly using the Skill tool, then send the output via `mcp__plugin_telegram_telegram__reply`.
@@ -128,7 +138,9 @@ next-task, reflect, code-review, security-audit, security-check,
 generate-tests, changelog, test-plan, perf-audit, deps-audit,
 visual-verify, web-test, build, scaffold, api-endpoint, refactor,
 debug, new-app, new-project, ci-setup, auto-plan, review,
-team-build, parallel-implement, production-ready, reverse-doc
+team-build, parallel-implement, production-ready, reverse-doc,
+mcp-install, mcp-remove, skill-import, agent-import, knowledge-ingest,
+teach-me
 ```
 
 **Action:**

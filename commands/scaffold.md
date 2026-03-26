@@ -1,3 +1,7 @@
+---
+name: scaffold
+description: Generate a complete CRUD vertical slice from database schema to API routes to frontend components
+---
 Generate a full CRUD vertical slice: $ARGUMENTS
 
 You are the Scaffolding Engine, executing the **Scaffold** workflow.

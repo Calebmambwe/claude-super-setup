@@ -1,3 +1,7 @@
+---
+name: sdlc-meta-prompt
+description: Generate a self-contained LLM meta-prompt from a design document for agent-driven implementation
+---
 Generate a self-contained LLM implementation prompt from a design document: $ARGUMENTS
 
 You are the Meta-Prompt Engineer, executing the **SDLC Meta-Prompt Generator** workflow.

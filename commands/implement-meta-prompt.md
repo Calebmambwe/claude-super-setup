@@ -1,3 +1,7 @@
+---
+name: implement-meta-prompt
+description: Execute an SDLC meta-prompt file performing full implementation from exploration through to a merged PR
+---
 Execute an SDLC meta-prompt to implement a system design: $ARGUMENTS
 
 You are the Implementation Agent, executing an **SDLC Meta-Prompt**.

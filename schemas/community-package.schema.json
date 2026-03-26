@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude-super-setup/schemas/community-package.schema.json",
+  "title": "Community Package",
+  "description": "Manifest for community contributions to claude-super-setup — lives at the root of a contribution PR as package.yaml or package.json",
+  "type": "object",
+  "required": ["name", "version", "type", "author", "description", "artifacts"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": {
+      "type": "string",
+      "description": "Unique kebab-case identifier for this package — must be lowercase, start with a letter, and contain only letters, digits, and hyphens",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "examples": ["my-agent", "sql-analyst", "code-review-hook"]
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of this package",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0", "0.2.1"]
+    },
+    "type": {
+      "type": "string",
+      "description": "Primary type of artifact this package contributes",
+      "enum": ["agent", "skill", "command", "hook", "team"]
+    },
+    "author": {
+      "type": "string",
+      "description": "Author name or GitHub handle",
+      "examples": ["Jane Smith", "jsmith", "jane@example.com"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Short human-readable description of what this package provides — minimum 10 characters",
+      "minLength": 10,
+      "examples": ["An agent that reviews SQL queries for correctness and performance."]
+    },
+    "homepage": {
+      "type": "string",
+      "description": "URL to the package homepage, docs, or source repository",
+      "format": "uri",
+      "examples": ["https://github.com/jsmith/my-claude-agent"]
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier",
+      "default": "MIT",
+      "examples": ["MIT", "Apache-2.0", "GPL-3.0"]
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "List of artifact files this package contributes — at least one required",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative path to the artifact file from the package root",
+            "examples": ["agents/sql-analyst.md", "skills/sql/SKILL.md", "commands/sql-query.md"]
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of this individual artifact",
+            "enum": ["agent", "skill", "command", "hook"]
+          },
+          "install_to": {
+            "type": "string",
+            "description": "Optional override for the install destination path (relative to ~/.claude/)",
+            "examples": ["agents/sql-analyst.md", "skills/sql/SKILL.md"]
+          }
+        }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "description": "Runtime requirements for this package",
+      "additionalProperties": false,
+      "properties": {
+        "claude_super_setup": {
+          "type": "string",
+          "description": "Minimum version of claude-super-setup required (semver range)",
+          "examples": [">=1.0.0", "^2.0.0"]
+        },
+        "mcp_servers": {
+          "type": "array",
+          "description": "MCP server identifiers this package depends on — users will be prompted to install missing ones",
+          "items": { "type": "string" },
+          "examples": [["@modelcontextprotocol/server-github", "context7"]]
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "description": "Keyword tags used for search and discovery in the marketplace",
+      "items": { "type": "string" },
+      "default": [],
+      "examples": [["sql", "database", "analytics"], ["testing", "pytest", "coverage"]]
+    },
+    "categories": {
+      "type": "array",
+      "description": "Category labels for marketplace filtering",
+      "items": { "type": "string" },
+      "default": [],
+      "examples": [["developer-tools", "databases"], ["productivity", "writing"]]
+    },
+    "model_tier": {
+      "type": "string",
+      "description": "Recommended Claude model tier for running this package's artifacts",
+      "enum": ["haiku", "sonnet", "opus"]
+    },
+    "test_command": {
+      "type": "string",
+      "description": "Shell command to run in CI to verify the package is working correctly",
+      "examples": ["bash tests/validate.sh", "pytest tests/"]
+    },
+    "changelog": {
+      "type": "string",
+      "description": "URL or relative path to the CHANGELOG file for this package",
+      "examples": ["CHANGELOG.md", "https://github.com/jsmith/pkg/blob/main/CHANGELOG.md"]
+    }
+  }
+}

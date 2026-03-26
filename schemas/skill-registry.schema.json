@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude-super-setup/schemas/skill-registry.schema.json",
+  "title": "Skill Registry",
+  "description": "Tracks installed skills and their remote availability from sources like LobeHub and GitHub",
+  "type": "object",
+  "required": ["version", "installed"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": {
+      "type": "string",
+      "description": "Schema version of this registry file",
+      "examples": ["1.0.0"]
+    },
+    "installed": {
+      "type": "array",
+      "description": "List of skills currently installed in ~/.claude/skills/",
+      "items": { "$ref": "#/$defs/InstalledSkill" }
+    },
+    "available_remote": {
+      "type": "number",
+      "description": "Total count of skills available from remote sources (informational, set after last sync)",
+      "minimum": 0
+    },
+    "last_sync": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the last successful remote registry sync"
+    }
+  },
+  "$defs": {
+    "InstalledSkill": {
+      "type": "object",
+      "title": "InstalledSkill",
+      "description": "A single skill entry, either locally authored or installed from a remote source",
+      "required": ["name", "path", "description", "source", "installed_at"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique skill identifier — matches the directory name under ~/.claude/skills/",
+          "examples": ["design-system", "backend-architecture", "docker"]
+        },
+        "path": {
+          "type": "string",
+          "description": "Absolute path to the skill directory on disk",
+          "examples": ["~/.claude/skills/design-system"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Short human-readable description of what the skill provides, read from SKILL.md frontmatter"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["local", "lobehub", "github"],
+          "description": "Origin of this skill: authored locally, installed from LobeHub marketplace, or installed from a GitHub repo"
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Canonical URL to the upstream skill listing or repo (omitted for local skills)"
+        },
+        "version": {
+          "type": "string",
+          "description": "Semver string of the installed skill version, if provided by the upstream source"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keyword tags used for search filtering, read from SKILL.md frontmatter",
+          "default": [],
+          "examples": [["ui", "components", "tailwind"], ["testing", "pytest", "coverage"]]
+        },
+        "installed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when this skill was first installed"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when this skill was last updated from its source"
+        }
+      }
+    }
+  }
+}

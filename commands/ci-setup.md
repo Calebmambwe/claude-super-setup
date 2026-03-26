@@ -1,3 +1,7 @@
+---
+name: ci-setup
+description: Set up a full CI/CD pipeline with linting, tests, and deployment for the current project
+---
 Set up a full CI/CD pipeline for this project: $ARGUMENTS
 
 ## Step 0: Create a Feature Branch

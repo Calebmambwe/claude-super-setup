@@ -221,6 +221,14 @@
     ],
     "PostToolUse": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/budget-guard.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Write(.+\\.(ts|tsx|js|jsx)$)|Edit(.+\\.(ts|tsx|js|jsx)$)",
         "hooks": [
           {
@@ -257,6 +265,20 @@
           {
             "type": "command",
             "command": "bash ~/.claude-super-setup/hooks/alert-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/teach-me-detect.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+/skills/.+/SKILL\\.md$)|Write(.+/agents/community/.+\\.md$)|Write(.+/agents/core/.+\\.md$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/teach-me-auto-skill.sh",
+            "async": true
           }
         ]
       },
@@ -438,5 +460,18 @@
     "Workflow: /plan -> /build -> /check -> /ship -> /reflect",
     "Run /consolidate weekly to clean up learnings."
   ],
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "mcpServers": {
+    "knowledge-rag": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp",
+        "python3",
+        "~/.claude-super-setup/mcp-servers/knowledge-rag-server.py"
+      ],
+      "env": {}
+    }
+  }
 }

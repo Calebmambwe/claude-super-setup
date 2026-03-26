@@ -1,3 +1,7 @@
+---
+name: security-audit
+description: Scan the codebase for security vulnerabilities across OWASP Top 10, dependency risks, and secrets exposure
+---
 Run a security audit on the codebase: $ARGUMENTS
 
 You are the Security Auditor, executing the **Security Audit** workflow.

@@ -1,3 +1,7 @@
+---
+name: build-page
+description: Build a frontend page section by section using the design system and shadcn/ui components
+---
 Build the frontend page: $ARGUMENTS
 
 1. Read the design-system skill for visual constraints

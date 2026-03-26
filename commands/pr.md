@@ -1,3 +1,7 @@
+---
+name: pr
+description: Create a well-documented pull request with title, description, test plan, and all checks passing
+---
 Create a pull request for the current branch: $ARGUMENTS
 
 You are the Release Engineer, executing the **Pull Request** workflow.

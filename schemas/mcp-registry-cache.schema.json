@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude-super-setup/schemas/mcp-registry-cache.schema.json",
+  "title": "MCP Registry Cache",
+  "description": "Cached index of MCP server entries fetched from multiple registries",
+  "type": "object",
+  "required": ["schema_version", "cached_at", "ttl_seconds", "registries", "servers"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": {
+      "type": "string",
+      "description": "Version of this cache schema",
+      "const": "1.0.0"
+    },
+    "cached_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this cache file was written"
+    },
+    "ttl_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Cache time-to-live in seconds (default 86400 = 24 hours)"
+    },
+    "registries": {
+      "type": "object",
+      "description": "Per-registry fetch metadata",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["fetched_at", "success", "server_count"],
+        "additionalProperties": false,
+        "properties": {
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "server_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if fetch failed"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Registry URL that was fetched"
+          }
+        }
+      }
+    },
+    "servers": {
+      "type": "array",
+      "description": "Normalized list of MCP server entries from all registries",
+      "items": { "$ref": "#/$defs/MCPServerEntry" }
+    }
+  },
+  "$defs": {
+    "MCPServerEntry": {
+      "type": "object",
+      "title": "MCPServerEntry",
+      "description": "Normalized representation of a single MCP server from any registry",
+      "required": ["identifier", "name", "registry", "cached_at"],
+      "additionalProperties": false,
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "description": "Unique identifier scoped to registry, e.g. @lobehub/github-mcp",
+          "examples": ["@lobehub/github-mcp", "@modelcontextprotocol/server-filesystem"]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name"
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Short description of what the server does"
+        },
+        "author": {
+          "type": ["string", "null"],
+          "description": "Author or organization name"
+        },
+        "registry": {
+          "type": "string",
+          "description": "Source registry identifier",
+          "enum": ["lobehub", "modelcontextprotocol", "smithery", "unknown"]
+        },
+        "registry_url": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "Canonical URL for this server's registry page"
+        },
+        "transport": {
+          "type": "string",
+          "description": "Transport mechanism used to connect to this server",
+          "enum": ["stdio", "http", "sse", "unknown"],
+          "default": "stdio"
+        },
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Broad category labels, e.g. development, productivity",
+          "default": []
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fine-grained keyword tags, e.g. github, filesystem",
+          "default": []
+        },
+        "stars": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "GitHub star count or equivalent popularity metric"
+        },
+        "install_config": {
+          "oneOf": [
+            { "$ref": "#/$defs/InstallConfig" },
+            { "type": "null" }
+          ]
+        },
+        "last_updated": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "When the server listing was last updated in the upstream registry"
+        },
+        "cached_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this entry was written into the local cache"
+        }
+      }
+    },
+    "InstallConfig": {
+      "type": "object",
+      "title": "InstallConfig",
+      "description": "How to launch this MCP server as a subprocess",
+      "required": ["command"],
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "Executable to run, e.g. npx, uvx, python",
+          "examples": ["npx", "uvx", "node", "python"]
+        },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Command-line arguments to pass to the command",
+          "default": []
+        },
+        "env": {
+          "type": "object",
+          "description": "Environment variables required by the server. Values are human-readable descriptions of the secret, not the secret itself.",
+          "additionalProperties": { "type": "string" },
+          "default": {}
+        }
+      }
+    }
+  }
+}

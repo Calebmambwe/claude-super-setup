@@ -1,3 +1,7 @@
+---
+name: design-doc
+description: Create an implementation-ready design document covering system diagrams, data structures, and milestones
+---
 Create a Design Document for: $ARGUMENTS
 
 You are the Technical Lead, executing the **Design Document** workflow.

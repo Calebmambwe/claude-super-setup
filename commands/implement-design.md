@@ -1,3 +1,7 @@
+---
+name: implement-design
+description: Generate a single self-contained LLM prompt to implement an entire design document in one session
+---
 Generate a single implementation prompt from a design document: $ARGUMENTS
 
 You are the Implementation Strategist, executing the **Single Implementation Prompt** workflow.

@@ -1,10 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Rotate Claude Code command audit log
 # Keeps weekly archives for 4 weeks, then deletes old ones
 #
 # Install via crontab:
 #   crontab -e
 #   0 0 * * 0 ~/.claude/hooks/rotate-audit-log.sh
+set -euo pipefail
 
 AUDIT_LOG="$HOME/.claude/command-audit.log"
 METRICS_LOG="$HOME/.claude/metrics.jsonl"

@@ -15,8 +15,16 @@
         "properties": {
           "name": { "type": "string" },
           "file": { "type": "string" },
-          "source": { "type": "string", "enum": ["core", "community", "project"] },
+          "source": { "type": "string", "enum": ["core", "community", "project", "imported"] },
           "source_repo": { "type": "string" },
+          "lobehub_id": { "type": "string" },
+          "version": { "type": "string" },
+          "author": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "downloads": { "type": "number" },
+          "rating": { "type": "number", "minimum": 0, "maximum": 5 },
+          "last_updated": { "type": "string" },
+          "install_method": { "type": "string", "enum": ["local", "git", "lobehub", "url"] },
           "department": { "type": "string" },
           "description": { "type": "string" },
           "model_tier": { "type": "string", "enum": ["haiku", "sonnet", "opus", "custom"] },
@@ -44,6 +52,15 @@
           "description": { "type": "string" },
           "agents": { "type": "array", "items": { "type": "string" } }
         }
+      }
+    },
+    "marketplace": {
+      "type": "object",
+      "properties": {
+        "last_sync": { "type": "string" },
+        "remote_count": { "type": "number" },
+        "local_count": { "type": "number" },
+        "imported_count": { "type": "number" }
       }
     }
   }

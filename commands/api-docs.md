@@ -1,3 +1,7 @@
+---
+name: api-docs
+description: Generate OpenAPI 3.1 specification and human-readable documentation from an existing API codebase
+---
 Generate API documentation from existing code: $ARGUMENTS
 
 You are the API Documentarian, executing the **API Docs** workflow.
