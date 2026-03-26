@@ -8,3 +8,4 @@
 | [unified-agent-system](unified-agent-system/brief.md) | In Progress | [brief.md](unified-agent-system/brief.md) | — | Telegram-driven task dispatcher bridging Telegram bot with Ghost Mode for mobile-first dev workflows |
 | [enterprise-agent-platform](enterprise-agent-platform/brief.md) | Design Doc | [brief.md](enterprise-agent-platform/brief.md) | [design-doc.md](enterprise-agent-platform/design-doc.md) | Portable, enterprise-grade, always-on AI dev platform — 8 pillars including fully autonomous /auto-develop pipeline |
 | [agentos-v2](docs/agentos-v2/brief.md) | 📝 Brief | [brief.md](docs/agentos-v2/brief.md) | — | Self-hosted Manus alternative — autonomous agent platform with sandbox, connectors, SSE streaming |
+| [browser-error-monitor](browser-error-monitor/brief.md) | 📝 Brief | [brief.md](browser-error-monitor/brief.md) | — | Playwright CDP daemon + PostToolUse hook for automatic browser runtime error detection and agent feedback |
