@@ -41,32 +41,32 @@ The following sections should be populated per-sprint or per-feature. They form 
 
 ### Current Goal
 
-> Enterprise Agent Platform Sprint 5: VS Code Agent Teams (review, feature, debug presets), Remote Control architecture docs (worktree isolation, URI handler), Smart Hub web API spec, verifier team preset validation.
+> Enterprise Agent Platform Sprint 5: VS Code Agent Teams presets, Remote Control docs, worktree isolation, URI handler integration, Smart Hub web API spec.
 
 ### Key Constraints
 
 - Must build on existing architecture — extend, don't replace
 - Must not break existing functionality (Ghost Mode, Telegram, overnight.sh)
 - Solo developer — leverage AI agents for implementation
-- All commands must follow existing SKILL.md frontmatter pattern
-- Commands must gracefully skip missing integrations with setup hints
+- All docs must reference existing patterns (catalog.json teams, verifier agent, Telegram dispatch)
+- Smart Hub API spec is design-only — no running server code yet
 
 ### Success Criteria
 
-- [x] VS Code Agent Teams presets (review, feature, debug) with JSON schema
-- [x] Remote Control architecture documentation
-- [x] Worktree isolation documentation
-- [x] URI handler integration documentation
-- [x] Smart Hub web API spec (10 endpoints)
-- [x] Verifier agent enhanced with team preset validation
-- [x] AGENTS.md and catalog.json updated with Sprint 5 content
+- [ ] VS Code team presets created for review, feature, debug teams
+- [ ] Remote Control, worktree isolation, URI handler fully documented
+- [ ] Smart Hub API spec covers pipeline status, task queue, metrics endpoints
+- [ ] Verifier agent enhanced with team preset awareness
+- [ ] AGENTS.md updated with Sprint 5 patterns
+- [ ] catalog.json updated with new team presets
+- [ ] No regressions in existing commands or agents
 
 ### Non-Goals (Explicit)
 
-- Implementing Smart Hub Tauri frontend (spec only)
-- Implementing URI handler VS Code extension (docs only)
-- Running server code or API implementations
-- Modifying existing command behavior
+- Smart Hub application code (Tauri/React) — spec only
+- Running API server implementation
+- Modifying existing commands or agent behavior
+- Multi-machine or cloud deployment patterns
 
 ---
 
