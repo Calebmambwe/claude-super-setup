@@ -13,20 +13,22 @@
       }
     },
     "ollama": {
-      "enabled": false,
+      "enabled": true,
       "priority": 2,
       "base_url": "http://localhost:11434",
       "health_check": "http://localhost:11434/api/tags",
       "models": {
-        "large": "llama3.3:70b",
-        "medium": "llama3.3:8b",
         "small": "llama3.2:3b",
-        "code": "qwen2.5-coder:32b",
-        "embed": "nomic-embed-text"
+        "code": "qwen2.5-coder:7b"
       },
+      "installed": ["llama3.2:3b", "qwen2.5-coder:7b"],
       "pull_on_first_use": true,
-      "gpu_layers": -1,
-      "context_length": 32768
+      "gpu_layers": 0,
+      "context_length": 32768,
+      "benchmarks": {
+        "llama3.2:3b": {"tok_per_sec_cpu": 12, "ram_gb": 2.5, "quality": "adequate"},
+        "qwen2.5-coder:7b": {"tok_per_sec_cpu": 5, "ram_gb": 5.5, "quality": "good"}
+      }
     }
   },
   "routing": {
