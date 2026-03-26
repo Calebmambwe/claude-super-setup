@@ -1,7 +1,7 @@
 {
   "$comment": "Schema: schemas/model-routing.schema.json (to be created)",
-  "version": 1,
-  "description": "Model routing configuration — maps task types to models with local Ollama fallback support",
+  "version": 2,
+  "description": "Model routing configuration — maps task types to models with Anthropic, OpenRouter, and local Ollama support",
   "providers": {
     "anthropic": {
       "enabled": true,
@@ -12,9 +12,32 @@
         "haiku": "claude-haiku-4-5"
       }
     },
-    "ollama": {
+    "openrouter": {
       "enabled": true,
       "priority": 2,
+      "api_base": "https://openrouter.ai/api/v1",
+      "models": {
+        "code": "qwen/qwen3-coder",
+        "code-fallback": "meta-llama/llama-4-maverick",
+        "analysis": "google/gemini-2.5-pro",
+        "general": "deepseek/deepseek-chat-v3-0324",
+        "code-free": "qwen/qwen3-coder:free"
+      },
+      "benchmarks": {
+        "reference": "docs/local-models/openrouter-benchmarks.md",
+        "date": "2026-03-26",
+        "winner": "qwen/qwen3-coder",
+        "scores": {
+          "qwen/qwen3-coder": { "correctness": 9.5, "speed_avg_s": 2.1, "quality": 9.3 },
+          "meta-llama/llama-4-maverick": { "correctness": 9.2, "speed_avg_s": 2.9, "quality": 8.8 },
+          "deepseek/deepseek-chat-v3-0324": { "correctness": 9.0, "speed_avg_s": 3.9, "quality": 8.3 },
+          "google/gemini-2.5-pro": { "correctness": 8.7, "speed_avg_s": 34.8, "quality": 8.8 }
+        }
+      }
+    },
+    "ollama": {
+      "enabled": true,
+      "priority": 3,
       "base_url": "http://localhost:11434",
       "health_check": "http://localhost:11434/api/tags",
       "models": {
@@ -34,12 +57,14 @@
   "routing": {
     "planning": {
       "primary": "anthropic:opus",
-      "fallback": "ollama:large",
+      "fallback": "openrouter:analysis",
+      "local_fallback": "ollama:large",
       "description": "Architecture, design, and strategic planning"
     },
     "implementation": {
       "primary": "anthropic:sonnet",
-      "fallback": "ollama:code",
+      "fallback": "openrouter:code",
+      "local_fallback": "ollama:code",
       "description": "Code generation and editing"
     },
     "review": {
@@ -72,7 +97,8 @@
       "Budget remaining < $1",
       "Network timeout > 30s"
     ],
-    "behavior": "If Anthropic API returns an error matching any condition above AND ollama.enabled is true, retry with the fallback model. Log the fallback event to telemetry."
+    "chain": "anthropic → openrouter → ollama (if enabled)",
+    "behavior": "If primary provider returns an error matching any condition, try next provider in chain. Log fallback events to telemetry."
   },
   "offline_mode": {
     "enabled": false,
