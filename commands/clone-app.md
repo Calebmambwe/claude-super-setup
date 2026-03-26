@@ -178,26 +178,78 @@ Run the full `/auto-dev` pipeline using the design doc:
 5. **Run E2E tests** after each milestone
 6. **Visual compare** against scan screenshots
 
-### Phase 5: Visual Testing + Iteration
+### Phase 5: Visual Testing + Scored Iteration
 
-After implementation, run a visual comparison:
+After implementation, run a **scored** visual comparison:
 
-1. Screenshot every built page (desktop + mobile)
-2. Compare side-by-side with scan screenshots
-3. Identify mismatches:
-   - Missing sections
-   - Wrong colors
-   - Layout differences
-   - Missing interactions
-4. Auto-fix each mismatch (up to 3 iteration rounds)
-5. Final E2E test suite covering:
-   - All pages load with content
-   - All navigation links work
-   - All buttons are clickable
-   - Forms accept input
-   - Theme toggle works (if applicable)
-   - Mobile responsive
-   - No console errors
+**Step 5.1: Screenshot Built Pages**
+Screenshot every built page at 3 viewports:
+- Desktop (1440px)
+- Tablet (768px)
+- Mobile (390px)
+Save to `docs/clone/screenshots-built/`
+
+**Step 5.2: Compute Similarity Score**
+For each page, compare scan screenshots with built screenshots using three metrics:
+
+| Metric | Weight | How to Check |
+|--------|--------|-------------|
+| Section count match | 40% | Count sections in scan vs built — same number and order? |
+| Color accuracy | 35% | Compare primary/bg/border colors — OKLCH delta < 0.05? |
+| Layout ratio match | 25% | Section heights proportional? Grid columns match? |
+
+Overall score = weighted average across all pages and viewports.
+**Pass threshold: 90%**
+
+**Step 5.3: Generate VisualComparisonResult**
+Save structured results to `docs/clone/visual-comparison.json`:
+```json
+{
+  "sourceUrl": "{url}",
+  "builtProjectPath": "{path}",
+  "timestamp": "{ISO date}",
+  "overallScore": 85,
+  "passThreshold": 90,
+  "passed": false,
+  "viewports": [
+    {
+      "viewport": "desktop",
+      "widthPx": 1440,
+      "similarityScore": 88,
+      "mismatches": [
+        {
+          "type": "wrong_color",
+          "description": "Hero background is #f8f8f7 but scan shows #f5f5f5",
+          "fixSuggestion": "Update --background token in globals.css"
+        }
+      ]
+    }
+  ],
+  "iterationNumber": 1
+}
+```
+
+**Step 5.4: Auto-Fix Iteration Loop (max 3 rounds)**
+If score < 90%:
+1. For each mismatch, apply the `fixSuggestion`
+2. Re-screenshot and re-score
+3. Repeat until score >= 90% or 3 iterations reached
+4. If still failing after 3 rounds → escalate:
+   - Send Telegram notification with remaining mismatches
+   - Include side-by-side screenshot comparison
+   - Write mismatches to `docs/clone/remaining-issues.md`
+
+**Step 5.5: Final E2E Verification**
+Run the standard smoke test suite (from `/generate-tests --smoke`):
+- All pages load with visible content
+- No console errors
+- All navigation links work
+- All buttons are clickable
+- Forms accept input
+- Mobile responsive (no horizontal scroll at 390px)
+- No dead links (href="#")
+- Theme toggle works (if applicable)
+- Accessibility: no critical WCAG 2.2 violations
 
 ### Phase 6: Report
 
@@ -210,7 +262,15 @@ Components: {count}
 Design tokens: {count} OKLCH values
 E2E tests: {pass}/{total}
 
-Visual accuracy: ~{score}% (based on section matching)
+Visual Accuracy Score: {overallScore}% (threshold: 90%)
+  Desktop: {desktopScore}%
+  Tablet:  {tabletScore}%
+  Mobile:  {mobileScore}%
+Fix iterations: {iterationCount}/3
+Remaining mismatches: {count}
+
+Visual comparison: docs/clone/visual-comparison.json
+Screenshots: docs/clone/screenshots-built/
 
 Project location: {output directory}
 Run: cd {dir} && pnpm dev

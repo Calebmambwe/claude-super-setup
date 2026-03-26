@@ -1,27 +1,25 @@
 {
-  "project": "lobehub-marketplace-integration",
-  "description": "Integrate claude-super-setup with LobeHub ecosystem \u2014 MCP registry client, agent/skill import, knowledge RAG, and community contributions",
-  "stack": "python + shell + markdown",
-  "created": "2026-03-26T00:30:00Z",
-  "source": "docs/lobehub-marketplace/design-doc.md",
+  "project": "super-builder-enhancement",
+  "description": "Make claude-super-setup the best autonomous app builder \u2014 premium design system, enforcing hooks, visual verification, self-healing pipeline",
+  "stack": "shell + markdown + typescript patterns",
+  "created": "2026-03-26T03:10:00Z",
+  "source": "docs/super-builder/design-doc.md",
   "tasks": [
     {
       "id": 1,
-      "title": "Create MCP registry cache schema and fetch script",
-      "description": "Build scripts/mcp-registry-fetch.py that fetches MCP server listings from LobeHub, Official MCP Registry, and Smithery. Normalizes to common MCPServerEntry format. Creates schemas/mcp-registry-cache.schema.json. Stores cache at ~/.claude/mcp-registry/cache.json with 24h TTL.",
+      "title": "Create premium-builder skill",
+      "description": "Write skills/premium-builder/SKILL.md \u2014 comprehensive component pattern library covering typography scale, spacing scale, visual effects (glass-card, gradients, shadows, noise), animation library (SSR-safe), and 10+ component patterns (cards, buttons, navbars, heroes, features, pricing, footers, auth forms, terminals, integrations). This is the design law that all generated apps must follow.",
       "status": "completed",
       "priority": "P0",
-      "risk": "medium",
+      "risk": "low",
       "acceptance": [
-        "scripts/mcp-registry-fetch.py fetches from at least 2 registries (LobeHub + Official)",
-        "Cache file created at ~/.claude/mcp-registry/cache.json with valid schema",
-        "schemas/mcp-registry-cache.schema.json validates the cache structure",
-        "Graceful per-registry failure (one registry down doesn't block others)",
-        "Cache includes server name, description, transport, install config, and registry source"
+        "skills/premium-builder/SKILL.md exists with 10+ component patterns each having code examples",
+        "Typography scale covers Display through Caption with exact Tailwind classes",
+        "Animation library includes SSR-safe rules (initial={false} for above-fold)",
+        "Visual effects section includes glass-card, gradients, shadows, noise, grid patterns with CSS code"
       ],
       "files": [
-        "scripts/mcp-registry-fetch.py",
-        "schemas/mcp-registry-cache.schema.json"
+        "skills/premium-builder/SKILL.md"
       ],
       "depends_on": [],
       "attempts": 0,
@@ -29,68 +27,62 @@
     },
     {
       "id": 2,
-      "title": "Create /mcp-search command",
-      "description": "Build commands/mcp-search.md that searches the MCP registry cache by query string. Searches across name, description, tags, and categories. Displays results in a formatted table with name, registry, transport, stars, and install status.",
+      "title": "Create OKLCH palette generator script",
+      "description": "Write scripts/generate-palette.sh that takes a hex color input and outputs complete CSS custom properties for both :root (light) and .dark themes. Generates 11-shade primary scale, neutral scale with brand tint, and all 14 semantic token mappings. Uses Node.js for OKLCH math.",
       "status": "completed",
       "priority": "P0",
-      "risk": "low",
+      "risk": "medium",
       "acceptance": [
-        "commands/mcp-search.md exists and is a valid slash command",
-        "Searches cached MCP servers by name, description, tags",
-        "Displays results in formatted table with source registry",
-        "Shows install status (installed/available) by checking settings.json",
-        "Auto-refreshes cache if stale (>24h) or missing"
+        "scripts/generate-palette.sh '#3ECF8E' outputs valid CSS with :root and .dark blocks",
+        "Output includes 11-shade primary scale (50-950) in OKLCH",
+        "Output includes neutral scale with subtle brand hue tint",
+        "All 14 semantic tokens mapped (background, foreground, card, primary, muted, border, etc.)",
+        "Script is executable and handles invalid input gracefully"
       ],
       "files": [
-        "commands/mcp-search.md"
+        "scripts/generate-palette.sh",
+        "scripts/oklch-math.mjs"
       ],
-      "depends_on": [
-        1
-      ],
+      "depends_on": [],
       "attempts": 0,
       "max_attempts": 3
     },
     {
       "id": 3,
-      "title": "Create /mcp-install and /mcp-remove commands",
-      "description": "Build commands/mcp-install.md that installs an MCP server by adding it to settings.json with correct transport config. Prompts for required env vars. Build commands/mcp-remove.md that removes an MCP server entry. Build commands/mcp-list.md that shows installed servers.",
+      "title": "Create design-compliance hook",
+      "description": "Write hooks/design-compliance.sh \u2014 PreToolUse hook that blocks writes containing hardcoded hex colors (#xxx), arbitrary pixel values, or inline color styles in .tsx and .css files. Allows hex values only in design token definition files (globals.css :root block).",
       "status": "completed",
       "priority": "P0",
       "risk": "medium",
       "acceptance": [
-        "commands/mcp-install.md resolves server from cache and adds to settings.json",
-        "Prompts user for required environment variables before install",
-        "commands/mcp-remove.md removes server entry from settings.json",
-        "commands/mcp-list.md shows all installed MCP servers with source",
-        "Install does not overwrite existing settings.json entries (merge only)"
+        "hooks/design-compliance.sh blocks a file containing 'color: #3b82f6' (exits non-zero)",
+        "hooks/design-compliance.sh passes a file using 'text-primary' or 'var(--primary)'",
+        "Allows hex values inside globals.css :root and .dark blocks (token definitions)",
+        "Allows hex values in comments and string literals",
+        "Hook registered in settings.json as PreToolUse on Write/Edit for *.tsx, *.css"
       ],
       "files": [
-        "commands/mcp-install.md",
-        "commands/mcp-remove.md",
-        "commands/mcp-list.md"
+        "hooks/design-compliance.sh"
       ],
-      "depends_on": [
-        1
-      ],
+      "depends_on": [],
       "attempts": 0,
       "max_attempts": 3
     },
     {
       "id": 4,
-      "title": "Update agent catalog schema to v2",
-      "description": "Update schemas/catalog.schema.json to v2 with new marketplace fields (source_repo, lobehub_id, version, author, tags, downloads, rating, install_method). Backward compatible \u2014 all new fields optional. Migrate agents/catalog.json to v2 format.",
+      "title": "Create SSR safety check hook",
+      "description": "Write hooks/ssr-safety-check.sh \u2014 PostToolUse hook that warns when Framer Motion initial={{ opacity: 0 }} is used without whileInView, or when above-fold components use opacity-hiding initial states. Checks for noscript fallback in layout.",
       "status": "completed",
       "priority": "P0",
       "risk": "low",
       "acceptance": [
-        "schemas/catalog.schema.json updated with v2 fields (all optional for backward compat)",
-        "agents/catalog.json version bumped to 2.0.0 with marketplace metadata section",
-        "Existing agent entries unchanged (pure additive migration)",
-        "New fields: source_repo, lobehub_id, version, author, tags, install_method"
+        "hooks/ssr-safety-check.sh warns on 'initial={{ opacity: 0' in .tsx files",
+        "Does NOT warn on 'initial={false}' (the correct pattern)",
+        "Checks for noscript style fallback in layout.tsx",
+        "Hook registered in settings.json as PostToolUse on Write/Edit for *.tsx"
       ],
       "files": [
-        "schemas/catalog.schema.json",
-        "agents/catalog.json"
+        "hooks/ssr-safety-check.sh"
       ],
       "depends_on": [],
       "attempts": 0,
@@ -98,19 +90,19 @@
     },
     {
       "id": 5,
-      "title": "Build agent format converter (LobeHub JSON -> our MD)",
-      "description": "Create scripts/agent-converter.py that converts LobeHub JSON agent format to our Markdown agent format. Maps systemRole to body content, meta fields to YAML frontmatter, plugins to tools list. Import direction only.",
+      "title": "Create dead-link check hook",
+      "description": "Write hooks/dead-link-check.sh \u2014 PostToolUse hook that scans written .tsx files for href='#' or href='' links and warns. Also checks for empty onClick handlers on anchor tags.",
       "status": "completed",
       "priority": "P1",
       "risk": "low",
       "acceptance": [
-        "scripts/agent-converter.py converts LobeHub JSON to our Markdown format",
-        "Correctly maps: systemRole -> body, meta.title -> name, meta.tags -> tags, config.model -> model_tier",
-        "Output validates against schemas/agent-frontmatter.schema.json",
-        "Handles edge cases: missing fields, empty systemRole, special characters"
+        "hooks/dead-link-check.sh warns on href='#' in .tsx files",
+        "hooks/dead-link-check.sh warns on href='' (empty string) in .tsx files",
+        "Does NOT warn on href='/#section' (anchor links with path)",
+        "Hook registered in settings.json as PostToolUse on Write/Edit for *.tsx"
       ],
       "files": [
-        "scripts/agent-converter.py"
+        "hooks/dead-link-check.sh"
       ],
       "depends_on": [],
       "attempts": 0,
@@ -118,215 +110,161 @@
     },
     {
       "id": 6,
-      "title": "Create /agent-search and /agent-import commands",
-      "description": "Build commands/agent-search.md to search local catalog + LobeHub agents. Build commands/agent-import.md to import a LobeHub agent into local Markdown format using the converter.",
+      "title": "Create typecheck-on-save hook",
+      "description": "Write hooks/typecheck-on-save.sh \u2014 PostToolUse hook that runs tsc --noEmit on the project after TypeScript file writes. Captures and reports errors with file:line format.",
       "status": "completed",
       "priority": "P1",
-      "risk": "low",
+      "risk": "medium",
       "acceptance": [
-        "commands/agent-search.md searches local catalog and LobeHub agent index",
-        "commands/agent-import.md downloads LobeHub agent and converts to local MD format",
-        "Imported agents saved to agents/community/imported/ directory",
-        "Imported agents added to catalog.json with source='imported' and lobehub_id set"
+        "hooks/typecheck-on-save.sh runs tsc --noEmit and exits non-zero on type errors",
+        "Error output includes file path and line number",
+        "Runs only for .ts and .tsx file writes (not .md, .json, etc.)",
+        "Completes within 10 seconds for typical projects",
+        "Hook registered in settings.json as PostToolUse on Write/Edit for *.ts, *.tsx"
       ],
       "files": [
-        "commands/agent-search.md",
-        "commands/agent-import.md"
-      ],
-      "depends_on": [
-        4,
-        5
-      ],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 7,
-      "title": "Create skill registry and /skill-search command",
-      "description": "Create schemas/skill-registry.schema.json and ~/.claude/skill-registry.json to track installed skills with source metadata. Build commands/skill-search.md to search local + LobeHub skills.",
-      "status": "completed",
-      "priority": "P1",
-      "risk": "low",
-      "acceptance": [
-        "schemas/skill-registry.schema.json defines skill tracking format",
-        "commands/skill-search.md searches local skills and LobeHub marketplace",
-        "Results show: name, description, source (local/lobehub), installed status",
-        "Local skills auto-discovered from ~/.claude/skills/"
-      ],
-      "files": [
-        "schemas/skill-registry.schema.json",
-        "commands/skill-search.md"
+        "hooks/typecheck-on-save.sh"
       ],
       "depends_on": [],
       "attempts": 0,
       "max_attempts": 3
     },
     {
-      "id": 8,
-      "title": "Create /skill-import command",
-      "description": "Build commands/skill-import.md that imports a skill from LobeHub or GitHub. Downloads SKILL.md + bundled resources. Installs to ~/.claude/skills/imported/<name>/. Updates skill registry.",
+      "id": 7,
+      "title": "Enhance web-shadcn-v4 template with premium defaults",
+      "description": "Update config/stacks/web-shadcn-v4.yaml to include premium component set: glass-card CSS utility, gradient-text utility, product-shadow, hero-glow, noise texture, marquee animation, cursor-blink. Add these to the template's globals.css scaffold section.",
       "status": "completed",
-      "priority": "P1",
+      "priority": "P0",
       "risk": "low",
       "acceptance": [
-        "commands/skill-import.md accepts LobeHub skill ID or GitHub URL",
-        "Downloads SKILL.md and bundled resources to ~/.claude/skills/imported/<name>/",
-        "Updates ~/.claude/skill-registry.json with new entry",
-        "Imported skills have correct SKILL.md frontmatter and are usable by Claude Code"
+        "web-shadcn-v4.yaml includes premium CSS utilities in its globals.css scaffold",
+        "Template includes glass-card, gradient-text, product-shadow, hero-glow utilities",
+        "Template includes marquee and cursor-blink keyframe animations",
+        "Template references premium-builder skill in its conventions section"
       ],
       "files": [
-        "commands/skill-import.md"
+        "config/stacks/web-shadcn-v4.yaml"
       ],
       "depends_on": [
-        7
+        1
+      ],
+      "attempts": 0,
+      "max_attempts": 3
+    },
+    {
+      "id": 8,
+      "title": "Register all new hooks in settings.json",
+      "description": "Add all 4 new hooks (design-compliance, ssr-safety-check, dead-link-check, typecheck-on-save) to the Claude Code settings.json hooks configuration. Ensure they have correct event types, matchers, and action_on_fail settings.",
+      "status": "completed",
+      "priority": "P0",
+      "risk": "high",
+      "acceptance": [
+        "All 4 hooks are listed in settings.json under the hooks array",
+        "design-compliance is PreToolUse with action block",
+        "ssr-safety-check is PostToolUse with action warn",
+        "dead-link-check is PostToolUse with action warn",
+        "typecheck-on-save is PostToolUse with action warn",
+        "Existing hooks are preserved (not overwritten)"
+      ],
+      "files": [
+        "config/settings.json"
+      ],
+      "depends_on": [
+        3,
+        4,
+        5,
+        6
       ],
       "attempts": 0,
       "max_attempts": 3
     },
     {
       "id": 9,
-      "title": "Build Knowledge RAG MCP server \u2014 core ingestion",
-      "description": "Create mcp-servers/knowledge-rag-server.py with knowledge_ingest and knowledge_status MCP tools. Uses SQLite + FTS5 for text indexing. Chunks markdown and source code files. Implements hash-based change detection.",
+      "title": "Enhance /clone-app with source repo discovery and visual scoring",
+      "description": "Update commands/clone-app.md to add Phase 1.3 (template/source repo discovery via WebSearch), Phase 5 visual comparison scoring with VisualComparisonResult JSON output, and auto-fix iteration loop (3 rounds). Add similarity score to the clone report.",
       "status": "completed",
       "priority": "P0",
-      "risk": "high",
+      "risk": "medium",
       "acceptance": [
-        "mcp-servers/knowledge-rag-server.py implements knowledge_ingest MCP tool",
-        "SQLite database created per-project at ~/.claude/knowledge/{project-hash}.db",
-        "Documents table and chunks table created with FTS5 index",
-        "Markdown files chunked by headings then paragraphs (max 512 tokens)",
-        "Source code files chunked by function/class boundaries",
-        "Hash-based change detection skips unchanged files",
-        "knowledge_status tool returns DB stats (doc count, chunk count, size)"
+        "clone-app.md includes Step 1.3: Template Discovery with WebSearch for source repos",
+        "clone-app.md Phase 5 includes visual comparison scoring outputting JSON",
+        "clone-app.md Phase 5 includes fix iteration loop with max 3 rounds",
+        "Clone report includes 'Visual accuracy: ~XX%' line"
       ],
       "files": [
-        "mcp-servers/knowledge-rag-server.py"
+        "commands/clone-app.md"
       ],
-      "depends_on": [],
+      "depends_on": [
+        1
+      ],
       "attempts": 0,
       "max_attempts": 3
     },
     {
       "id": 10,
-      "title": "Add semantic search to Knowledge RAG server",
-      "description": "Add knowledge_search and knowledge_clear MCP tools. Implement FTS5 BM25 search as baseline. Add optional sqlite-vss vector search when available. Add sentence-transformers embedding support.",
+      "title": "Enhance /new-app with palette generation and premium defaults",
+      "description": "Update commands/new-app.md to call generate-palette.sh when user provides a brand color, apply premium CSS utilities from the premium-builder skill, and include standard E2E smoke test in every new project.",
       "status": "completed",
-      "priority": "P0",
-      "risk": "high",
+      "priority": "P1",
+      "risk": "low",
       "acceptance": [
-        "knowledge_search MCP tool returns top-k relevant chunks for a query",
-        "FTS5 BM25 ranking works as baseline search (no extra deps required)",
-        "sqlite-vss vector search works when sqlite-vss is installed",
-        "knowledge_clear MCP tool deletes all data for a project",
-        "Search results include: file_path, chunk content, relevance score"
+        "new-app.md includes step to ask for brand color and run generate-palette.sh",
+        "new-app.md includes step to add premium CSS utilities to globals.css",
+        "new-app.md includes step to generate standard E2E smoke test",
+        "new-app.md references premium-builder skill for component generation"
       ],
       "files": [
-        "mcp-servers/knowledge-rag-server.py"
+        "commands/new-app.md"
       ],
       "depends_on": [
-        9
+        1,
+        2
       ],
       "attempts": 0,
       "max_attempts": 3
     },
     {
       "id": 11,
-      "title": "Create /knowledge-ingest and /knowledge-search commands",
-      "description": "Build slash commands that wrap the Knowledge RAG MCP tools. /knowledge-ingest triggers ingestion of current project. /knowledge-search queries the knowledge base.",
+      "title": "Create standard E2E smoke test generator",
+      "description": "Write commands/generate-tests.md enhancement or a new utility that generates a standard Playwright E2E smoke test for any project. Tests: all pages load, no console errors, responsive at 390px, all links valid, accessibility basics.",
       "status": "completed",
       "priority": "P1",
       "risk": "low",
       "acceptance": [
-        "commands/knowledge-ingest.md triggers knowledge_ingest for current project directory",
-        "commands/knowledge-search.md queries knowledge base and displays results",
-        "Both commands handle the case where knowledge-rag-server is not configured"
+        "Generated E2E test checks all pages load with content",
+        "Generated test checks no console errors on any page",
+        "Generated test checks responsive at 390px (no horizontal scroll)",
+        "Generated test checks all links have valid href (no '#')",
+        "Test template is reusable across all project types"
       ],
       "files": [
-        "commands/knowledge-ingest.md",
-        "commands/knowledge-search.md"
+        "commands/generate-tests.md"
       ],
-      "depends_on": [
-        10
-      ],
+      "depends_on": [],
       "attempts": 0,
       "max_attempts": 3
     },
     {
       "id": 12,
-      "title": "Create community contribution schema and validation",
-      "description": "Create schemas/community-package.schema.json for community contributions. Build commands/community-validate.md that validates agent/skill contributions locally. Create scripts/validate-contribution.sh for CI.",
-      "status": "completed",
-      "priority": "P2",
-      "risk": "low",
+      "title": "Integration verification \u2014 test full pipeline",
+      "description": "Run /new-app with the enhanced pipeline to verify: palette generation works, premium CSS utilities are included, hooks fire correctly, E2E tests are generated. Create a test project, verify all acceptance criteria from M1, and clean up.",
+      "status": "pending",
+      "priority": "P0",
+      "risk": "high",
       "acceptance": [
-        "schemas/community-package.schema.json defines package manifest format",
-        "commands/community-validate.md validates contributions against schema",
-        "scripts/validate-contribution.sh runs validation checks (frontmatter, naming, duplicates)",
-        "Validation checks: required fields, kebab-case naming, no duplicate identifiers"
+        "A test project generated with /new-app includes OKLCH design tokens",
+        "Hooks fire correctly: design-compliance blocks hardcoded hex",
+        "Generated project has premium CSS utilities (glass-card, gradient-text)",
+        "Generated project has standard E2E smoke test",
+        "All existing commands still work (no regressions)"
       ],
-      "files": [
-        "schemas/community-package.schema.json",
-        "commands/community-validate.md",
-        "scripts/validate-contribution.sh"
-      ],
+      "files": [],
       "depends_on": [
-        4,
-        7
-      ],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 13,
-      "title": "Update install.sh and register Knowledge RAG MCP server",
-      "description": "Update install.sh to create ~/.claude/mcp-registry/ and ~/.claude/knowledge/ directories. Add knowledge-rag-server.py to MCP server configuration. Update config/settings.json template.",
-      "status": "completed",
-      "priority": "P1",
-      "risk": "low",
-      "acceptance": [
-        "install.sh creates ~/.claude/mcp-registry/ directory",
-        "install.sh creates ~/.claude/knowledge/ directory",
-        "knowledge-rag-server registered in config/settings.json template",
-        "Optional dependencies documented (sentence-transformers, sqlite-vss)"
-      ],
-      "files": [
-        "install.sh",
-        "config/settings.json"
-      ],
-      "depends_on": [
-        1,
-        10
-      ],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 14,
-      "title": "Integration testing and documentation",
-      "description": "Update AGENTS.md with new patterns. Update README.md marketplace section. Add all new commands to Telegram dispatch routing. Run integration smoke tests for all new commands.",
-      "status": "completed",
-      "priority": "P1",
-      "risk": "low",
-      "acceptance": [
-        "AGENTS.md updated with marketplace patterns and gotchas",
-        "README.md has marketplace features section",
-        "All new commands accessible via Telegram dispatch",
-        "Smoke test: /mcp-search returns results",
-        "Smoke test: /knowledge-ingest completes without error"
-      ],
-      "files": [
-        "AGENTS.md",
-        "README.md",
-        "commands/telegram-dispatch.md"
-      ],
-      "depends_on": [
-        2,
-        3,
-        6,
+        7,
         8,
-        11,
-        12,
-        13
+        9,
+        10,
+        11
       ],
       "attempts": 0,
       "max_attempts": 3

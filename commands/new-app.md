@@ -122,6 +122,25 @@ If the template YAML file does not exist at the expected path, fall back to the 
 
 The template defines: dependencies, directory structure, config files, and starter AGENTS.md content.
 
+## Step 2.5: Brand Color + Design Tokens (NEW)
+
+Ask the user for a brand color:
+```
+Brand color? (hex, e.g., #0081F2 for blue, #3ECF8E for green)
+Or press Enter for default neutral palette.
+```
+
+If provided:
+1. Run the palette generator: `bash ~/.claude/scripts/generate-palette.sh "{hex}"`
+2. The output is a complete CSS custom properties block for `:root` and `.dark`
+3. Store as `{{PALETTE_CSS}}` — this will be injected into `globals.css` during scaffold
+
+If skipped:
+- Use the template's default palette (typically neutral gray + blue accent)
+
+**Also load the premium-builder skill:**
+Read `~/.claude/skills/premium-builder/SKILL.md` — this contains the component patterns, visual effects library, and animation patterns that will be used during the build phase.
+
 ## Step 3: Scaffold Project
 
 ### Create project directory
@@ -270,6 +289,37 @@ dist
 .next
 __pycache__
 ```
+
+### Apply Premium Design Tokens + CSS Utilities
+
+**If `{{PALETTE_CSS}}` is set** (from Step 2.5):
+1. Replace the `:root` and `.dark` blocks in `globals.css` with `{{PALETTE_CSS}}`
+2. This gives the project brand-specific OKLCH design tokens
+
+**For all web/SaaS templates**, append premium CSS utilities to `globals.css`:
+- `glass-card` — backdrop blur + translucent bg + subtle border
+- `gradient-text` — dark-to-gray text gradient
+- `hero-glow` — radial gradient for hero backgrounds
+- `bg-grid` — subtle grid pattern
+- `product-shadow` — multi-layer depth shadow for screenshots
+- `cta-gradient` — dark gradient for CTA sections
+- `footer-gradient-divider` — blue accent line
+- `cursor-blink` — blinking cursor animation
+- `marquee` / `marquee-reverse` — infinite scroll animations
+- `noise` — SVG turbulence texture overlay
+- Noscript fallback for Framer Motion
+
+These utilities come from the premium-builder skill and ensure every generated app starts with premium visual foundations.
+
+### Generate Standard E2E Smoke Test
+
+For web projects, auto-generate `e2e/smoke.spec.ts` using the standard smoke test template from `/generate-tests --smoke`:
+1. Scan `app/` directory for all `page.tsx` files
+2. Map each to a route path
+3. Generate Playwright smoke test covering: page loads, no console errors, responsive, no dead links
+4. Create `e2e/screenshots/` directory
+5. Add `playwright.config.ts` if not present
+6. Add `test:e2e` script to `package.json`
 
 ### Configure Per-Project RAG
 

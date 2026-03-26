@@ -238,6 +238,19 @@
         ]
       },
       {
+        "matcher": "Write(.+\\.tsx$)|Edit(.+\\.tsx$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/ssr-safety-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/dead-link-check.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Write(.+\\.(json|css|md)$)|Edit(.+\\.(json|css|md)$)",
         "hooks": [
           {
@@ -377,6 +390,15 @@
           {
             "type": "command",
             "command": "echo '{\"decision\": \"block\", \"reason\": \"Lock files should not be manually edited. Use the package manager.\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+\\.(tsx|css)$)|Edit(.+\\.(tsx|css)$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/design-compliance.sh"
           }
         ]
       },

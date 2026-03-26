@@ -77,6 +77,93 @@ starter_files:
       }
     }
 
+    /* ─── Premium Visual Utilities (from premium-builder skill) ─── */
+
+    .glass-card {
+      background: oklch(1 0 0 / 70%);
+      backdrop-filter: blur(20px);
+      border: 1px solid oklch(0 0 0 / 6%);
+    }
+    .dark .glass-card {
+      background: oklch(0.15 0 0 / 60%);
+      border-color: oklch(1 0 0 / 8%);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, oklch(0.15 0 0) 0%, oklch(0.45 0 0) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-glow {
+      position: relative;
+    }
+    .hero-glow::before {
+      content: "";
+      position: absolute;
+      inset: -20% -10%;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, oklch(var(--color-primary) / 12%), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-grid {
+      background-image: linear-gradient(to right, oklch(0 0 0 / 3%) 1px, transparent 1px),
+        linear-gradient(to bottom, oklch(0 0 0 / 3%) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .product-shadow {
+      box-shadow:
+        0 0 0 1px oklch(0 0 0 / 8%),
+        0 4px 6px oklch(0 0 0 / 4%),
+        0 12px 24px oklch(0 0 0 / 8%),
+        0 40px 80px oklch(0 0 0 / 12%);
+    }
+
+    .cta-gradient {
+      background: linear-gradient(135deg, oklch(0.12 0.01 240) 0%, oklch(0.08 0 0) 40%, oklch(0.10 0.015 260) 100%);
+    }
+
+    .footer-gradient-divider {
+      background: linear-gradient(90deg, transparent 0%, oklch(var(--color-primary) / 40%) 30%, oklch(var(--color-primary) / 60%) 50%, oklch(var(--color-primary) / 40%) 70%, transparent 100%);
+      height: 1px;
+    }
+
+    .noise::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    @keyframes cursor-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .cursor-blink { animation: cursor-blink 1.1s step-end infinite; }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes marquee-reverse {
+      0% { transform: translateX(-50%); }
+      100% { transform: translateX(0); }
+    }
+
+    /* Noscript fallback for Framer Motion */
+    @media (scripting: none) {
+      [style*="opacity: 0"], [style*="opacity:0"] {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+
   src/components/skip-nav.tsx: |
     "use client";
 
@@ -418,6 +505,15 @@ claude_md: |
   - `src/types/` — TypeScript types
   - `src/actions/` — Next.js Server Actions
   - `src/styles/globals.css` — Tailwind v4 @theme tokens (single source of truth for design)
+
+  ## Design System (premium-builder skill)
+  - ALWAYS read `~/.claude/skills/premium-builder/SKILL.md` before generating any UI component
+  - Use design tokens from globals.css — NEVER hardcode hex colors
+  - Use premium visual utilities: glass-card, gradient-text, hero-glow, product-shadow, bg-grid
+  - Use SSR-safe animation patterns: initial={false} for above-fold, whileInView for below-fold
+  - Mobile-first: start at 390px, add breakpoints up (sm → md → lg)
+  - Touch targets: minimum 44px on all interactive elements
+  - Quality: no dead links, no console errors, no accessibility violations
 
   ## Conventions
   - Server components by default; add "use client" only when needed (state, effects, browser APIs)

@@ -264,3 +264,112 @@ Test Generation Complete:
 - NEVER write tests that test the framework (e.g., "Express returns 200") — test YOUR code
 - Target 80%+ coverage for the target code
 - Each test should fail if the behavior it tests is broken — no tautological tests
+
+---
+
+## Standard Smoke Test Generator (for new projects)
+
+When generating tests for a NEW project (via `/new-app` or `/clone-app`), auto-generate a standard Playwright E2E smoke test at `e2e/smoke.spec.ts`. This test covers the minimum viability checks every web app needs.
+
+### How to use
+
+If `$ARGUMENTS` is `--smoke` or the project has no existing E2E tests:
+1. Detect all pages from the `app/` directory (Next.js) or `src/routes/` (SvelteKit/Remix)
+2. Generate the smoke test covering all discovered pages
+3. Write to `e2e/smoke.spec.ts`
+
+### Standard Smoke Test Template
+
+```typescript
+import { test, expect } from "@playwright/test";
+
+// Auto-discovered pages from the app directory
+const pages = [
+  // { path: "/", name: "home" },
+  // Will be populated by scanning app/ directory
+];
+
+// ─── Page Load Tests ────────────────────────────────────────────────
+for (const { path, name } of pages) {
+  test(\`[S] \${name} page loads with visible content\`, async ({ page }) => {
+    await page.goto(\`http://localhost:3000\${path}\`, { waitUntil: "networkidle" });
+    const body = await page.locator("body").textContent();
+    expect(body!.length).toBeGreaterThan(50);
+  });
+
+  test(\`[S] \${name} page has no console errors\`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error") errors.push(msg.text());
+    });
+    await page.goto(\`http://localhost:3000\${path}\`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1000);
+    const real = errors.filter(
+      (e) => !e.includes("favicon") && !e.includes("hydration")
+    );
+    expect(real).toHaveLength(0);
+  });
+
+  test(\`[S] \${name} page is responsive at 390px\`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(\`http://localhost:3000\${path}\`, { waitUntil: "networkidle" });
+    const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
+    const viewportWidth = await page.evaluate(() => window.innerWidth);
+    expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 1);
+  });
+}
+
+// ─── Global Checks ──────────────────────────────────────────────────
+test("[S] all links have valid href (no dead links)", async ({ page }) => {
+  for (const { path } of pages) {
+    await page.goto(\`http://localhost:3000\${path}\`, { waitUntil: "networkidle" });
+    const links = page.locator("a[href]");
+    const count = await links.count();
+    for (let i = 0; i < count; i++) {
+      const href = await links.nth(i).getAttribute("href");
+      expect(href).toBeTruthy();
+      expect(href).not.toBe("#");
+    }
+  }
+});
+
+test("[S] mobile navigation works", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
+  // Look for hamburger menu button
+  const menuBtn = page.locator('button[aria-label*="menu" i], button[aria-label*="toggle" i]').first();
+  if (await menuBtn.isVisible()) {
+    await menuBtn.click();
+    await page.waitForTimeout(300);
+    // Mobile menu should show navigation links
+    const mobileNav = page.locator("nav a, header a").first();
+    await expect(mobileNav).toBeVisible();
+  }
+});
+
+test("[S] screenshots at 3 viewports", async ({ page }) => {
+  for (const { width, name } of [
+    { width: 390, name: "mobile" },
+    { width: 768, name: "tablet" },
+    { width: 1440, name: "desktop" },
+  ]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: \`e2e/screenshots/home-\${name}.png\`,
+      fullPage: true,
+    });
+  }
+});
+```
+
+### Generation Process
+
+1. Scan `app/` directory for all `page.tsx` files
+2. Map each to a route path (e.g., `app/pricing/page.tsx` → `/pricing`)
+3. Populate the `pages` array in the template
+4. Write the complete test file to `e2e/smoke.spec.ts`
+5. Create `e2e/screenshots/` directory
+6. Add Playwright config if not present (`playwright.config.ts`)
+7. Add `test:e2e` script to `package.json` if not present
