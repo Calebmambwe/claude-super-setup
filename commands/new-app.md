@@ -5,11 +5,87 @@ description: Scaffold a new app from a curated stack template with full automati
 
 You are scaffolding a new app from a curated, constrained stack. This mirrors Lovable's approach: lock the stack to eliminate decision paralysis and reduce build errors.
 
-If $ARGUMENTS specifies a stack name ("web", "api", "mobile"), use it directly. Otherwise, present the menu.
+If $ARGUMENTS specifies a stack name ("web", "api", "mobile"), use it directly. Otherwise, run Step 0 to detect intent from natural language before presenting the menu.
+
+## Step 0: Smart Template Detection
+
+Run this step when $ARGUMENTS contains a natural-language description rather than a known template name or stack keyword.
+
+Scan $ARGUMENTS (case-insensitive) against the keyword map below. Pick the **first** row whose keywords match. If multiple rows match, pick the one with the most keyword hits.
+
+| Keywords (any match triggers) | Template |
+|-------------------------------|----------|
+| saas, billing, subscription, payments, stripe | saas-complete |
+| ai, chat, rag, embeddings, llm, gpt, claude | ai-rag-complete |
+| landing, marketing, blog, content | web-shadcn-v4 |
+| dashboard, admin, analytics | web-shadcn-v4 |
+| mobile, ios, android, app | mobile-gluestack |
+| api, backend, server, microservice | api-service |
+| monorepo, mono, workspace, turborepo | monorepo |
+| email, newsletter, transactional | email-templates |
+| extension, chrome, browser | chrome-extension |
+| cli, command line, tool | cli-tool |
+| flutter, dart | mobile-flutter |
+| astro, static, content | web-astro |
+| svelte, sveltekit | web-sveltekit |
+| remix | web-remix |
+| t3, trpc, prisma | web-t3 |
+| python, fastapi, django | api-fastapi |
+| edge, cloudflare, workers | api-hono-edge |
+| revenucat, iap, in-app purchase | mobile-expo-revenucat |
+
+**If a match is found:** confirm with the user before proceeding:
+```
+Detected intent: "{matched keywords}" → template: {template}
+
+Use {template}? (yes / no — or describe what you want differently)
+```
+
+**If no match is found:** show the full template menu grouped by category and let the user choose:
+
+```
+No template auto-detected. Pick one:
+
+WEB
+  1.  web-shadcn-v4        — Next.js 15 + shadcn/ui v4 + Tailwind + Supabase
+  2.  web-t3               — T3 Stack: Next.js + tRPC + Prisma + Tailwind
+  3.  web-astro            — Astro + Tailwind (static/content-first)
+  4.  web-sveltekit        — SvelteKit + TypeScript + Tailwind
+  5.  web-remix            — Remix + TypeScript + Tailwind
+
+SAAS / AI
+  6.  saas-complete        — Next.js + Stripe + Supabase + shadcn/ui (batteries-included SaaS)
+  7.  ai-rag-complete      — Next.js + LangChain + Pinecone + OpenAI (RAG/chat apps)
+
+API / BACKEND
+  8.  api-service          — Hono + TypeScript + Drizzle + PostgreSQL
+  9.  api-fastapi          — FastAPI + Python + SQLAlchemy + Alembic
+  10. api-hono-edge        — Hono on Cloudflare Workers (edge-first)
+
+MOBILE
+  11. mobile-gluestack     — React Native + Expo + Gluestack UI + Supabase
+  12. mobile-expo-revenucat — React Native + Expo + RevenueCat (IAP)
+  13. mobile-nativewind    — React Native + Expo + NativeWind
+  14. mobile-flutter       — Flutter + Dart + Supabase
+
+TOOLING / OTHER
+  15. monorepo             — Turborepo + pnpm workspaces + shared packages
+  16. chrome-extension     — Chrome Extension + TypeScript + Vite
+  17. cli-tool             — Node.js CLI + TypeScript + Commander
+  18. email-templates      — React Email + Resend + TypeScript
+
+Enter a number or template name:
+```
+
+Store the resolved template as `{{TEMPLATE}}` and the project name as `{{PROJECT_NAME}}`.
+
+**Validate PROJECT_NAME** (if provided in $ARGUMENTS): Must match `^[a-zA-Z0-9_-]+$`. Reject anything else with an error message and prompt again.
 
 ## Step 1: Choose Stack
 
-Present the user with these options:
+If `{{TEMPLATE}}` was already resolved in Step 0, skip this step entirely.
+
+Otherwise present the user with these options (for backward compatibility with direct stack keywords):
 
 ```
 Which stack?
@@ -27,7 +103,7 @@ Which stack?
              Includes: Expo Router navigation, EAS Build config, Supabase client
 ```
 
-If $ARGUMENTS contains the stack name, skip the prompt. If $ARGUMENTS contains a project name but no stack, ask for the stack. Parse both `new-app web my-app` and `new-app my-app web`.
+If $ARGUMENTS contains a recognized stack keyword (`web`, `api`, `mobile`), skip the prompt. If $ARGUMENTS contains a project name but no recognizable keyword, Step 0 should have caught it — if not, ask the user to clarify. Parse both `new-app web my-app` and `new-app my-app web`.
 
 Store: `{{STACK}}` and `{{PROJECT_NAME}}`
 
@@ -35,10 +111,14 @@ Store: `{{STACK}}` and `{{PROJECT_NAME}}`
 
 ## Step 2: Read Stack Template
 
-Read the stack template file:
-- `~/.claude/config/stacks/web-app.yaml` for "web"
-- `~/.claude/config/stacks/api-service.yaml` for "api"
-- `~/.claude/config/stacks/mobile-app.yaml` for "mobile"
+Read the stack template file from `~/.claude/config/stacks/`. The filename matches `{{TEMPLATE}}` or the legacy stack keyword:
+
+- `web-app.yaml` — legacy "web" keyword
+- `api-service.yaml` — legacy "api" keyword or `api-service` template
+- `mobile-app.yaml` — legacy "mobile" keyword
+- `{template-name}.yaml` — for all templates resolved in Step 0 (e.g., `saas-complete.yaml`, `ai-rag-complete.yaml`, `web-t3.yaml`, etc.)
+
+If the template YAML file does not exist at the expected path, fall back to the closest matching template from the legacy set (`web-app.yaml`, `api-service.yaml`, `mobile-app.yaml`) and inform the user which fallback was used.
 
 The template defines: dependencies, directory structure, config files, and starter AGENTS.md content.
 
