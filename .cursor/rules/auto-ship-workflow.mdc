@@ -1,0 +1,68 @@
+---
+description: " 8-phase autonomous pipeline — Build all tasks + Check + Ship in one pass. Invoke by asking to follow the /auto-ship workflow."
+alwaysApply: true
+---
+
+
+# Auto-Ship Workflow
+
+Autonomous end-to-end pipeline: build all tasks, run quality checks, create a PR.
+
+## Resume Support
+
+If `.claude/pipeline-checkpoint.json` exists and matches the current branch, resume from the last incomplete phase. Skip completed phases automatically.
+
+## Phase 1: Pre-flight
+
+1. Verify `tasks.json` exists with pending tasks
+2. Read AGENTS.md for project patterns
+3. Check branch safety (never ship directly to main)
+4. Check for uncommitted changes
+5. Write initial checkpoint
+
+## Phase 2: Build All Tasks
+
+For each pending task in dependency order:
+1. **Plan** — analyze task, read AGENTS.md, explore codebase
+2. **Implement** — file-by-file, tests alongside
+3. **Verify** — check acceptance criteria
+4. **Fix** — up to 2 fix cycles if verification found issues
+
+Tasks execute in dependency order. Stop after 3 consecutive failures.
+
+## Phase 2.25: Coverage Gate
+
+Run test coverage check. If coverage is below 80% for new code, generate additional tests before proceeding.
+
+## Phase 2.5: Direct Verification
+
+Run the project's full verification suite:
+```
+pnpm test && pnpm lint && pnpm typecheck    # TypeScript
+pytest && ruff check && mypy .               # Python
+```
+
+## Phase 2.75: Visual Verification
+
+If any `.tsx`, `.jsx`, or `.css` files were changed:
+- Launch the app and verify it renders correctly
+- In Cursor: use the built-in browser preview or run Playwright tests via terminal
+- Check for visual regressions
+
+## Phase 3: Check Gate
+
+Run comprehensive quality checks:
+- Code review (correctness, security, maintainability)
+- Security audit (OWASP Top 10, no hardcoded secrets)
+- Test verification (coverage, edge cases)
+
+## Phase 4: Ship
+
+1. Create conventional commit(s) for all changes
+2. Push branch to remote
+3. Create PR with summary, test plan, and change list
+4. Checkpoint: `{"phase": 4, "status": "complete", "pr_url": "..."}`
+
+## Phase 5: Self-Review
+
+Post review comments on the PR for any issues found during the check phase.
