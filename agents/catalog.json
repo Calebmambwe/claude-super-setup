@@ -73,6 +73,17 @@
   },
   "agents": [
     {
+      "name": "teach-me",
+      "file": "agents/core/teach-me.md",
+      "source": "core",
+      "department": "engineering",
+      "description": "Self-teaching agent — researches unknown tools/processes, creates skills, then executes the task. Full autonomy loop.",
+      "model_tier": "opus",
+      "capabilities": ["self-teaching", "deep-research", "skill-creation", "agent-creation", "autonomous-learning", "gap-analysis"],
+      "tools": ["Read", "Write", "Edit", "Grep", "Glob", "Bash", "Agent", "WebSearch", "WebFetch", "mcp__context7__resolve-library-id", "mcp__context7__query-docs"],
+      "teams": ["research"]
+    },
+    {
       "name": "darwin",
       "file": "agents/core/darwin.md",
       "source": "core",
