@@ -50,6 +50,17 @@ Run quick health checks:
 - **Ollama status**: if model-routing.json has ollama.enabled=true, check `curl -s http://localhost:11434/api/tags`
 - **Budget**: from ghost-config.json budget_usd or model-costs.jsonl
 
+### Step 3b: Model Routing Aggregates
+
+From `~/.claude/logs/model-costs.jsonl` (last 24h entries), compute:
+- **Per-provider call count and total cost**: group by `provider`, sum `cost_usd`, count rows
+- **Top models by call count**: group by `model`, count rows, sort descending, take top 5
+- **Fallback event count**: count rows where `fallback_from` is non-empty string
+
+From `~/.claude/logs/comparisons.jsonl` (if it exists), compute:
+- **Total comparisons**: total row count
+- **Win rate per model**: group by winning model, count wins / total comparisons × 100
+
 ### Step 4: Format Dashboard Output
 
 Present as a structured dashboard:
@@ -95,6 +106,17 @@ Present as a structured dashboard:
 ║  ├─ /check                ⏳ running (12m)            ║
 ║  └─ /auto-ship            ⏸ pending                  ║
 ║                                                      ║
+║  🤖 Model Routing (24h)                              ║
+║  ├─ Providers                                        ║
+║  │   ├─ openrouter:  142 calls  $0.0312              ║
+║  │   └─ anthropic:    18 calls  $0.2150              ║
+║  ├─ Top Models                                       ║
+║  │   ├─ qwen/qwen3-coder        87 calls             ║
+║  │   ├─ claude-3-5-sonnet       45 calls             ║
+║  │   └─ gpt-4o-mini             28 calls             ║
+║  ├─ Fallbacks: 3 events                              ║
+║  └─ Comparisons: 12 total  (sonnet: 67% win rate)    ║
+║                                                      ║
 ╚══════════════════════════════════════════════════════╝
 ```
 
@@ -116,6 +138,10 @@ Alerts (2h): 2 test failures, 0 build, 0 disk
 Budget: $37.50 remaining
 
 Queue: 1 running, 1 pending
+
+Models (24h): openrouter 142/$0.03 · anthropic 18/$0.22
+Top: qwen3-coder(87) sonnet(45) gpt-4o-mini(28)
+Fallbacks: 3 · Comparisons: 12 (sonnet 67% win)
 ```
 
 ## Rules
