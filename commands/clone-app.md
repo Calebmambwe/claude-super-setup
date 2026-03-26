@@ -44,7 +44,26 @@ mcp__plugin_playwright_playwright__browser_take_screenshot(type: "png", fullPage
 mcp__plugin_playwright_playwright__browser_snapshot(filename: "scan-dom.md")
 ```
 
-**Step 1.3: Deep Content Analysis**
+**Step 1.3: Template Discovery (BEFORE coding)**
+
+Before generating any code, check if the target site has an open-source repo or downloadable template:
+
+1. **GitHub search**: `WebSearch("{site name} website github repo open source")`
+   - Many sites (Supabase, Vercel, Linear) have their marketing site in a public repo
+   - If found: extract their `tailwind.config`, `globals.css`, font imports, and color tokens
+   - Use these as the GROUND TRUTH for colors/typography — don't guess from screenshots
+
+2. **Template marketplaces**: `WebSearch("{site name} template clone starter kit")`
+   - Check: Vercel Templates, shadcn themes, Tailwind UI, GitHub topics
+   - If an exact or near-exact template exists, use it as the starting scaffold
+
+3. **Design system check**: `WebSearch("{site name} design system design tokens")`
+   - Some companies publish their design system (e.g., Radix, Chakra, Material)
+   - If found: import their exact tokens instead of approximating
+
+**Store findings in `docs/clone/template-sources.md`** — this prevents re-research on iteration rounds.
+
+**Step 1.4: Deep Content Analysis**
 
 Use WebFetch to extract structured data:
 
@@ -52,17 +71,28 @@ Use WebFetch to extract structured data:
 WebFetch(url, "Extract ALL of the following as structured data:
 1. SITE TYPE: landing page / SaaS / blog / e-commerce / docs / dashboard
 2. EVERY PAGE SECTION in order: name, type, approximate height, key elements
-3. COLOR PALETTE: extract exact hex values for primary, secondary, accent, background, text, border, muted colors
-4. TYPOGRAPHY: font families, heading sizes, body size, line heights
-5. COMPONENT INVENTORY: every distinct UI component (buttons, cards, navbars, forms, modals, carousels, tables, code blocks, etc.) with their variants
-6. NAVIGATION: all menu items and their destinations (internal pages)
+3. COLOR PALETTE — BE EXACT:
+   - Use browser DevTools computed styles, NOT visual approximation
+   - Extract: primary, secondary, accent, background, text, border, muted, surface, card
+   - For EACH color: exact hex (#3ECF8E not 'green'), RGB, and OKLCH conversion
+   - Extract gradient definitions verbatim (e.g., 'linear-gradient(135deg, #3ECF8E, #2B9A66)')
+   - Dark mode colors AND light mode colors if both exist
+4. TYPOGRAPHY — BE EXACT:
+   - Font families: exact names (e.g., 'Inter', 'Circular Std', 'SF Pro') — check @font-face and Google Fonts imports
+   - Heading hierarchy: h1 size, h2 size, h3 size, h4 size (in px AND rem)
+   - Body text: size, line-height, letter-spacing
+   - Font weights used: 400, 500, 600, 700, etc.
+   - Special typography: gradient text, monospace for code, decorative fonts
+5. COMPONENT INVENTORY: every distinct UI component with their variants
+6. NAVIGATION: all menu items and their destinations
 7. INTERACTIONS: hover effects, animations, scroll triggers, modals, dropdowns
 8. RESPONSIVE BEHAVIOR: how layout changes at mobile breakpoints
 9. IMAGES/ICONS: what images are used, icon library (Lucide, Heroicons, custom SVGs)
-10. TECH SIGNALS: framework, CSS library, component library signatures")
+10. TECH SIGNALS: framework, CSS library, component library signatures
+11. SPACING SYSTEM: section padding, card padding, gap sizes — identify the scale (4px, 8px, etc.)")
 ```
 
-**Step 1.4: Discover Internal Pages**
+**Step 1.5: Discover Internal Pages**
 
 If `--pages all` or `--depth > 1`:
 - Extract all internal links from the homepage
@@ -84,14 +114,27 @@ Generate a structured feature brief from the scan data. Save to `docs/clone/brie
 - Pages discovered: {count} — {list}
 - Total sections: {count}
 
-### Design Language
+### Template Sources
+- Open-source repo: {url or "none found"}
+- Existing template: {url or "none found"}
+- Design system: {url or "none found"}
+- Files extracted: {tailwind.config, globals.css, etc.}
+
+### Design Language (EXACT — not approximated)
 - Theme: {dark/light/both}
-- Primary: {hex} → OKLCH({value})
-- Secondary: {hex} → OKLCH({value})
-- Accent: {hex} → OKLCH({value})
-- Background: {hex} → OKLCH({value})
-- Font heading: {family}
-- Font body: {family}
+- Primary: {exact hex} → OKLCH({value}) — source: {devtools/repo/screenshot}
+- Secondary: {exact hex} → OKLCH({value})
+- Accent: {exact hex} → OKLCH({value})
+- Background: {exact hex} → OKLCH({value})
+- Surface/Card: {exact hex} → OKLCH({value})
+- Border: {exact hex} → OKLCH({value})
+- Text primary: {exact hex} → OKLCH({value})
+- Text muted: {exact hex} → OKLCH({value})
+- Gradients: {verbatim gradient definitions}
+- Font heading: {exact family} — weights: {list}
+- Font body: {exact family} — size: {px}, line-height: {value}
+- Font mono: {exact family} (for code blocks)
+- Heading scale: h1={px}, h2={px}, h3={px}, h4={px}
 
 ### Component Inventory
 {table of every component, its variant, and which shadcn/ui component maps to it}
@@ -196,6 +239,7 @@ When adding animations:
 
 ## Rules
 
+- ALWAYS search for the site's open-source repo or downloadable template FIRST — use real CSS/config as ground truth
 - ALWAYS screenshot with Playwright before generating code — never code from text analysis alone
 - ALWAYS run through brainstorm → design-doc → auto-dev pipeline — never raw code generation
 - ALWAYS use OKLCH color values extracted from the actual site
