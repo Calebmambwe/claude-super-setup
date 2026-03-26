@@ -436,7 +436,7 @@
           },
           {
             "type": "prompt",
-            "prompt": "Before stopping, verify ALL of the following:\n\n1. TASK COMPLETION: All tasks from the task list are completed or explicitly deferred with a reason.\n2. NO LOOSE ENDS: No TODO items remain in modified files without a linked issue.\n3. TESTS RAN: If code was written or modified, tests were run and pass.\n4. NO RATIONALIZATION: Check your last response — did you say 'we can address this later', 'this is good enough for now', 'we can defer this to a follow-up', or similar? If so, STOP. Either fix the issue now or explicitly flag it as a known limitation.\n5. VERIFICATION: If implementation was done, were the verification commands run? (test, lint, typecheck)\n6. AGENTS.MD: If you discovered a pattern, gotcha, or resolved a non-trivial error during this session, did you update AGENTS.md? If AGENTS.md exists and you learned something new, update it before stopping.\n\nIf anything is incomplete, respond with {\"decision\": \"block\", \"reason\": \"Incomplete: [what remains]\"}.\nOtherwise respond with {\"decision\": \"allow\"}.\nAlso remind the user to run /reflect.",
+            "prompt": "Before stopping, verify ALL of the following:\n\n1. TASK COMPLETION: All tasks from the task list are completed or explicitly deferred with a reason.\n2. NO LOOSE ENDS: No TODO items remain in modified files without a linked issue.\n3. TESTS RAN: If code was written or modified, tests were run and pass.\n4. NO RATIONALIZATION: Check your last response \u2014 did you say 'we can address this later', 'this is good enough for now', 'we can defer this to a follow-up', or similar? If so, STOP. Either fix the issue now or explicitly flag it as a known limitation.\n5. VERIFICATION: If implementation was done, were the verification commands run? (test, lint, typecheck)\n6. AGENTS.MD: If you discovered a pattern, gotcha, or resolved a non-trivial error during this session, did you update AGENTS.md? If AGENTS.md exists and you learned something new, update it before stopping.\n\nIf anything is incomplete, respond with {\"decision\": \"block\", \"reason\": \"Incomplete: [what remains]\"}.\nOtherwise respond with {\"decision\": \"allow\"}.\nAlso remind the user to run /reflect.",
             "timeout": 60
           }
         ]
@@ -472,6 +472,13 @@
         "~/.claude-super-setup/mcp-servers/knowledge-rag-server.py"
       ],
       "env": {}
+    },
+    "stitch": {
+      "command": "npx",
+      "args": [
+        "@_davideast/stitch-mcp",
+        "proxy"
+      ]
     }
   }
 }
