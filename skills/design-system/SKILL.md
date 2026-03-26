@@ -35,7 +35,7 @@ Use `next-themes` for mode switching. Prevent FOUC with `suppressHydrationWarnin
 ## Typography
 
 - Headings: Space Grotesk (variable), font-weight 700
-- Body: DM Sans (variable), font-weight 400/500
+- Body: Inter (variable), font-weight 400/500
 - Mono: JetBrains Mono (variable)
 - Scale: 12 / 14 / 16 / 18 / 20 / 24 / 30 / 36 / 48 / 60
 - Line heights: tight (1.1) for display, snug (1.3) for headings, relaxed (1.6) for body

@@ -628,98 +628,31 @@ starter_files:
       return { success: false, data: null, error };
     }
 
-  src/middleware.ts: |
-    import { type NextRequest, NextResponse } from "next/server";
-    import { createServerClient } from "@supabase/ssr";
-
-    // Routes that do NOT require authentication.
-    const PUBLIC_ROUTES = ["/", "/login", "/signup", "/auth/callback", "/api/webhooks/stripe"];
-    // Routes that require the admin role specifically.
-    const ADMIN_ROUTES = ["/admin"];
-
-    export async function middleware(req: NextRequest) {
-      const { pathname } = req.nextUrl;
-
-      // Skip auth check for public routes.
-      if (PUBLIC_ROUTES.some((r) => pathname.startsWith(r))) {
-        return NextResponse.next();
-      }
-
-      let response = NextResponse.next({
-        request: { headers: req.headers },
-      });
-
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() { return req.cookies.getAll(); },
-            setAll(cookiesToSet) {
-              cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
-              response = NextResponse.next({ request: req });
-              cookiesToSet.forEach(({ name, value, options }) =>
-                response.cookies.set(name, value, options)
-              );
-            },
-          },
-        }
-      );
-
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        const loginUrl = req.nextUrl.clone();
-        loginUrl.pathname = "/login";
-        loginUrl.searchParams.set("next", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-
-      // RBAC check for admin routes.
-      if (ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        if (profile?.role !== "admin") {
-          return NextResponse.redirect(new URL("/dashboard", req.url));
-        }
-      }
-
-      return response;
-    }
-
-    export const config = {
-      matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
-    };
-
   src/app/(dashboard)/layout.tsx: |
-    import { createClient } from "@/lib/supabase/server";
+    import { auth } from "@clerk/nextjs/server";
     import { redirect } from "next/navigation";
 
+    // Clerk middleware already guards this route group.
+    // This layout provides the sidebar shell for all dashboard pages.
     export default async function DashboardLayout({
       children,
     }: {
       children: React.ReactNode;
     }) {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) redirect("/login");
+      const { userId } = await auth();
+      if (!userId) redirect("/sign-in");
 
       return (
         <div className="flex min-h-screen">
-          <aside className="w-64 border-r bg-gray-50 px-4 py-6">
+          <aside className="w-64 border-r bg-muted/30 px-4 py-6">
             <nav className="space-y-1">
-              <a href="/dashboard" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+              <a href="/dashboard" className="block rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-accent">
                 Dashboard
               </a>
-              <a href="/dashboard/settings" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+              <a href="/dashboard/settings" className="block rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-accent">
                 Settings
               </a>
-              <a href="/dashboard/billing" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+              <a href="/dashboard/billing" className="block rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-accent">
                 Billing
               </a>
             </nav>
@@ -730,35 +663,41 @@ starter_files:
     }
 
   src/app/(dashboard)/dashboard/page.tsx: |
-    import { createClient } from "@/lib/supabase/server";
+    import { auth, currentUser } from "@clerk/nextjs/server";
     import { redirect } from "next/navigation";
+    import { db } from "../../../db";
+    import { users } from "../../../db/schema";
+    import { eq } from "drizzle-orm";
 
     export default async function DashboardPage() {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { userId } = await auth();
+      if (!userId) redirect("/sign-in");
 
-      if (!user) redirect("/login");
+      const clerkUser = await currentUser();
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, role, org_id")
-        .eq("id", user.id)
-        .single();
+      const [profile] = await db
+        .select()
+        .from(users)
+        .where(eq(users.clerkId, userId))
+        .limit(1);
 
       return (
         <main className="p-8">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="mt-2 text-gray-600">
-            Welcome, {profile?.full_name ?? user.email}
+          <h1 className="text-2xl font-bold gradient-text">Dashboard</h1>
+          <p className="mt-2 text-muted-foreground">
+            Welcome, {profile?.name ?? clerkUser?.firstName ?? "there"}
           </p>
-          <p className="mt-1 text-sm text-gray-400">Role: {profile?.role}</p>
+          <p className="mt-1 text-sm text-muted-foreground">Role: {profile?.role ?? "member"}</p>
         </main>
       );
     }
 
   src/app/(admin)/layout.tsx: |
-    import { createClient } from "@/lib/supabase/server";
+    import { auth } from "@clerk/nextjs/server";
     import { redirect } from "next/navigation";
+    import { db } from "../../../db";
+    import { users } from "../../../db/schema";
+    import { eq } from "drizzle-orm";
 
     // Admin layout with server-side role guard.
     // Middleware also enforces this — defence in depth.
@@ -767,16 +706,14 @@ starter_files:
     }: {
       children: React.ReactNode;
     }) {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { userId } = await auth();
+      if (!userId) redirect("/sign-in");
 
-      if (!user) redirect("/login");
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+      const [profile] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.clerkId, userId))
+        .limit(1);
 
       if (profile?.role !== "admin") redirect("/dashboard");
 
@@ -807,18 +744,16 @@ starter_files:
     }
 
   src/app/(admin)/users/page.tsx: |
-    import { createClient } from "@/lib/supabase/server";
+    import { db } from "../../../../db";
+    import { users } from "../../../../db/schema";
+    import { desc } from "drizzle-orm";
 
     // User management stub — extend with invite, role change, and deactivation actions.
     export default async function AdminUsersPage() {
-      const supabase = await createClient();
-
-      const { data: users, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, role, created_at")
-        .order("created_at", { ascending: false });
-
-      if (error) throw new Error(error.message);
+      const allUsers = await db
+        .select()
+        .from(users)
+        .orderBy(desc(users.createdAt));
 
       return (
         <div className="p-8">
@@ -826,28 +761,28 @@ starter_files:
             <h1 className="text-2xl font-bold">Users</h1>
             {/* TODO: Add invite user button */}
           </div>
-          <div className="overflow-hidden rounded-lg border bg-white">
+          <div className="product-shadow overflow-hidden rounded-xl border bg-card">
             <table className="w-full text-sm">
-              <thead className="border-b bg-gray-50">
+              <thead className="border-b bg-muted/50">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Name</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Email</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Role</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Joined</th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Role</th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Joined</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {(users ?? []).map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-900">{u.full_name ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{u.email}</td>
+                {allUsers.map((u) => (
+                  <tr key={u.id} className="hover:bg-muted/30">
+                    <td className="px-4 py-3 text-foreground">{u.name ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                         {u.role}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {new Date(u.created_at).toLocaleDateString()}
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {u.createdAt.toLocaleDateString()}
                     </td>
                   </tr>
                 ))}
@@ -860,32 +795,34 @@ starter_files:
 
   src/app/api/stripe/checkout/route.ts: |
     import { type NextRequest, NextResponse } from "next/server";
-    import { createClient } from "@/lib/supabase/server";
+    import { auth } from "@clerk/nextjs/server";
     import { createCheckoutSession } from "@/lib/stripe";
     import { env } from "@/lib/env";
     import { z } from "zod";
     import { err } from "@/types/api";
+    import { db } from "../../../../db";
+    import { users } from "../../../../db/schema";
+    import { eq } from "drizzle-orm";
 
     const bodySchema = z.object({
       priceId: z.string().min(1),
     });
 
     export async function POST(req: NextRequest) {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return NextResponse.json(err("Unauthorized"), { status: 401 });
+      const { userId } = await auth();
+      if (!userId) return NextResponse.json(err("Unauthorized"), { status: 401 });
 
       const parsed = bodySchema.safeParse(await req.json());
       if (!parsed.success) return NextResponse.json(err("Invalid body"), { status: 400 });
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("stripe_customer_id")
-        .eq("id", user.id)
-        .single();
+      const [profile] = await db
+        .select()
+        .from(users)
+        .where(eq(users.clerkId, userId))
+        .limit(1);
 
       const session = await createCheckoutSession({
-        customerId: profile?.stripe_customer_id ?? "",
+        customerId: (profile as unknown as { stripeCustomerId?: string }).stripeCustomerId ?? "",
         priceId: parsed.data.priceId,
         successUrl: `${env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`,
         cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
@@ -896,28 +833,31 @@ starter_files:
 
   src/app/api/stripe/portal/route.ts: |
     import { type NextRequest, NextResponse } from "next/server";
-    import { createClient } from "@/lib/supabase/server";
+    import { auth } from "@clerk/nextjs/server";
     import { createPortalSession } from "@/lib/stripe";
     import { env } from "@/lib/env";
     import { err } from "@/types/api";
+    import { db } from "../../../../db";
+    import { users } from "../../../../db/schema";
+    import { eq } from "drizzle-orm";
 
     export async function POST(_req: NextRequest) {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return NextResponse.json(err("Unauthorized"), { status: 401 });
+      const { userId } = await auth();
+      if (!userId) return NextResponse.json(err("Unauthorized"), { status: 401 });
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("stripe_customer_id")
-        .eq("id", user.id)
-        .single();
+      const [profile] = await db
+        .select()
+        .from(users)
+        .where(eq(users.clerkId, userId))
+        .limit(1);
 
-      if (!profile?.stripe_customer_id) {
+      const customerId = (profile as unknown as { stripeCustomerId?: string }).stripeCustomerId;
+      if (!customerId) {
         return NextResponse.json(err("No billing account found"), { status: 400 });
       }
 
       const session = await createPortalSession({
-        customerId: profile.stripe_customer_id,
+        customerId,
         returnUrl: `${env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
       });
 
@@ -1122,25 +1062,53 @@ starter_files:
 commands:
   dev: "pnpm exec next dev"
   test: "pnpm exec vitest run"
+  e2e: "pnpm exec playwright test"
   build: "pnpm exec next build"
   lint: "pnpm exec next lint"
   typecheck: "pnpm exec tsc --noEmit"
   format: "pnpm exec prettier --write ."
+  db:generate: "pnpm exec drizzle-kit generate"
+  db:migrate: "pnpm exec drizzle-kit migrate"
+  db:push: "pnpm exec drizzle-kit push"
+  db:studio: "pnpm exec drizzle-kit studio"
 
 package_json_scripts:
   dev: "next dev"
   build: "next build"
   test: "vitest run"
+  e2e: "playwright test"
   lint: "next lint"
   typecheck: "tsc --noEmit"
+  db:generate: "drizzle-kit generate"
+  db:migrate: "drizzle-kit migrate"
+  db:push: "drizzle-kit push"
+  db:studio: "drizzle-kit studio"
 
 env_example: |
+  # Clerk Auth
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxx
+  CLERK_SECRET_KEY=sk_test_xxxx
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+
+  # Database (Neon)
+  DATABASE_URL=postgresql://user:password@ep-xxxx.neon.tech/neondb?sslmode=require
+
+  # Supabase (optional — only if using Supabase for storage/realtime)
   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+  # Stripe
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxx
   STRIPE_SECRET_KEY=sk_test_xxxx
   STRIPE_WEBHOOK_SECRET=whsec_xxxx
+
+  # Email
   RESEND_API_KEY=re_xxxx
+
+  # App
   NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 gitignore_extra: |
@@ -1190,81 +1158,101 @@ claude_md: |
   # CLAUDE.md
 
   ## Project
-  - Stack: Next.js 15 + Supabase Auth + Stripe + Resend + shadcn/ui
-  - Auth: Supabase (@supabase/ssr) — email + OAuth (Google, GitHub)
+  - Stack: Next.js 15 + Clerk Auth + Drizzle ORM (Neon) + Stripe + Resend + shadcn/ui
+  - Auth: Clerk (@clerk/nextjs) — email, OAuth, MFA, user management UI built-in
+  - Database: Drizzle ORM + Neon serverless Postgres
   - Billing: Stripe subscriptions, customer portal, webhook verification
   - Email: Resend (welcome, invite, payment failed)
-  - RBAC: Role enum (admin | member | viewer) in src/types/roles.ts
-  - Teams: org_id foreign key on profiles table
+  - RBAC: Role enum (admin | member | viewer) in src/types/roles.ts + Drizzle schema
+  - Teams: clerkId foreign key links Clerk users to local DB records
 
   ## Commands
   - Dev: `pnpm exec next dev`
-  - Test: `pnpm exec vitest run`
+  - Test (unit): `pnpm exec vitest run`
+  - Test (e2e): `pnpm exec playwright test`
   - Build: `pnpm exec next build`
   - Lint: `pnpm exec next lint`
   - Typecheck: `pnpm exec tsc --noEmit`
+  - DB generate: `pnpm exec drizzle-kit generate`
+  - DB migrate: `pnpm exec drizzle-kit migrate`
+  - DB push (dev): `pnpm exec drizzle-kit push`
+  - DB studio: `pnpm exec drizzle-kit studio`
 
   ## Architecture
-  - `src/app/(auth)/` — login, signup, callback pages
-  - `src/app/(dashboard)/` — protected app pages (auth required)
-  - `src/app/(admin)/` — admin-only pages (role=admin required)
+  - `src/app/(auth)/sign-in/` — Clerk SignIn component page
+  - `src/app/(auth)/sign-up/` — Clerk SignUp component page
+  - `src/app/(dashboard)/` — protected app pages (Clerk auth required)
+  - `src/app/(admin)/` — admin-only pages (role=admin required in DB)
   - `src/app/api/webhooks/stripe/` — Stripe webhook handler
   - `src/app/api/stripe/checkout/` — checkout session creation
   - `src/app/api/stripe/portal/` — billing portal session
+  - `src/actions/billing.ts` — server actions for checkout + portal
   - `src/components/billing/` — pricing, paywall components
   - `src/services/usage.ts` — usage metering (trackUsage, getUsage)
-  - `src/lib/` — Supabase client (server + browser), Stripe, Resend
+  - `src/lib/` — Supabase client (optional), Stripe, Resend
   - `src/types/roles.ts` — Role enum and permission matrix
+  - `db/schema.ts` — Drizzle schema (users table with clerkId)
+  - `db/index.ts` — Neon + Drizzle client
+  - `e2e/` — Playwright smoke tests
 
-  ## Design System (premium-builder skill)
-  - ALWAYS read `~/.claude/skills/premium-builder/SKILL.md` before generating UI
-  - Use OKLCH design tokens from globals.css — NEVER hardcode hex colors
-  - Use premium utilities: glass-card, gradient-text, hero-glow, product-shadow
-  - SSR-safe animations: initial={false} for above-fold, whileInView for below-fold
+  ## Design System
+  - Read `~/.claude/skills/premium-builder/SKILL.md` before generating UI
+  - Use OKLCH design tokens from src/app/globals.css — NEVER hardcode hex colors
+  - Use premium utilities: glass-card, gradient-text, hero-glow, product-shadow, bg-grid, noise
+  - SSR-safe animations: `initial={false}` for above-fold Framer Motion components
+  - Noscript fallback included in globals.css for users with JS disabled
   - Mobile-first: start at 390px, add breakpoints up
   - Touch targets: minimum 44px on all interactive elements
 
   ## Conventions
   - All API responses use envelope: `{ success, data, error, meta }`
-  - Use createClient() from @/lib/supabase/server in Server Components
-  - Use createClient() from @/lib/supabase/client in Client Components
+  - Auth: use `auth()` from @clerk/nextjs/server in Server Components + Route Handlers
+  - Auth: use `useAuth()` / `useUser()` from @clerk/nextjs in Client Components
+  - Database: always use Drizzle ORM — never raw SQL strings
   - SECURITY: NEVER skip Stripe webhook signature verification
   - RBAC: always call hasPermission() — never hardcode role string comparisons
   - NEVER use `any` type
 
-  ## Supabase Schema Notes
-  - profiles: id (uuid, FK auth.users), full_name, email, role (text), org_id (uuid), stripe_customer_id (text), subscription_status (text)
-  - organizations: id, name, created_at
-  - usage_events: id, user_id (uuid), metric (text), quantity (int), recorded_at (timestamptz)
+  ## Drizzle Schema
+  - users: id (uuid), email, name, role (admin|member|viewer), clerkId, createdAt, updatedAt
+  - Add stripeCustomerId (text) to users when wiring up Stripe customer creation
 
 agents_md: |
   # AGENTS.md
 
   ## Stack
   - Framework: Next.js 15 (App Router)
-  - Auth: Supabase Auth (@supabase/ssr) — email + OAuth
+  - Auth: Clerk (@clerk/nextjs) — email, OAuth, MFA, built-in UI components
+  - Database: Drizzle ORM + Neon serverless Postgres
   - Billing: Stripe (subscriptions, customer portal, webhooks)
   - Email: Resend
-  - UI: shadcn/ui + Tailwind CSS
-  - RBAC: Role enum — admin | member | viewer
-  - Testing: Vitest
+  - UI: shadcn/ui + Tailwind CSS v4 (OKLCH tokens) + premium visual utilities
+  - RBAC: Role enum — admin | member | viewer (stored in Drizzle `users` table)
+  - Testing: Vitest (unit) + Playwright (e2e)
 
   ## Patterns & Conventions
-  - Server Components fetch data directly from Supabase server client
-  - Client Components use Supabase browser client
-  - Route groups: (auth) public, (dashboard) protected, (admin) admin-only
-  - Stripe webhook route must be excluded from middleware auth check
-  - RBAC enforced at two levels: middleware (fast redirect) + layout (defence in depth)
+  - Auth: `auth()` / `currentUser()` from @clerk/nextjs/server in Server Components
+  - Auth: `useAuth()` / `useUser()` from @clerk/nextjs in Client Components
+  - Database: Drizzle ORM only — no raw SQL strings, no Supabase for auth
+  - Route groups: (auth) Clerk pages, (dashboard) protected, (admin) admin-only
+  - Middleware: Clerk's `clerkMiddleware` + `createRouteMatcher` for route protection
+  - Stripe webhook route excluded from Clerk auth via `isPublicRoute` matcher
+  - RBAC enforced at two levels: middleware (role in sessionClaims) + layout (DB lookup)
+  - Server Actions in src/actions/ for billing — prefer over API routes for form submissions
   - Usage metering: call trackUsage() at API boundaries; query getUsage() to enforce limits
+  - Design: always use OKLCH tokens and premium CSS utilities — never hardcode colors
 
   ## Gotchas
   - Stripe webhook signature verification is security-critical — never bypass
   - Webhook route needs raw body (not parsed JSON) — use req.text() not req.json()
-  - Supabase server client requires await cookies() in Next.js 15
+  - Clerk sessionClaims.metadata.role requires a custom JWT template in Clerk dashboard
+  - Admin role check in middleware reads from sessionClaims — set this up in Clerk JWT templates
   - Set up webhook endpoint in Stripe dashboard (or use stripe CLI for local dev)
     stripe listen --forward-to localhost:3000/api/webhooks/stripe
   - Admin layout has server-side role guard AND middleware guard — both are intentional
-  - stripe_customer_id on profiles must be set when user first subscribes (checkout.session.completed)
-  - OAuth providers must be enabled in Supabase dashboard → Auth → Providers
+  - stripeCustomerId on users table must be populated in checkout.session.completed handler
+  - Drizzle push (pnpm db:push) for local dev; use migrate for production
+  - ClerkProvider must wrap the root layout — it is included in src/app/layout.tsx
+  - Playwright e2e tests require the dev server running (`pnpm dev`) unless using webServer config
 
   ## Resolved Issues
