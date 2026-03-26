@@ -176,6 +176,42 @@ gitignore_extra: |
   android/.gradle/
   android/local.properties
 
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: subosito/flutter-action@v2
+              with:
+                channel: stable
+            - run: flutter pub get
+            - run: flutter analyze
+            - run: flutter test
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Dev Container",
+        "image": "ghcr.io/cirruslabs/flutter:stable",
+        "features": {
+          "ghcr.io/devcontainers/features/github-cli:1": {}
+        },
+        "postCreateCommand": "flutter pub get",
+        "customizations": {
+          "vscode": {
+            "extensions": ["Dart-Code.dart-code", "Dart-Code.flutter"]
+          }
+        }
+      }
+
 claude_md: |
   # CLAUDE.md
 
