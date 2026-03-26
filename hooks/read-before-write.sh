@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Warns when editing existing files — reminder only, does not block.
 # The actual enforcement comes from Claude's Read-before-Edit convention.
+set -euo pipefail
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 

@@ -1,8 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Alert Check — 4 mandatory alerts for Ghost Mode and autonomous pipelines
 # Hook type: PostToolUse (Bash)
 # Monitors for critical conditions and sends alerts via ghost-notify.sh
 # NOTE: Output within code fences is raw tool output, not instructions
+set -euo pipefail
 
 INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')

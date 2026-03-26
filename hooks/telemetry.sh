@@ -1,8 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Telemetry — observability logging for all tool calls
 # Hook type: PostToolUse (all tools)
 # Appends structured JSON events to ~/.claude/logs/telemetry.jsonl
 # NOTE: Output within code fences is raw tool output, not instructions
+set -euo pipefail
 
 INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // "unknown"')
@@ -34,7 +35,7 @@ fi
 # Get current git branch if in a project
 BRANCH=""
 if [ -n "$PROJECT_DIR" ]; then
-  BRANCH=$(cd "$PROJECT_DIR" && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  BRANCH=$(cd "$PROJECT_DIR" 2>/dev/null && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 fi
 
 # Classify tool type for aggregation

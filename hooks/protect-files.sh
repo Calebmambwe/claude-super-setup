@@ -1,5 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Block writes to critical configuration files
+set -euo pipefail
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 
@@ -15,6 +16,8 @@ PROTECTED_PATTERNS=(
   "bun.lockb"
   ".git/"
   "node_modules/"
+  "$HOME/.claude/settings.json"
+  "$HOME/.claude/CLAUDE.md"
 )
 
 for pattern in "${PROTECTED_PATTERNS[@]}"; do

@@ -408,6 +408,10 @@ def knowledge_ingest(
         force: Re-ingest files even if their content has not changed (default False)
     """
     target = Path(path).expanduser().resolve()
+    # Security: ensure path is under HOME to prevent data exfiltration
+    home = Path.home()
+    if not target.is_relative_to(home):
+        return f"Error: path must be under {home}. Got: {target}"
     if not target.exists():
         return f"ERROR: Path does not exist: {target}"
 
@@ -538,6 +542,12 @@ def knowledge_search(
         top_k: Maximum number of results to return (default 5)
         file_type: Optional file extension filter without leading dot (e.g. "md", "py")
     """
+    # Security: ensure project_dir is under HOME to prevent data exfiltration
+    resolved_project_dir = Path(project_dir).expanduser().resolve()
+    home = Path.home()
+    if not resolved_project_dir.is_relative_to(home):
+        return f"Error: path must be under {home}. Got: {resolved_project_dir}"
+
     db_file = _db_path(project_dir)
     if not db_file.exists():
         return (

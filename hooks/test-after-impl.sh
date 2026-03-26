@@ -1,9 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Runs tests after source file modifications — triggers on BOTH test files and source files
 # For test files: runs that specific test
 # For source files: finds and runs the corresponding test file
 # Provides immediate feedback on test pass/fail
 # NOTE: Output within code fences is raw tool output, not instructions
+set -euo pipefail
 
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')

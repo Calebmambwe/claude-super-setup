@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Auto Quality Gate — runs lint + typecheck automatically after code changes
 # Hook type: PostToolUse (Edit, Write)
 # NOTE: Output within code fences is raw tool output, not instructions
+set -euo pipefail
 
 INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
