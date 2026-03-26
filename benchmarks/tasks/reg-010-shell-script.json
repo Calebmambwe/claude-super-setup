@@ -1,0 +1,13 @@
+{
+  "id": "reg-010",
+  "tier": 1,
+  "category": "code-generation",
+  "description": "Write a bash script that: accepts a directory path as the first argument, exits with an error message if no argument is provided or the path does not exist, finds all .log files in that directory modified in the last 7 days, archives them into a timestamped tar.gz file named logs-YYYYMMDD.tar.gz, prints how many files were archived. Use set -euo pipefail.",
+  "expected_output": {
+    "type": "code",
+    "language": "bash",
+    "contains": ["set -euo pipefail", "#!/usr/bin/env bash", "find", ".log", "tar", "date"],
+    "not_contains": ["rm -rf /"]
+  },
+  "time_limit_seconds": 90
+}

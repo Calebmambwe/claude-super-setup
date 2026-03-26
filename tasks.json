@@ -1,176 +1,149 @@
 {
-  "version": 1,
-  "feature": "Ghost Mode Hardening + Full Telegram Dev Parity + Local Models",
-  "created_at": "2026-03-25T01:00:00Z",
+  "project": "self-improvement-engine",
+  "description": "Self-improvement engine Phase 1 — benchmark framework, CI/CD templates, new templates, agent improvements",
+  "stack": "python + shell + yaml + markdown",
+  "created": "2026-03-26T03:40:00Z",
+  "source": "docs/self-improvement-engine/20-implementation-roadmap.md",
   "tasks": [
     {
       "id": 1,
-      "title": "NLP natural language routing for telegram-dispatch.md",
-      "description": "Upgrade telegram-dispatch.md with NLP intent detection — 'build X' auto-routes to /ghost, 'fix X' to /debug, always-autonomous default.",
-      "status": "completed",
+      "title": "Add CI/CD workflow to top 5 stack templates",
+      "description": "Add .github/workflows/ci.yml and .devcontainer/devcontainer.json to web-app, saas-starter, ai-ml-app, web-t3, and api-service templates.",
+      "status": "pending",
       "priority": "P0",
       "risk": "low",
+      "acceptance": [
+        "Each of the 5 templates has ci_files section with .github/workflows/ci.yml",
+        "CI workflow runs test + lint + typecheck for the template's stack",
+        "Each template has .devcontainer/devcontainer.json",
+        "YAML syntax is valid for all new files"
+      ],
+      "files": ["config/stacks/web-app.yaml", "config/stacks/saas-starter.yaml", "config/stacks/ai-ml-app.yaml", "config/stacks/web-t3.yaml", "config/stacks/api-service.yaml"],
       "depends_on": [],
-      "files": ["commands/telegram-dispatch.md"],
-      "acceptance_criteria": [
-        "Natural language messages are classified by intent (BUILD, FIX, TEST, REVIEW, SHIP, etc.)",
-        "BUILD/PLAN intents route to /ghost (always-autonomous)",
-        "FIX intents route to /debug",
-        "High-confidence matches dispatch immediately, medium-confidence asks for confirmation",
-        "No-match falls back to conversational mode",
-        "Queue entries include nlp_routed flag",
-        "Prompt injection guard documented for NLP-extracted arguments"
-      ]
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 2,
-      "title": "Auto quality gate hook",
-      "description": "Create hooks/auto-quality-gate.sh for auto lint+typecheck on code changes.",
-      "status": "completed",
+      "title": "Create benchmark-runner agent and framework",
+      "description": "Create benchmark-runner agent, 10 regression tasks, run-benchmark.sh CLI, and history.jsonl for score tracking.",
+      "status": "pending",
       "priority": "P0",
-      "risk": "low",
+      "risk": "medium",
+      "acceptance": [
+        "agents/core/benchmark-runner.md exists with proper frontmatter",
+        "benchmarks/tasks/ contains at least 10 regression task JSON files",
+        "scripts/run-benchmark.sh exists and is executable",
+        "Agent registered in agents/catalog.json"
+      ],
+      "files": ["agents/core/benchmark-runner.md", "scripts/run-benchmark.sh", "agents/catalog.json"],
       "depends_on": [],
-      "files": ["hooks/auto-quality-gate.sh"],
-      "acceptance_criteria": [
-        "Triggers on Edit/Write tool for .ts/.tsx/.js/.jsx/.py files",
-        "Runs ESLint or Biome for JS/TS projects",
-        "Runs tsc --noEmit for TypeScript files",
-        "Runs ruff and mypy for Python files",
-        "Reports failures with formatted output",
-        "Script is executable"
-      ]
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 3,
-      "title": "Telemetry hook",
-      "description": "Create hooks/telemetry.sh for observability logging of all tool calls.",
-      "status": "completed",
+      "title": "Create web-shadcn-v4 template",
+      "description": "Flagship web template: Next.js 15 + shadcn/ui + Tailwind v4 + OKLCH tokens + accessibility + Vitest + CI/CD.",
+      "status": "pending",
       "priority": "P0",
-      "risk": "low",
+      "risk": "medium",
+      "acceptance": [
+        "config/stacks/web-shadcn-v4.yaml exists with full template spec",
+        "Template includes Tailwind v4 @theme block with OKLCH tokens",
+        "Template includes eslint-plugin-jsx-a11y for accessibility",
+        "Template includes CI/CD and vitest with coverage"
+      ],
+      "files": ["config/stacks/web-shadcn-v4.yaml"],
       "depends_on": [],
-      "files": ["hooks/telemetry.sh"],
-      "acceptance_criteria": [
-        "Logs structured JSON events to ~/.claude/logs/telemetry.jsonl",
-        "Captures tool name, type, file path, project, branch, session",
-        "Classifies tools into types (read/write/exec/agent/mcp)",
-        "Auto-rotates log at 10MB",
-        "Script is executable"
-      ]
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 4,
-      "title": "Alert check hook with 4 mandatory alerts",
-      "description": "Create hooks/alert-check.sh with 4 alerts: test failure, build failure, disk low, timeout warning.",
-      "status": "completed",
-      "priority": "P0",
-      "risk": "low",
+      "title": "Create saas-complete template",
+      "description": "Full SaaS: Next.js 15 + shadcn + Stripe + Auth + Admin Dashboard + RBAC + Teams + Resend + CI/CD.",
+      "status": "pending",
+      "priority": "P1",
+      "risk": "medium",
+      "acceptance": [
+        "config/stacks/saas-complete.yaml exists",
+        "Template includes admin dashboard, RBAC roles, team model",
+        "Template includes CI/CD and accessibility"
+      ],
+      "files": ["config/stacks/saas-complete.yaml"],
       "depends_on": [],
-      "files": ["hooks/alert-check.sh"],
-      "acceptance_criteria": [
-        "Alert 1: Test suite failure detection (pytest, vitest, jest)",
-        "Alert 2: Build/compile failure detection (tsc, cargo, go)",
-        "Alert 3: Disk space low (>90%) with 1h dedup",
-        "Alert 4: Ghost Mode timeout (exceeds max_hours)",
-        "All alerts log to ~/.claude/logs/alerts.jsonl",
-        "Alerts dispatch via ghost-notify.sh",
-        "Script is executable"
-      ]
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 5,
-      "title": "5 integration tests",
-      "description": "Create 5 integration tests in tests/integration/ covering hooks, config, dispatch security, notifications, and VPS setup.",
-      "status": "completed",
-      "priority": "P0",
-      "risk": "low",
-      "depends_on": [1, 2, 3, 4],
-      "files": [
-        "tests/integration/test-hooks-exist.sh",
-        "tests/integration/test-config-valid.sh",
-        "tests/integration/test-dispatch-runner.sh",
-        "tests/integration/test-ghost-notify.sh",
-        "tests/integration/test-setup-vps-flags.sh"
+      "title": "Create ai-rag-complete template",
+      "description": "Full AI/RAG: Next.js 15 + AI SDK + pgvector + multi-provider + tool calling + document ingestion + streaming.",
+      "status": "pending",
+      "priority": "P1",
+      "risk": "medium",
+      "acceptance": [
+        "config/stacks/ai-rag-complete.yaml exists",
+        "Template includes multi-provider (OpenAI + Anthropic)",
+        "Template includes tool calling and document ingestion",
+        "Template includes CI/CD"
       ],
-      "acceptance_criteria": [
-        "test-hooks-exist.sh: verifies all hooks exist and are executable (15 checks)",
-        "test-config-valid.sh: validates all JSON configs parse correctly (12 checks)",
-        "test-dispatch-runner.sh: tests security validation rejects bad inputs (7 checks)",
-        "test-ghost-notify.sh: tests all notification levels exit cleanly (8 checks)",
-        "test-setup-vps-flags.sh: tests --with-ollama and other flags in dry-run (10 checks)",
-        "All 52 assertions pass"
-      ]
+      "files": ["config/stacks/ai-rag-complete.yaml"],
+      "depends_on": [],
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 6,
-      "title": "Ollama local model support",
-      "description": "Create config/model-routing.json and update setup-vps.sh with --with-ollama flag.",
-      "status": "completed",
+      "title": "Create mobile-gluestack and monorepo templates",
+      "description": "Two new templates: mobile-gluestack (Expo 54 + Gluestack v3 + NativeWind v4) and monorepo (Turborepo + web + api + shared).",
+      "status": "pending",
       "priority": "P1",
       "risk": "low",
+      "acceptance": [
+        "config/stacks/mobile-gluestack.yaml exists with Expo Router + Gluestack + NativeWind",
+        "config/stacks/monorepo.yaml exists with Turborepo structure",
+        "Both YAML files are valid and follow existing template format"
+      ],
+      "files": ["config/stacks/mobile-gluestack.yaml", "config/stacks/monorepo.yaml"],
       "depends_on": [],
-      "files": ["config/model-routing.json", "scripts/setup-vps.sh"],
-      "acceptance_criteria": [
-        "model-routing.json defines providers (anthropic, ollama) with model mappings",
-        "Routing rules map task types (planning, implementation, review, testing, triage) to models",
-        "Fallback policy triggers on API errors or budget exceeded",
-        "Offline mode support documented",
-        "setup-vps.sh accepts --with-ollama flag",
-        "Phase 9/10 installs Ollama, pulls base model, copies config",
-        "Phase count updated from 9 to 10 across all phases"
-      ]
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 7,
-      "title": "Observability dashboard command",
-      "description": "Create commands/dashboard.md for unified observability view.",
-      "status": "completed",
+      "title": "Create /benchmark and /benchmark-status commands",
+      "description": "Commands to run benchmarks and view score history/trends.",
+      "status": "pending",
       "priority": "P1",
       "risk": "low",
-      "depends_on": [3, 4],
-      "files": ["commands/dashboard.md"],
-      "acceptance_criteria": [
-        "Aggregates data from telemetry, alerts, tasks, queue, ghost-config, metrics",
-        "Computes tool usage breakdown, alert counts, task progress",
-        "Runs system health checks (disk, sessions, Ollama, budget)",
-        "Full terminal dashboard with box-drawing characters",
-        "Condensed Telegram version within 4096-char limit",
-        "Gracefully handles missing data sources"
-      ]
+      "acceptance": [
+        "commands/benchmark.md invokes benchmark-runner agent",
+        "commands/benchmark-status.md shows history and trends",
+        "Both commands have proper frontmatter"
+      ],
+      "files": ["commands/benchmark.md", "commands/benchmark-status.md"],
+      "depends_on": [2],
+      "attempts": 0,
+      "max_attempts": 3
     },
     {
       "id": 8,
-      "title": "Extend test-after-impl.sh for all source files",
-      "description": "Upgrade test-after-impl.sh to trigger on source file changes, not just test files.",
-      "status": "completed",
-      "priority": "P0",
-      "risk": "low",
-      "depends_on": [],
-      "files": ["hooks/test-after-impl.sh"],
-      "acceptance_criteria": [
-        "Triggers on .ts/.tsx/.js/.jsx/.py/.go/.rs files",
-        "For test files: runs that specific test (existing behavior)",
-        "For source files: finds corresponding test file using 6 search patterns",
-        "Supports co-located tests, __tests__ dirs, tests/ dir, Python test_ prefix",
-        "Silently skips if no corresponding test found",
-        "Reports which source file triggered the test run"
-      ]
-    },
-    {
-      "id": 9,
-      "title": "Update AGENTS.md for Sprint 6",
-      "description": "Add Sprint 6 sections to AGENTS.md covering hardening, NLP dispatch, and local models.",
-      "status": "completed",
+      "title": "Update README and commit everything",
+      "description": "Update README with new templates and benchmark features. Final verification pass.",
+      "status": "pending",
       "priority": "P1",
       "risk": "low",
-      "depends_on": [1, 2, 3, 4, 5, 6, 7, 8],
-      "files": ["AGENTS.md"],
-      "acceptance_criteria": [
-        "Sprint 6 section documents NLP dispatch routing",
-        "Documents new hooks (auto-quality-gate, telemetry, alert-check)",
-        "Documents model-routing.json and Ollama support",
-        "Documents dashboard command",
-        "Documents test-after-impl.sh source file triggering"
-      ]
+      "acceptance": [
+        "README.md updated with new template count and benchmark features",
+        "All new files pass syntax validation",
+        "Git commit and push to feature branch"
+      ],
+      "files": ["README.md"],
+      "depends_on": [1, 2, 3, 4, 5, 6, 7],
+      "attempts": 0,
+      "max_attempts": 3
     }
   ]
 }

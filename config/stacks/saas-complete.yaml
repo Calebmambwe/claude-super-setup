@@ -1,0 +1,837 @@
+# SaaS Complete Stack Template
+# Next.js 15 + Supabase Auth + Stripe + Resend + shadcn/ui + RBAC + Teams + Admin
+
+name: saas-complete
+description: "Next.js 15 + Supabase Auth (email+OAuth) + Stripe + Resend + shadcn/ui + RBAC + Teams + Admin dashboard"
+short_label: "saas-complete"
+
+init_commands:
+  - "pnpm create next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*'"
+  - "pnpm add @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js resend zod"
+  - "pnpm add class-variance-authority clsx tailwind-merge lucide-react"
+  - "pnpm add -D @types/node vitest @vitejs/plugin-react"
+  - "pnpm dlx shadcn@latest init --defaults"
+
+directories:
+  - src/app/(auth)
+  - src/app/(dashboard)
+  - src/app/(admin)
+  - src/app/(admin)/users
+  - src/app/api/stripe
+  - src/app/api/webhooks
+  - src/components/ui
+  - src/components/billing
+  - src/components/admin
+  - src/lib
+  - src/lib/supabase
+  - src/services
+  - src/types
+  - src/__tests__
+
+starter_files:
+  src/lib/env.ts: |
+    import { z } from "zod";
+
+    const envSchema = z.object({
+      NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_"),
+      STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
+      STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
+      RESEND_API_KEY: z.string().startsWith("re_"),
+      NEXT_PUBLIC_APP_URL: z.string().url(),
+    });
+
+    export const env = envSchema.parse(process.env);
+
+  src/lib/supabase/server.ts: |
+    import { createServerClient } from "@supabase/ssr";
+    import { cookies } from "next/headers";
+
+    export async function createClient() {
+      const cookieStore = await cookies();
+      return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() { return cookieStore.getAll(); },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {}
+            },
+          },
+        }
+      );
+    }
+
+  src/lib/supabase/client.ts: |
+    import { createBrowserClient } from "@supabase/ssr";
+
+    export function createClient() {
+      return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+    }
+
+  src/lib/stripe.ts: |
+    import Stripe from "stripe";
+    import { env } from "./env";
+
+    export const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-01-27.acacia",
+      typescript: true,
+    });
+
+    // Create a checkout session for a subscription price.
+    export async function createCheckoutSession({
+      customerId,
+      priceId,
+      successUrl,
+      cancelUrl,
+    }: {
+      customerId: string;
+      priceId: string;
+      successUrl: string;
+      cancelUrl: string;
+    }) {
+      return stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: "subscription",
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+      });
+    }
+
+    // Create a billing portal session so customers can manage their subscription.
+    export async function createPortalSession({
+      customerId,
+      returnUrl,
+    }: {
+      customerId: string;
+      returnUrl: string;
+    }) {
+      return stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+      });
+    }
+
+  src/lib/resend.ts: |
+    import { Resend } from "resend";
+    import { env } from "./env";
+
+    export const resend = new Resend(env.RESEND_API_KEY);
+
+    export async function sendWelcomeEmail(to: string, name: string) {
+      return resend.emails.send({
+        from: "no-reply@yourdomain.com",
+        to,
+        subject: "Welcome!",
+        html: `<p>Hi ${name}, welcome aboard.</p>`,
+      });
+    }
+
+    export async function sendInviteEmail(to: string, inviteUrl: string) {
+      return resend.emails.send({
+        from: "no-reply@yourdomain.com",
+        to,
+        subject: "You've been invited",
+        html: `<p>You've been invited to join. <a href="${inviteUrl}">Accept invite</a></p>`,
+      });
+    }
+
+  src/types/roles.ts: |
+    // Role enum — single source of truth for RBAC.
+    // Add new roles here; update the permission matrix below accordingly.
+    export const ROLES = ["admin", "member", "viewer"] as const;
+    export type Role = (typeof ROLES)[number];
+
+    // Permission matrix: maps each role to a list of allowed actions.
+    // Extend with your domain-specific permissions.
+    export const PERMISSIONS: Record<Role, string[]> = {
+      admin: [
+        "users:read",
+        "users:write",
+        "users:delete",
+        "billing:read",
+        "billing:write",
+        "org:read",
+        "org:write",
+        "usage:read",
+      ],
+      member: [
+        "users:read",
+        "billing:read",
+        "org:read",
+        "usage:read",
+      ],
+      viewer: [
+        "users:read",
+        "org:read",
+        "usage:read",
+      ],
+    };
+
+    export function hasPermission(role: Role, permission: string): boolean {
+      return PERMISSIONS[role]?.includes(permission) ?? false;
+    }
+
+    export function isAdmin(role: Role): boolean {
+      return role === "admin";
+    }
+
+  src/types/api.ts: |
+    export interface ApiResponse<T> {
+      success: boolean;
+      data: T | null;
+      error: string | null;
+      meta?: Record<string, unknown>;
+    }
+
+    export function ok<T>(data: T, meta?: Record<string, unknown>): ApiResponse<T> {
+      return { success: true, data, error: null, meta };
+    }
+
+    export function err(error: string): ApiResponse<null> {
+      return { success: false, data: null, error };
+    }
+
+  src/middleware.ts: |
+    import { type NextRequest, NextResponse } from "next/server";
+    import { createServerClient } from "@supabase/ssr";
+
+    // Routes that do NOT require authentication.
+    const PUBLIC_ROUTES = ["/", "/login", "/signup", "/auth/callback", "/api/webhooks/stripe"];
+    // Routes that require the admin role specifically.
+    const ADMIN_ROUTES = ["/admin"];
+
+    export async function middleware(req: NextRequest) {
+      const { pathname } = req.nextUrl;
+
+      // Skip auth check for public routes.
+      if (PUBLIC_ROUTES.some((r) => pathname.startsWith(r))) {
+        return NextResponse.next();
+      }
+
+      let response = NextResponse.next({
+        request: { headers: req.headers },
+      });
+
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() { return req.cookies.getAll(); },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
+              response = NextResponse.next({ request: req });
+              cookiesToSet.forEach(({ name, value, options }) =>
+                response.cookies.set(name, value, options)
+              );
+            },
+          },
+        }
+      );
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        const loginUrl = req.nextUrl.clone();
+        loginUrl.pathname = "/login";
+        loginUrl.searchParams.set("next", pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+
+      // RBAC check for admin routes.
+      if (ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.role !== "admin") {
+          return NextResponse.redirect(new URL("/dashboard", req.url));
+        }
+      }
+
+      return response;
+    }
+
+    export const config = {
+      matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+    };
+
+  src/app/(dashboard)/layout.tsx: |
+    import { createClient } from "@/lib/supabase/server";
+    import { redirect } from "next/navigation";
+
+    export default async function DashboardLayout({
+      children,
+    }: {
+      children: React.ReactNode;
+    }) {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) redirect("/login");
+
+      return (
+        <div className="flex min-h-screen">
+          <aside className="w-64 border-r bg-gray-50 px-4 py-6">
+            <nav className="space-y-1">
+              <a href="/dashboard" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Dashboard
+              </a>
+              <a href="/dashboard/settings" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Settings
+              </a>
+              <a href="/dashboard/billing" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Billing
+              </a>
+            </nav>
+          </aside>
+          <main className="flex-1">{children}</main>
+        </div>
+      );
+    }
+
+  src/app/(dashboard)/dashboard/page.tsx: |
+    import { createClient } from "@/lib/supabase/server";
+    import { redirect } from "next/navigation";
+
+    export default async function DashboardPage() {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) redirect("/login");
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, role, org_id")
+        .eq("id", user.id)
+        .single();
+
+      return (
+        <main className="p-8">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="mt-2 text-gray-600">
+            Welcome, {profile?.full_name ?? user.email}
+          </p>
+          <p className="mt-1 text-sm text-gray-400">Role: {profile?.role}</p>
+        </main>
+      );
+    }
+
+  src/app/(admin)/layout.tsx: |
+    import { createClient } from "@/lib/supabase/server";
+    import { redirect } from "next/navigation";
+
+    // Admin layout with server-side role guard.
+    // Middleware also enforces this — defence in depth.
+    export default async function AdminLayout({
+      children,
+    }: {
+      children: React.ReactNode;
+    }) {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) redirect("/login");
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role !== "admin") redirect("/dashboard");
+
+      return (
+        <div className="flex min-h-screen">
+          <aside className="w-64 border-r bg-gray-900 px-4 py-6">
+            <p className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Admin
+            </p>
+            <nav className="space-y-1">
+              <a href="/admin" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
+                Overview
+              </a>
+              <a href="/admin/users" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
+                Users
+              </a>
+              <a href="/admin/billing" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
+                Billing
+              </a>
+              <a href="/admin/usage" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
+                Usage
+              </a>
+            </nav>
+          </aside>
+          <main className="flex-1 bg-gray-50">{children}</main>
+        </div>
+      );
+    }
+
+  src/app/(admin)/users/page.tsx: |
+    import { createClient } from "@/lib/supabase/server";
+
+    // User management stub — extend with invite, role change, and deactivation actions.
+    export default async function AdminUsersPage() {
+      const supabase = await createClient();
+
+      const { data: users, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, role, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) throw new Error(error.message);
+
+      return (
+        <div className="p-8">
+          <div className="mb-6 flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Users</h1>
+            {/* TODO: Add invite user button */}
+          </div>
+          <div className="overflow-hidden rounded-lg border bg-white">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Name</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Email</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Role</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Joined</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {(users ?? []).map((u) => (
+                  <tr key={u.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-gray-900">{u.full_name ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600">{u.email}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {new Date(u.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+  src/app/api/stripe/checkout/route.ts: |
+    import { type NextRequest, NextResponse } from "next/server";
+    import { createClient } from "@/lib/supabase/server";
+    import { createCheckoutSession } from "@/lib/stripe";
+    import { env } from "@/lib/env";
+    import { z } from "zod";
+    import { err } from "@/types/api";
+
+    const bodySchema = z.object({
+      priceId: z.string().min(1),
+    });
+
+    export async function POST(req: NextRequest) {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return NextResponse.json(err("Unauthorized"), { status: 401 });
+
+      const parsed = bodySchema.safeParse(await req.json());
+      if (!parsed.success) return NextResponse.json(err("Invalid body"), { status: 400 });
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("stripe_customer_id")
+        .eq("id", user.id)
+        .single();
+
+      const session = await createCheckoutSession({
+        customerId: profile?.stripe_customer_id ?? "",
+        priceId: parsed.data.priceId,
+        successUrl: `${env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`,
+        cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+      });
+
+      return NextResponse.json({ url: session.url });
+    }
+
+  src/app/api/stripe/portal/route.ts: |
+    import { type NextRequest, NextResponse } from "next/server";
+    import { createClient } from "@/lib/supabase/server";
+    import { createPortalSession } from "@/lib/stripe";
+    import { env } from "@/lib/env";
+    import { err } from "@/types/api";
+
+    export async function POST(_req: NextRequest) {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return NextResponse.json(err("Unauthorized"), { status: 401 });
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("stripe_customer_id")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile?.stripe_customer_id) {
+        return NextResponse.json(err("No billing account found"), { status: 400 });
+      }
+
+      const session = await createPortalSession({
+        customerId: profile.stripe_customer_id,
+        returnUrl: `${env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+      });
+
+      return NextResponse.json({ url: session.url });
+    }
+
+  src/app/api/webhooks/stripe/route.ts: |
+    import { type NextRequest, NextResponse } from "next/server";
+    import { stripe } from "@/lib/stripe";
+    import { env } from "@/lib/env";
+
+    // SECURITY: Stripe webhook signature verification is critical.
+    // Never skip verifyWebhook — it prevents replay attacks and forged events.
+    export async function POST(req: NextRequest) {
+      const body = await req.text();
+      const signature = req.headers.get("stripe-signature");
+
+      if (!signature) {
+        return NextResponse.json({ error: "No signature" }, { status: 400 });
+      }
+
+      let event;
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET);
+      } catch (err) {
+        console.error("Webhook signature verification failed:", err);
+        return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+      }
+
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object;
+          // TODO: provision access — update profiles.subscription_status for session.customer
+          console.log("Checkout completed:", session.id);
+          break;
+        }
+        case "customer.subscription.updated": {
+          const subscription = event.data.object;
+          // TODO: sync subscription status and current_period_end to profiles
+          console.log("Subscription updated:", subscription.id);
+          break;
+        }
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object;
+          // TODO: revoke access — downgrade profiles.subscription_status to "free"
+          console.log("Subscription cancelled:", subscription.id);
+          break;
+        }
+        case "invoice.payment_failed": {
+          const invoice = event.data.object;
+          // TODO: send payment failed email via Resend
+          console.log("Payment failed:", invoice.id);
+          break;
+        }
+        default:
+          console.log("Unhandled event type:", event.type);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+  src/services/usage.ts: |
+    import { createClient } from "@/lib/supabase/server";
+
+    // Usage metering pattern.
+    // Call trackUsage() from any API route that consumes a metered resource.
+    // Query getUsage() to enforce limits or display usage dashboards.
+
+    export async function trackUsage(
+      userId: string,
+      metric: string,
+      quantity = 1
+    ): Promise<void> {
+      const supabase = await createClient();
+      const { error } = await supabase.from("usage_events").insert({
+        user_id: userId,
+        metric,
+        quantity,
+        recorded_at: new Date().toISOString(),
+      });
+      if (error) console.error("Failed to track usage:", error.message);
+    }
+
+    export async function getUsage(
+      userId: string,
+      metric: string,
+      since: Date
+    ): Promise<number> {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("usage_events")
+        .select("quantity")
+        .eq("user_id", userId)
+        .eq("metric", metric)
+        .gte("recorded_at", since.toISOString());
+
+      if (error) throw new Error(error.message);
+      return (data ?? []).reduce((sum, row) => sum + (row.quantity as number), 0);
+    }
+
+  src/components/billing/PricingCard.tsx: |
+    "use client";
+    import { useState } from "react";
+
+    interface PricingCardProps {
+      name: string;
+      price: number;
+      description: string;
+      features: string[];
+      priceId: string;
+      isPopular?: boolean;
+    }
+
+    export function PricingCard({ name, price, description, features, priceId, isPopular = false }: PricingCardProps) {
+      const [isLoading, setIsLoading] = useState(false);
+
+      async function handleSubscribe() {
+        setIsLoading(true);
+        try {
+          const res = await fetch("/api/stripe/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ priceId }),
+          });
+          const data = await res.json() as { url?: string };
+          if (data.url) window.location.href = data.url;
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      return (
+        <div className={`rounded-2xl border p-8 ${isPopular ? "border-blue-600 shadow-lg" : "border-gray-200"}`}>
+          {isPopular && (
+            <span className="mb-4 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
+              Most Popular
+            </span>
+          )}
+          <h3 className="text-xl font-bold text-gray-900">{name}</h3>
+          <p className="mt-1 text-sm text-gray-500">{description}</p>
+          <p className="mt-4 text-4xl font-bold text-gray-900">
+            ${price}<span className="text-base font-normal text-gray-500">/mo</span>
+          </p>
+          <ul className="mt-6 space-y-3">
+            {features.map((f) => (
+              <li key={f} className="flex items-center gap-2 text-sm text-gray-700">
+                <span className="text-green-500">&#10003;</span> {f}
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={handleSubscribe}
+            disabled={isLoading}
+            className={`mt-8 w-full rounded-lg py-3 font-semibold transition ${
+              isPopular
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "border border-gray-300 text-gray-900 hover:bg-gray-50"
+            } disabled:opacity-50`}
+          >
+            {isLoading ? "Redirecting..." : "Get started"}
+          </button>
+        </div>
+      );
+    }
+
+  src/__tests__/smoke.test.ts: |
+    import { describe, it, expect } from "vitest";
+
+    describe("Smoke test", () => {
+      it("should pass", () => {
+        expect(true).toBe(true);
+      });
+    });
+
+  src/__tests__/roles.test.ts: |
+    import { describe, it, expect } from "vitest";
+    import { hasPermission, isAdmin } from "@/types/roles";
+
+    describe("RBAC", () => {
+      it("admin has all permissions", () => {
+        expect(hasPermission("admin", "users:delete")).toBe(true);
+        expect(hasPermission("admin", "billing:write")).toBe(true);
+      });
+
+      it("viewer cannot write", () => {
+        expect(hasPermission("viewer", "users:write")).toBe(false);
+        expect(hasPermission("viewer", "billing:write")).toBe(false);
+      });
+
+      it("member can read but not delete", () => {
+        expect(hasPermission("member", "users:read")).toBe(true);
+        expect(hasPermission("member", "users:delete")).toBe(false);
+      });
+
+      it("isAdmin only true for admin role", () => {
+        expect(isAdmin("admin")).toBe(true);
+        expect(isAdmin("member")).toBe(false);
+        expect(isAdmin("viewer")).toBe(false);
+      });
+    });
+
+commands:
+  dev: "pnpm exec next dev"
+  test: "pnpm exec vitest run"
+  build: "pnpm exec next build"
+  lint: "pnpm exec next lint"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+
+package_json_scripts:
+  dev: "next dev"
+  build: "next build"
+  test: "vitest run"
+  lint: "next lint"
+  typecheck: "tsc --noEmit"
+
+env_example: |
+  NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxx
+  STRIPE_SECRET_KEY=sk_test_xxxx
+  STRIPE_WEBHOOK_SECRET=whsec_xxxx
+  RESEND_API_KEY=re_xxxx
+  NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+gitignore_extra: |
+  .next/
+
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version-file: '.nvmrc'
+                cache: 'pnpm'
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm lint
+            - run: pnpm typecheck
+            - run: pnpm test -- --run
+            - run: pnpm build
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": {
+          "ghcr.io/devcontainers/features/github-cli:1": {}
+        },
+        "postCreateCommand": "pnpm install",
+        "customizations": {
+          "vscode": {
+            "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+          }
+        }
+      }
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Next.js 15 + Supabase Auth + Stripe + Resend + shadcn/ui
+  - Auth: Supabase (@supabase/ssr) — email + OAuth (Google, GitHub)
+  - Billing: Stripe subscriptions, customer portal, webhook verification
+  - Email: Resend (welcome, invite, payment failed)
+  - RBAC: Role enum (admin | member | viewer) in src/types/roles.ts
+  - Teams: org_id foreign key on profiles table
+
+  ## Commands
+  - Dev: `pnpm exec next dev`
+  - Test: `pnpm exec vitest run`
+  - Build: `pnpm exec next build`
+  - Lint: `pnpm exec next lint`
+  - Typecheck: `pnpm exec tsc --noEmit`
+
+  ## Architecture
+  - `src/app/(auth)/` — login, signup, callback pages
+  - `src/app/(dashboard)/` — protected app pages (auth required)
+  - `src/app/(admin)/` — admin-only pages (role=admin required)
+  - `src/app/api/webhooks/stripe/` — Stripe webhook handler
+  - `src/app/api/stripe/checkout/` — checkout session creation
+  - `src/app/api/stripe/portal/` — billing portal session
+  - `src/components/billing/` — pricing, paywall components
+  - `src/services/usage.ts` — usage metering (trackUsage, getUsage)
+  - `src/lib/` — Supabase client (server + browser), Stripe, Resend
+  - `src/types/roles.ts` — Role enum and permission matrix
+
+  ## Conventions
+  - All API responses use envelope: `{ success, data, error, meta }`
+  - Use createClient() from @/lib/supabase/server in Server Components
+  - Use createClient() from @/lib/supabase/client in Client Components
+  - SECURITY: NEVER skip Stripe webhook signature verification
+  - RBAC: always call hasPermission() — never hardcode role string comparisons
+  - NEVER use `any` type
+
+  ## Supabase Schema Notes
+  - profiles: id (uuid, FK auth.users), full_name, email, role (text), org_id (uuid), stripe_customer_id (text), subscription_status (text)
+  - organizations: id, name, created_at
+  - usage_events: id, user_id (uuid), metric (text), quantity (int), recorded_at (timestamptz)
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: Next.js 15 (App Router)
+  - Auth: Supabase Auth (@supabase/ssr) — email + OAuth
+  - Billing: Stripe (subscriptions, customer portal, webhooks)
+  - Email: Resend
+  - UI: shadcn/ui + Tailwind CSS
+  - RBAC: Role enum — admin | member | viewer
+  - Testing: Vitest
+
+  ## Patterns & Conventions
+  - Server Components fetch data directly from Supabase server client
+  - Client Components use Supabase browser client
+  - Route groups: (auth) public, (dashboard) protected, (admin) admin-only
+  - Stripe webhook route must be excluded from middleware auth check
+  - RBAC enforced at two levels: middleware (fast redirect) + layout (defence in depth)
+  - Usage metering: call trackUsage() at API boundaries; query getUsage() to enforce limits
+
+  ## Gotchas
+  - Stripe webhook signature verification is security-critical — never bypass
+  - Webhook route needs raw body (not parsed JSON) — use req.text() not req.json()
+  - Supabase server client requires await cookies() in Next.js 15
+  - Set up webhook endpoint in Stripe dashboard (or use stripe CLI for local dev)
+    stripe listen --forward-to localhost:3000/api/webhooks/stripe
+  - Admin layout has server-side role guard AND middleware guard — both are intentional
+  - stripe_customer_id on profiles must be set when user first subscribes (checkout.session.completed)
+  - OAuth providers must be enabled in Supabase dashboard → Auth → Providers
+
+  ## Resolved Issues

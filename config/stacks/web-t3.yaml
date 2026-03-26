@@ -388,6 +388,51 @@ gitignore_extra: |
   dev.db
   dev.db-journal
 
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          env:
+            DATABASE_URL: "file:./ci.db"
+            NEXTAUTH_SECRET: "ci-secret-for-typecheck-only-32chars"
+            NEXTAUTH_URL: "http://localhost:3000"
+          steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version-file: '.nvmrc'
+                cache: 'pnpm'
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm exec prisma db push
+            - run: pnpm lint
+            - run: pnpm typecheck
+            - run: pnpm test -- --run
+            - run: pnpm build
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": {
+          "ghcr.io/devcontainers/features/github-cli:1": {}
+        },
+        "postCreateCommand": "pnpm install",
+        "customizations": {
+          "vscode": {
+            "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+          }
+        }
+      }
+
 claude_md: |
   # CLAUDE.md
 
