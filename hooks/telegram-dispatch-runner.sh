@@ -204,6 +204,12 @@ if [[ "${6:-}" == "--inner" ]]; then
 
   cd "$PROJECT_DIR"
 
+  # Source env vars for OpenRouter and other API keys
+  ENV_LOCAL="$HOME/.claude/.env.local"
+  if [[ -f "$ENV_LOCAL" ]]; then
+    set -a; source "$ENV_LOCAL"; set +a
+  fi
+
   EXIT_CODE=0
   claude -p \
     --dangerously-skip-permissions \

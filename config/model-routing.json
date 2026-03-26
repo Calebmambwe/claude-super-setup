@@ -21,8 +21,12 @@
         "code-fallback": "meta-llama/llama-4-maverick",
         "analysis": "google/gemini-2.5-pro",
         "general": "deepseek/deepseek-chat-v3-0324",
-        "code-free": "qwen/qwen3-coder:free"
+        "code-free": "qwen/qwen3-coder:free",
+        "embedding": "openai/text-embedding-3-small",
+        "voice": "openai/whisper-1"
       },
+      "env_key": "OPENROUTER_API_KEY",
+      "env_file": "~/.claude/.env.local",
       "benchmarks": {
         "reference": "docs/local-models/openrouter-benchmarks.md",
         "date": "2026-03-26",
@@ -104,6 +108,26 @@
     "enabled": false,
     "description": "When true, skip Anthropic entirely and use only Ollama models. Useful for air-gapped environments or cost-zero development.",
     "activate_command": "Set CLAUDE_OFFLINE=1 in environment or pass --offline to ghost/auto-dev"
+  },
+  "specialized": {
+    "voice": {
+      "primary": "scripts/transcribe-voice.sh",
+      "notes": "Gemini free primary, Whisper fallback — handled internally by script"
+    },
+    "image": {
+      "primary": "gemini-mcp:imagen3",
+      "notes": "Via @rlabs-inc/gemini-mcp, requires setup-gemini-mcp.sh"
+    },
+    "embedding": {
+      "primary": "openrouter:embedding",
+      "fallback": "ollama:nomic-embed-text"
+    }
+  },
+  "dual_mode": {
+    "enabled": false,
+    "default_models": ["openrouter:code", "openrouter:general"],
+    "judge": "anthropic:opus",
+    "log_file": "~/.claude/logs/comparisons.jsonl"
   },
   "cost_tracking": {
     "log_file": "~/.claude/logs/model-costs.jsonl",
