@@ -290,6 +290,44 @@ gitignore_extra: |
   .ruff_cache/
   dist/
 
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-python@v5
+              with:
+                python-version: '3.12'
+            - run: pip install uv && uv sync
+            - run: uv run ruff check src/ tests/
+            - run: uv run mypy src/
+            - run: uv run pytest
+            - run: uv run ruff format --check src/ tests/
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/python:3.12",
+        "features": {
+          "ghcr.io/devcontainers/features/github-cli:1": {}
+        },
+        "postCreateCommand": "pip install uv && uv sync",
+        "customizations": {
+          "vscode": {
+            "extensions": ["ms-python.python", "ms-python.vscode-pylance", "charliermarsh.ruff"]
+          }
+        }
+      }
+
 claude_md: |
   # CLAUDE.md
 
