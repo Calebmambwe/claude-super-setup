@@ -281,6 +281,14 @@ if should_install "config"; then
   install_module "config/cursor-automations" "$CLAUDE_DIR/config/cursor-automations" "Cursor automation templates"
 fi
 
+# Marketplace directories
+mkdir -p "$HOME/.claude/mcp-registry"
+mkdir -p "$HOME/.claude/knowledge"
+mkdir -p "$HOME/.claude/skills/imported"
+
+# Optional: Knowledge RAG dependencies (for semantic search)
+# uv pip install sentence-transformers sqlite-vss mcp
+
 # Step 5.5: Install MCP servers
 info "Installing MCP servers..."
 MCP_TARGET="$CLAUDE_DIR/mcp-servers"

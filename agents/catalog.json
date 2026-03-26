@@ -1,6 +1,12 @@
 {
   "$schema": "../schemas/catalog.schema.json",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "marketplace": {
+    "last_sync": "2026-03-25",
+    "remote_count": 0,
+    "local_count": 69,
+    "imported_count": 0
+  },
   "model_tiers": {
     "haiku": {
       "model": "claude-haiku-3-5",

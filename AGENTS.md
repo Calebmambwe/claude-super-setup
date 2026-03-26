@@ -51,6 +51,23 @@ Shared project context for Claude Code and Cursor agents.
 - `shlex.quote()` is required for user-supplied paths in shell commands — never interpolate raw strings into f-string shell commands.
 - `--skip-chezmoi` flag in setup-vps.sh is parsed but intentionally unused — reserved for Sprint 2 chezmoi dotfiles integration.
 
+## Marketplace Integration (LobeHub + MCP Ecosystem)
+- MCP registry cache lives at `~/.claude/mcp-registry/cache.json` — refreshed every 24h by `scripts/mcp-registry-fetch.py`.
+- Knowledge RAG databases are per-project at `~/.claude/knowledge/{hash}.db` — SQLite + FTS5, optional sqlite-vss for vector search.
+- Imported skills go to `~/.claude/skills/imported/<name>/` — tracked in `~/.claude/skill-registry.json`.
+- Imported agents go to `agents/community/imported/<name>.md` — tracked in `catalog.json` with `source="imported"`.
+- Agent converter (`scripts/agent-converter.py`) only supports import direction (LobeHub JSON -> our MD), not export.
+- MCP install uses `jq` merge — never overwrites full settings.json. Always verify `jq` is available before running `/mcp-install`.
+- Community contributions validated by `scripts/validate-contribution.sh` — checks kebab-case naming, frontmatter, duplicates.
+- `catalog.json` v2 is backward compatible — all new fields optional. Version bumped to 2.0.0.
+- MCP registry fetch uses PEP 723 inline metadata — run with `uv run scripts/mcp-registry-fetch.py` (auto-installs httpx).
+- Knowledge RAG FTS5 requires sanitizing special chars from queries before MATCH — raw user input causes SQLite parse errors.
+- Agent converter model tier mapping covers 20+ known model strings. Unknown models default to "sonnet" with a warning.
+- MCP install uses `jq` to merge into settings.json — `jq` must be installed. Script fails gracefully if missing.
+- sqlite-vss and sentence-transformers are optional — knowledge search falls back to FTS5 BM25 ranking without them.
+- Registry fetch tries multiple URLs per registry (e.g., LobeHub has 2 known endpoints). First success wins.
+- Cache writes use atomic rename (`tmp` -> final) to prevent corruption on crash.
+
 ## Gemini Media Integration (Sprint 2)
 - Gemini MCP provides 37 tools via `@rlabs-inc/gemini-mcp` (image gen, video gen, TTS, editing).
 - Setup: `bash scripts/setup-gemini-mcp.sh` — requires `GEMINI_API_KEY` env var.

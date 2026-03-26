@@ -438,5 +438,18 @@
     "Workflow: /plan -> /build -> /check -> /ship -> /reflect",
     "Run /consolidate weekly to clean up learnings."
   ],
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "mcpServers": {
+    "knowledge-rag": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp",
+        "python3",
+        "~/.claude-super-setup/mcp-servers/knowledge-rag-server.py"
+      ],
+      "env": {}
+    }
+  }
 }

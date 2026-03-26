@@ -30,7 +30,7 @@ Inside the container, `claude --dangerously-skip-permissions` is safe — the co
 
 ## What's Included
 
-### Commands (80+)
+### Commands (99)
 
 | Category | Commands | Purpose |
 |----------|----------|---------|
@@ -42,6 +42,11 @@ Inside the container, `claude --dangerously-skip-permissions` is safe — the co
 | BMAD | /bmad:prd, /bmad:architecture, /bmad:sprint-planning | Product lifecycle |
 | Documentation | /design-doc, /spec, /api-docs, /adr | Technical documentation |
 | Observability | /pipeline-status, /metrics, /learning-dashboard | Pipeline monitoring |
+| Marketplace | /mcp-search, /mcp-install, /mcp-list, /mcp-remove | MCP server discovery & install |
+| Agent Import | /agent-search, /agent-import | Browse & import LobeHub agents |
+| Skill Sync | /skill-search, /skill-import | Browse & import skills from LobeHub |
+| Knowledge RAG | /knowledge-ingest, /knowledge-search | Semantic search over project docs |
+| Community | /community-validate | Validate community contributions |
 
 ### Stack Templates (16)
 
@@ -64,7 +69,17 @@ Inside the container, `claude --dangerously-skip-permissions` is safe — the co
 | Specialized | chrome-extension | TypeScript + Vite + Manifest V3 |
 | Specialized | cli-tool | TypeScript + Commander.js + tsup |
 
-### Agents (60+)
+### Marketplace Integration
+
+Connect to the broader AI agent ecosystem:
+
+- **MCP Registry Client** — Search and install from 39K+ MCP servers across LobeHub, Official MCP Registry, and Smithery. Cache-first with 24h TTL, works offline.
+- **Agent Import** — Browse LobeHub's agent marketplace and import agents into your local system. Auto-converts LobeHub JSON to our Markdown format.
+- **Skill Sync** — Import SKILL.md-compatible skills from LobeHub's 217K+ skill marketplace or GitHub repos.
+- **Knowledge RAG** — SQLite + FTS5 semantic search over project docs and code. Optional vector search via sqlite-vss + sentence-transformers.
+- **Community Pipeline** — Schema-validated contribution workflow with CI-ready validation scripts.
+
+### Agents (71)
 
 Core agents across 8 departments plus community agents for language specialists, data/AI, infrastructure, and mobile.
 
