@@ -1,25 +1,25 @@
 {
-  "project": "super-builder-enhancement",
-  "description": "Make claude-super-setup the best autonomous app builder \u2014 premium design system, enforcing hooks, visual verification, self-healing pipeline",
-  "stack": "shell + markdown + typescript patterns",
-  "created": "2026-03-26T03:10:00Z",
+  "project": "super-builder-m2-m3",
+  "description": "Milestones 2-3: Enhanced SaaS template, codegen wiki, file impact maps, a11y hook, visual regression",
+  "stack": "shell + markdown + yaml",
+  "created": "2026-03-26T03:30:00Z",
   "source": "docs/super-builder/design-doc.md",
   "tasks": [
     {
       "id": 1,
-      "title": "Create premium-builder skill",
-      "description": "Write skills/premium-builder/SKILL.md \u2014 comprehensive component pattern library covering typography scale, spacing scale, visual effects (glass-card, gradients, shadows, noise), animation library (SSR-safe), and 10+ component patterns (cards, buttons, navbars, heroes, features, pricing, footers, auth forms, terminals, integrations). This is the design law that all generated apps must follow.",
+      "title": "Enhance saas-complete with Clerk + Drizzle + Stripe + premium CSS",
+      "description": "Major update to config/stacks/saas-complete.yaml: add Clerk auth middleware, Drizzle ORM schema, Stripe webhook handler, premium CSS utilities, and premium-builder skill reference in CLAUDE.md.",
       "status": "completed",
       "priority": "P0",
-      "risk": "low",
+      "risk": "medium",
       "acceptance": [
-        "skills/premium-builder/SKILL.md exists with 10+ component patterns each having code examples",
-        "Typography scale covers Display through Caption with exact Tailwind classes",
-        "Animation library includes SSR-safe rules (initial={false} for above-fold)",
-        "Visual effects section includes glass-card, gradients, shadows, noise, grid patterns with CSS code"
+        "Template includes Clerk, Drizzle, Stripe dependencies",
+        "Template has middleware.ts, db/schema.ts, api/webhooks/stripe/route.ts scaffolds",
+        "Template has premium CSS utilities in globals.css",
+        "Template CLAUDE.md references premium-builder skill"
       ],
       "files": [
-        "skills/premium-builder/SKILL.md"
+        "config/stacks/saas-complete.yaml"
       ],
       "depends_on": [],
       "attempts": 0,
@@ -27,21 +27,19 @@
     },
     {
       "id": 2,
-      "title": "Create OKLCH palette generator script",
-      "description": "Write scripts/generate-palette.sh that takes a hex color input and outputs complete CSS custom properties for both :root (light) and .dark themes. Generates 11-shade primary scale, neutral scale with brand tint, and all 14 semantic token mappings. Uses Node.js for OKLCH math.",
+      "title": "Create /codegen-wiki command",
+      "description": "Auto-generate docs/architecture.md from codebase: Mermaid diagram, env vars, key files.",
       "status": "completed",
-      "priority": "P0",
-      "risk": "medium",
+      "priority": "P1",
+      "risk": "low",
       "acceptance": [
-        "scripts/generate-palette.sh '#3ECF8E' outputs valid CSS with :root and .dark blocks",
-        "Output includes 11-shade primary scale (50-950) in OKLCH",
-        "Output includes neutral scale with subtle brand hue tint",
-        "All 14 semantic tokens mapped (background, foreground, card, primary, muted, border, etc.)",
-        "Script is executable and handles invalid input gracefully"
+        "commands/codegen-wiki.md exists",
+        "Generates Mermaid component diagram",
+        "Extracts env var references",
+        "Output to docs/architecture.md"
       ],
       "files": [
-        "scripts/generate-palette.sh",
-        "scripts/oklch-math.mjs"
+        "commands/codegen-wiki.md"
       ],
       "depends_on": [],
       "attempts": 0,
@@ -49,20 +47,20 @@
     },
     {
       "id": 3,
-      "title": "Create design-compliance hook",
-      "description": "Write hooks/design-compliance.sh \u2014 PreToolUse hook that blocks writes containing hardcoded hex colors (#xxx), arbitrary pixel values, or inline color styles in .tsx and .css files. Allows hex values only in design token definition files (globals.css :root block).",
+      "title": "Add accessibility audit hook",
+      "description": "hooks/accessibility-audit.sh \u2014 warns on missing alt, labels, accessible names in .tsx files.",
       "status": "completed",
-      "priority": "P0",
-      "risk": "medium",
+      "priority": "P1",
+      "risk": "low",
       "acceptance": [
-        "hooks/design-compliance.sh blocks a file containing 'color: #3b82f6' (exits non-zero)",
-        "hooks/design-compliance.sh passes a file using 'text-primary' or 'var(--primary)'",
-        "Allows hex values inside globals.css :root and .dark blocks (token definitions)",
-        "Allows hex values in comments and string literals",
-        "Hook registered in settings.json as PreToolUse on Write/Edit for *.tsx, *.css"
+        "Warns on img without alt",
+        "Warns on button without text/aria-label",
+        "Warns on input without label",
+        "Registered in settings.json"
       ],
       "files": [
-        "hooks/design-compliance.sh"
+        "hooks/accessibility-audit.sh",
+        "config/settings.json"
       ],
       "depends_on": [],
       "attempts": 0,
@@ -70,19 +68,18 @@
     },
     {
       "id": 4,
-      "title": "Create SSR safety check hook",
-      "description": "Write hooks/ssr-safety-check.sh \u2014 PostToolUse hook that warns when Framer Motion initial={{ opacity: 0 }} is used without whileInView, or when above-fold components use opacity-hiding initial states. Checks for noscript fallback in layout.",
+      "title": "Create visual-regression command",
+      "description": "commands/visual-regression.md \u2014 captures baselines, compares against them, reports diff per page.",
       "status": "completed",
-      "priority": "P0",
+      "priority": "P2",
       "risk": "low",
       "acceptance": [
-        "hooks/ssr-safety-check.sh warns on 'initial={{ opacity: 0' in .tsx files",
-        "Does NOT warn on 'initial={false}' (the correct pattern)",
-        "Checks for noscript style fallback in layout.tsx",
-        "Hook registered in settings.json as PostToolUse on Write/Edit for *.tsx"
+        "Command captures baselines on first run",
+        "Compares and reports diff on subsequent runs",
+        "Supports 3 viewports"
       ],
       "files": [
-        "hooks/ssr-safety-check.sh"
+        "commands/visual-regression.md"
       ],
       "depends_on": [],
       "attempts": 0,
@@ -90,181 +87,22 @@
     },
     {
       "id": 5,
-      "title": "Create dead-link check hook",
-      "description": "Write hooks/dead-link-check.sh \u2014 PostToolUse hook that scans written .tsx files for href='#' or href='' links and warns. Also checks for empty onClick handlers on anchor tags.",
-      "status": "completed",
-      "priority": "P1",
-      "risk": "low",
-      "acceptance": [
-        "hooks/dead-link-check.sh warns on href='#' in .tsx files",
-        "hooks/dead-link-check.sh warns on href='' (empty string) in .tsx files",
-        "Does NOT warn on href='/#section' (anchor links with path)",
-        "Hook registered in settings.json as PostToolUse on Write/Edit for *.tsx"
-      ],
-      "files": [
-        "hooks/dead-link-check.sh"
-      ],
-      "depends_on": [],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 6,
-      "title": "Create typecheck-on-save hook",
-      "description": "Write hooks/typecheck-on-save.sh \u2014 PostToolUse hook that runs tsc --noEmit on the project after TypeScript file writes. Captures and reports errors with file:line format.",
-      "status": "completed",
-      "priority": "P1",
-      "risk": "medium",
-      "acceptance": [
-        "hooks/typecheck-on-save.sh runs tsc --noEmit and exits non-zero on type errors",
-        "Error output includes file path and line number",
-        "Runs only for .ts and .tsx file writes (not .md, .json, etc.)",
-        "Completes within 10 seconds for typical projects",
-        "Hook registered in settings.json as PostToolUse on Write/Edit for *.ts, *.tsx"
-      ],
-      "files": [
-        "hooks/typecheck-on-save.sh"
-      ],
-      "depends_on": [],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 7,
-      "title": "Enhance web-shadcn-v4 template with premium defaults",
-      "description": "Update config/stacks/web-shadcn-v4.yaml to include premium component set: glass-card CSS utility, gradient-text utility, product-shadow, hero-glow, noise texture, marquee animation, cursor-blink. Add these to the template's globals.css scaffold section.",
-      "status": "completed",
-      "priority": "P0",
-      "risk": "low",
-      "acceptance": [
-        "web-shadcn-v4.yaml includes premium CSS utilities in its globals.css scaffold",
-        "Template includes glass-card, gradient-text, product-shadow, hero-glow utilities",
-        "Template includes marquee and cursor-blink keyframe animations",
-        "Template references premium-builder skill in its conventions section"
-      ],
-      "files": [
-        "config/stacks/web-shadcn-v4.yaml"
-      ],
-      "depends_on": [
-        1
-      ],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 8,
-      "title": "Register all new hooks in settings.json",
-      "description": "Add all 4 new hooks (design-compliance, ssr-safety-check, dead-link-check, typecheck-on-save) to the Claude Code settings.json hooks configuration. Ensure they have correct event types, matchers, and action_on_fail settings.",
-      "status": "completed",
-      "priority": "P0",
-      "risk": "high",
-      "acceptance": [
-        "All 4 hooks are listed in settings.json under the hooks array",
-        "design-compliance is PreToolUse with action block",
-        "ssr-safety-check is PostToolUse with action warn",
-        "dead-link-check is PostToolUse with action warn",
-        "typecheck-on-save is PostToolUse with action warn",
-        "Existing hooks are preserved (not overwritten)"
-      ],
-      "files": [
-        "config/settings.json"
-      ],
-      "depends_on": [
-        3,
-        4,
-        5,
-        6
-      ],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 9,
-      "title": "Enhance /clone-app with source repo discovery and visual scoring",
-      "description": "Update commands/clone-app.md to add Phase 1.3 (template/source repo discovery via WebSearch), Phase 5 visual comparison scoring with VisualComparisonResult JSON output, and auto-fix iteration loop (3 rounds). Add similarity score to the clone report.",
-      "status": "completed",
-      "priority": "P0",
-      "risk": "medium",
-      "acceptance": [
-        "clone-app.md includes Step 1.3: Template Discovery with WebSearch for source repos",
-        "clone-app.md Phase 5 includes visual comparison scoring outputting JSON",
-        "clone-app.md Phase 5 includes fix iteration loop with max 3 rounds",
-        "Clone report includes 'Visual accuracy: ~XX%' line"
-      ],
-      "files": [
-        "commands/clone-app.md"
-      ],
-      "depends_on": [
-        1
-      ],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 10,
-      "title": "Enhance /new-app with palette generation and premium defaults",
-      "description": "Update commands/new-app.md to call generate-palette.sh when user provides a brand color, apply premium CSS utilities from the premium-builder skill, and include standard E2E smoke test in every new project.",
-      "status": "completed",
-      "priority": "P1",
-      "risk": "low",
-      "acceptance": [
-        "new-app.md includes step to ask for brand color and run generate-palette.sh",
-        "new-app.md includes step to add premium CSS utilities to globals.css",
-        "new-app.md includes step to generate standard E2E smoke test",
-        "new-app.md references premium-builder skill for component generation"
-      ],
-      "files": [
-        "commands/new-app.md"
-      ],
-      "depends_on": [
-        1,
-        2
-      ],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 11,
-      "title": "Create standard E2E smoke test generator",
-      "description": "Write commands/generate-tests.md enhancement or a new utility that generates a standard Playwright E2E smoke test for any project. Tests: all pages load, no console errors, responsive at 390px, all links valid, accessibility basics.",
-      "status": "completed",
-      "priority": "P1",
-      "risk": "low",
-      "acceptance": [
-        "Generated E2E test checks all pages load with content",
-        "Generated test checks no console errors on any page",
-        "Generated test checks responsive at 390px (no horizontal scroll)",
-        "Generated test checks all links have valid href (no '#')",
-        "Test template is reusable across all project types"
-      ],
-      "files": [
-        "commands/generate-tests.md"
-      ],
-      "depends_on": [],
-      "attempts": 0,
-      "max_attempts": 3
-    },
-    {
-      "id": 12,
-      "title": "Integration verification \u2014 test full pipeline",
-      "description": "Run /new-app with the enhanced pipeline to verify: palette generation works, premium CSS utilities are included, hooks fire correctly, E2E tests are generated. Create a test project, verify all acceptance criteria from M1, and clean up.",
+      "title": "Commit, push, and send update",
+      "description": "Commit all M2-M3 work, push, Telegram update.",
       "status": "pending",
       "priority": "P0",
-      "risk": "high",
+      "risk": "low",
       "acceptance": [
-        "A test project generated with /new-app includes OKLCH design tokens",
-        "Hooks fire correctly: design-compliance blocks hardcoded hex",
-        "Generated project has premium CSS utilities (glass-card, gradient-text)",
-        "Generated project has standard E2E smoke test",
-        "All existing commands still work (no regressions)"
+        "Committed",
+        "Pushed",
+        "Telegram sent"
       ],
       "files": [],
       "depends_on": [
-        7,
-        8,
-        9,
-        10,
-        11
+        1,
+        2,
+        3,
+        4
       ],
       "attempts": 0,
       "max_attempts": 3

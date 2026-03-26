@@ -1,24 +1,32 @@
 # SaaS Complete Stack Template
-# Next.js 15 + Supabase Auth + Stripe + Resend + shadcn/ui + RBAC + Teams + Admin
+# Next.js 15 + Clerk Auth + Drizzle ORM + Neon + Stripe + Resend + shadcn/ui + RBAC + Teams + Admin
+# Also ships Supabase client utilities for teams that prefer Supabase for data.
 
 name: saas-complete
-description: "Next.js 15 + Supabase Auth (email+OAuth) + Stripe + Resend + shadcn/ui + RBAC + Teams + Admin dashboard"
+description: "Next.js 15 + Clerk Auth + Drizzle ORM (Neon) + Stripe + Resend + shadcn/ui + RBAC + Teams + Admin dashboard"
 short_label: "saas-complete"
 
 init_commands:
   - "pnpm create next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*'"
   - "pnpm add @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js resend zod"
   - "pnpm add class-variance-authority clsx tailwind-merge lucide-react"
+  - "pnpm add @clerk/nextjs"
+  - "pnpm add drizzle-orm @neondatabase/serverless"
+  - "pnpm add -D drizzle-kit"
   - "pnpm add -D @types/node vitest @vitejs/plugin-react"
+  - "pnpm add -D @playwright/test"
   - "pnpm dlx shadcn@latest init --defaults"
 
 directories:
   - src/app/(auth)
+  - src/app/(auth)/sign-in/[[...sign-in]]
+  - src/app/(auth)/sign-up/[[...sign-up]]
   - src/app/(dashboard)
   - src/app/(admin)
   - src/app/(admin)/users
   - src/app/api/stripe
   - src/app/api/webhooks
+  - src/app/api/webhooks/stripe
   - src/components/ui
   - src/components/billing
   - src/components/admin
@@ -26,19 +34,436 @@ directories:
   - src/lib/supabase
   - src/services
   - src/types
+  - src/actions
   - src/__tests__
+  - db
+  - e2e
 
 starter_files:
+  # ─── Clerk Auth ──────────────────────────────────────────────────────────────
+
+  src/middleware.ts: |
+    import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+    import { NextResponse } from "next/server";
+
+    // Routes that do NOT require authentication.
+    const isPublicRoute = createRouteMatcher([
+      "/",
+      "/sign-in(.*)",
+      "/sign-up(.*)",
+      "/api/webhooks(.*)",
+    ]);
+
+    // Routes that require the admin role specifically.
+    const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+
+    export default clerkMiddleware(async (auth, req) => {
+      if (!isPublicRoute(req)) {
+        await auth.protect();
+      }
+
+      if (isAdminRoute(req)) {
+        const { sessionClaims } = await auth();
+        const role = (sessionClaims?.metadata as { role?: string } | undefined)?.role;
+        if (role !== "admin") {
+          return NextResponse.redirect(new URL("/dashboard", req.url));
+        }
+      }
+    });
+
+    export const config = {
+      matcher: [
+        "/((?!_next/static|_next/image|favicon.ico).*)",
+        "/(api|trpc)(.*)",
+      ],
+    };
+
+  src/app/(auth)/sign-in/[[...sign-in]]/page.tsx: |
+    import { SignIn } from "@clerk/nextjs";
+
+    export default function SignInPage() {
+      return (
+        <main className="flex min-h-screen items-center justify-center bg-background">
+          <SignIn
+            appearance={{
+              elements: {
+                card: "product-shadow rounded-2xl",
+                formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground",
+              },
+            }}
+          />
+        </main>
+      );
+    }
+
+  src/app/(auth)/sign-up/[[...sign-up]]/page.tsx: |
+    import { SignUp } from "@clerk/nextjs";
+
+    export default function SignUpPage() {
+      return (
+        <main className="flex min-h-screen items-center justify-center bg-background">
+          <SignUp
+            appearance={{
+              elements: {
+                card: "product-shadow rounded-2xl",
+                formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground",
+              },
+            }}
+          />
+        </main>
+      );
+    }
+
+  src/app/layout.tsx: |
+    import type { Metadata } from "next";
+    import { ClerkProvider } from "@clerk/nextjs";
+    import { Inter } from "next/font/google";
+    import "./globals.css";
+
+    const inter = Inter({ subsets: ["latin"] });
+
+    export const metadata: Metadata = {
+      title: "SaaS App",
+      description: "Your SaaS application",
+    };
+
+    export default function RootLayout({
+      children,
+    }: {
+      children: React.ReactNode;
+    }) {
+      return (
+        <ClerkProvider>
+          <html lang="en" suppressHydrationWarning>
+            <body className={inter.className}>{children}</body>
+          </html>
+        </ClerkProvider>
+      );
+    }
+
+  # ─── Drizzle ORM ─────────────────────────────────────────────────────────────
+
+  db/schema.ts: |
+    import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+
+    export const users = pgTable("users", {
+      id: uuid("id").defaultRandom().primaryKey(),
+      email: text("email").notNull().unique(),
+      name: text("name"),
+      role: text("role", { enum: ["admin", "member", "viewer"] })
+        .notNull()
+        .default("member"),
+      clerkId: text("clerk_id").notNull().unique(),
+      createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+      updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    });
+
+    export type User = typeof users.$inferSelect;
+    export type NewUser = typeof users.$inferInsert;
+
+  db/index.ts: |
+    import { neon } from "@neondatabase/serverless";
+    import { drizzle } from "drizzle-orm/neon-http";
+    import * as schema from "./schema";
+
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is not set");
+    }
+
+    const sql = neon(process.env.DATABASE_URL);
+    export const db = drizzle(sql, { schema });
+
+  drizzle.config.ts: |
+    import type { Config } from "drizzle-kit";
+
+    export default {
+      schema: "./db/schema.ts",
+      out: "./drizzle",
+      dialect: "postgresql",
+      dbCredentials: {
+        url: process.env.DATABASE_URL!,
+      },
+    } satisfies Config;
+
+  # ─── Stripe Actions ───────────────────────────────────────────────────────────
+
+  src/actions/billing.ts: |
+    "use server";
+    import { auth } from "@clerk/nextjs/server";
+    import { stripe } from "@/lib/stripe";
+    import { env } from "@/lib/env";
+    import { db } from "../../db";
+    import { users } from "../../db/schema";
+    import { eq } from "drizzle-orm";
+    import { redirect } from "next/navigation";
+
+    export async function createCheckoutSession(priceId: string): Promise<void> {
+      const { userId } = await auth();
+      if (!userId) throw new Error("Unauthorized");
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.clerkId, userId))
+        .limit(1);
+
+      if (!user) throw new Error("User not found");
+
+      // Customers should already exist via Stripe webhook (customer.created).
+      // As a fallback, create a new customer here.
+      let customerId = (user as unknown as { stripeCustomerId?: string }).stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({ email: user.email });
+        customerId = customer.id;
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: "subscription",
+        success_url: `${env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`,
+        cancel_url: `${env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+      });
+
+      redirect(session.url!);
+    }
+
+    export async function createPortalSession(): Promise<void> {
+      const { userId } = await auth();
+      if (!userId) throw new Error("Unauthorized");
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.clerkId, userId))
+        .limit(1);
+
+      const customerId = (user as unknown as { stripeCustomerId?: string }).stripeCustomerId;
+      if (!customerId) throw new Error("No billing account found");
+
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+      });
+
+      redirect(session.url);
+    }
+
+  # ─── Premium CSS (from premium-builder skill) ────────────────────────────────
+
+  src/app/globals.css: |
+    @import "tailwindcss";
+
+    @theme {
+      --color-primary: oklch(0.208 0.042 265.755);
+      --color-primary-foreground: oklch(0.984 0.003 247.858);
+      --color-secondary: oklch(0.968 0.007 247.896);
+      --color-secondary-foreground: oklch(0.208 0.042 265.755);
+      --color-muted: oklch(0.968 0.007 247.896);
+      --color-muted-foreground: oklch(0.554 0.046 257.417);
+      --color-accent: oklch(0.968 0.007 247.896);
+      --color-accent-foreground: oklch(0.208 0.042 265.755);
+      --color-destructive: oklch(0.577 0.245 27.325);
+      --color-destructive-foreground: oklch(0.984 0.003 247.858);
+      --color-background: oklch(1 0 0);
+      --color-foreground: oklch(0.145 0.042 265.755);
+      --color-card: oklch(1 0 0);
+      --color-card-foreground: oklch(0.145 0.042 265.755);
+      --color-popover: oklch(1 0 0);
+      --color-popover-foreground: oklch(0.145 0.042 265.755);
+      --color-border: oklch(0.921 0.013 255.508);
+      --color-input: oklch(0.921 0.013 255.508);
+      --color-ring: oklch(0.208 0.042 265.755);
+      --radius-sm: 0.25rem;
+      --radius-md: 0.375rem;
+      --radius-lg: 0.5rem;
+      --radius-xl: 0.75rem;
+    }
+
+    @layer base {
+      *,
+      *::before,
+      *::after {
+        border-color: var(--color-border);
+      }
+
+      body {
+        background-color: var(--color-background);
+        color: var(--color-foreground);
+      }
+
+      /* Respect user motion preferences */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    }
+
+    /* ─── Premium Visual Utilities (from premium-builder skill) ─── */
+
+    .glass-card {
+      background: oklch(1 0 0 / 70%);
+      backdrop-filter: blur(20px);
+      border: 1px solid oklch(0 0 0 / 6%);
+    }
+    .dark .glass-card {
+      background: oklch(0.15 0 0 / 60%);
+      border-color: oklch(1 0 0 / 8%);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, oklch(0.15 0 0) 0%, oklch(0.45 0 0) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-glow {
+      position: relative;
+    }
+    .hero-glow::before {
+      content: "";
+      position: absolute;
+      inset: -20% -10%;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, oklch(var(--color-primary) / 12%), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-grid {
+      background-image: linear-gradient(to right, oklch(0 0 0 / 3%) 1px, transparent 1px),
+        linear-gradient(to bottom, oklch(0 0 0 / 3%) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .product-shadow {
+      box-shadow:
+        0 0 0 1px oklch(0 0 0 / 8%),
+        0 4px 6px oklch(0 0 0 / 4%),
+        0 12px 24px oklch(0 0 0 / 8%),
+        0 40px 80px oklch(0 0 0 / 12%);
+    }
+
+    .cta-gradient {
+      background: linear-gradient(135deg, oklch(0.12 0.01 240) 0%, oklch(0.08 0 0) 40%, oklch(0.10 0.015 260) 100%);
+    }
+
+    .noise::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    @keyframes cursor-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .cursor-blink { animation: cursor-blink 1.1s step-end infinite; }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes marquee-reverse {
+      0% { transform: translateX(-50%); }
+      100% { transform: translateX(0); }
+    }
+
+    /* Noscript fallback for Framer Motion */
+    @media (scripting: none) {
+      [style*="opacity: 0"], [style*="opacity:0"] {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+
+  # ─── E2E tests (Playwright) ───────────────────────────────────────────────────
+
+  e2e/smoke.spec.ts: |
+    import { test, expect } from "@playwright/test";
+
+    test.describe("Smoke tests", () => {
+      test("homepage loads", async ({ page }) => {
+        await page.goto("/");
+        await expect(page).toHaveTitle(/.+/);
+        await expect(page.locator("body")).toBeVisible();
+      });
+
+      test("sign-in page loads", async ({ page }) => {
+        await page.goto("/sign-in");
+        await expect(page.locator("body")).toBeVisible();
+        // Clerk renders a form — check at least one input is present.
+        await expect(page.locator("input").first()).toBeVisible();
+      });
+
+      test("unauthenticated access to /dashboard redirects to sign-in", async ({ page }) => {
+        await page.goto("/dashboard");
+        await expect(page).toHaveURL(/sign-in/);
+      });
+    });
+
+  playwright.config.ts: |
+    import { defineConfig, devices } from "@playwright/test";
+
+    export default defineConfig({
+      testDir: "./e2e",
+      fullyParallel: true,
+      forbidOnly: !!process.env.CI,
+      retries: process.env.CI ? 2 : 0,
+      workers: process.env.CI ? 1 : undefined,
+      reporter: "html",
+      use: {
+        baseURL: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+        trace: "on-first-retry",
+      },
+      projects: [
+        {
+          name: "chromium",
+          use: { ...devices["Desktop Chrome"] },
+        },
+      ],
+      webServer: {
+        command: "pnpm dev",
+        url: "http://localhost:3000",
+        reuseExistingServer: !process.env.CI,
+      },
+    });
+
+  # ─── Core lib files ───────────────────────────────────────────────────────────
+
   src/lib/env.ts: |
     import { z } from "zod";
 
     const envSchema = z.object({
-      NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+      // Clerk
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().startsWith("pk_"),
+      CLERK_SECRET_KEY: z.string().startsWith("sk_"),
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().default("/sign-in"),
+      NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().default("/sign-up"),
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: z.string().default("/dashboard"),
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: z.string().default("/dashboard"),
+      // Database (Neon + Drizzle)
+      DATABASE_URL: z.string().url(),
+      // Supabase (optional — for teams using Supabase for data)
+      NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
+      // Stripe
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_"),
       STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
       STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
+      // Email
       RESEND_API_KEY: z.string().startsWith("re_"),
+      // App
       NEXT_PUBLIC_APP_URL: z.string().url(),
     });
 
@@ -790,6 +1215,14 @@ claude_md: |
   - `src/services/usage.ts` — usage metering (trackUsage, getUsage)
   - `src/lib/` — Supabase client (server + browser), Stripe, Resend
   - `src/types/roles.ts` — Role enum and permission matrix
+
+  ## Design System (premium-builder skill)
+  - ALWAYS read `~/.claude/skills/premium-builder/SKILL.md` before generating UI
+  - Use OKLCH design tokens from globals.css — NEVER hardcode hex colors
+  - Use premium utilities: glass-card, gradient-text, hero-glow, product-shadow
+  - SSR-safe animations: initial={false} for above-fold, whileInView for below-fold
+  - Mobile-first: start at 390px, add breakpoints up
+  - Touch targets: minimum 44px on all interactive elements
 
   ## Conventions
   - All API responses use envelope: `{ success, data, error, meta }`
