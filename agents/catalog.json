@@ -326,6 +326,17 @@
       "teams": []
     },
     {
+      "name": "accessibility-auditor",
+      "file": "agents/core/design/accessibility-auditor.md",
+      "source": "core",
+      "department": "design",
+      "description": "Audits projects for WCAG 2.2 AA compliance using static analysis, runtime axe-core checks, and manual requirement validation",
+      "model_tier": "sonnet",
+      "capabilities": ["wcag-audit", "axe-core", "eslint-jsx-a11y", "focus-management", "aria-validation", "color-contrast", "keyboard-navigation"],
+      "tools": ["Read", "Write", "Bash", "Grep", "Glob"],
+      "teams": ["frontend", "review"]
+    },
+    {
       "name": "brand-guardian",
       "file": "agents/core/design/brand-guardian.md",
       "source": "core",
