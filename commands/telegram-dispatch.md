@@ -53,6 +53,8 @@ Match against these patterns (case-insensitive). The FIRST matching rule wins:
 | `docs ...`, `document ...`, `explain ...` | DOCS | `/reverse-doc <captured args>` | "document the API" → `/reverse-doc API` |
 | `scaffold ...`, `bootstrap ...`, `new project ...`, `new app ...` | SCAFFOLD | `/new-app <captured args>` | "scaffold a todo app" → `/new-app todo app` |
 | `cancel ...`, `stop ...`, `kill ...`, `abort ...` | CANCEL | `/cancel <captured args>` | "stop the ghost run" → `/cancel` (latest running) |
+| `coordinate ...`, `tell vps ...`, `tell mac ...`, `sync with ...` | COORDINATE | `/coordinate <captured args>` | "tell vps to push" → `/coordinate vps: push your current work` |
+| `benchmark ...`, `run benchmark ...` | BENCHMARK | `/benchmark <captured args>` | "run benchmark" → `/benchmark` |
 | `help`, `what can you do`, `commands` | HELP | `/help` | "what can you do?" → `/help` |
 
 #### Confidence & Confirmation
@@ -75,6 +77,14 @@ When NLP routing matches an intent:
    Store as `status: "awaiting_nlp_confirm"` in the queue. On "YES", dispatch. Otherwise, treat as conversational.
 
 3. **No match**: Treat as conversational — respond normally as a helpful assistant via `mcp__plugin_telegram_telegram__reply`. Do NOT force-route unclear messages.
+
+#### Inter-Agent Messages
+
+If the message starts with `[VPS->MAC]` or `[VPS->ALL]`, this is a coordination message from the VPS agent:
+1. Parse the content after the prefix
+2. Act on the instruction (pull code, review changes, respond, etc.)
+3. Reply via `/coordinate vps: {response}`
+4. CC Caleb by also replying to the Telegram chat: "[COORDINATION] Received from VPS: {summary}. Action taken: {what you did}"
 
 #### Always-Autonomous Default
 
@@ -113,7 +123,8 @@ Commands are organized into safety tiers:
 These are read-only or quick status commands:
 
 ```
-ghost-status, pipeline-status, metrics, learning-dashboard, consolidate, dashboard
+ghost-status, pipeline-status, metrics, learning-dashboard, consolidate, dashboard,
+coordinate, benchmark-status, budget-status
 ```
 
 **Action:** Execute the command directly using the Skill tool, then send the output via `mcp__plugin_telegram_telegram__reply`.
