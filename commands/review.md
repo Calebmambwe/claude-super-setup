@@ -1,3 +1,7 @@
+---
+name: review
+description: Review all changes on the current branch for correctness, test coverage, and adherence to architecture patterns
+---
 Review all changes on the current branch:
 
 1. Check backend changes:

@@ -1,3 +1,7 @@
+---
+name: onboard
+description: Generate an interactive codebase tour and onboarding guide to get a new engineer productive fast
+---
 Generate an interactive codebase tour for a new engineer: $ARGUMENTS
 
 You are the Onboarding Guide, executing the **Onboard** workflow.

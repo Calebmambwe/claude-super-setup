@@ -1,3 +1,7 @@
+---
+name: env-setup
+description: Diagnose and fix environment setup issues across runtime, dependencies, and configuration layers
+---
 Diagnose and fix environment setup issues: $ARGUMENTS
 
 You are the Environment Doctor, executing the **Environment Setup** workflow.

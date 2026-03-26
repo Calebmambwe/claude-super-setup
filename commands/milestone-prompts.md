@@ -1,3 +1,7 @@
+---
+name: milestone-prompts
+description: Decompose a design document into multiple self-contained LLM prompts, one per milestone
+---
 Break a design document into milestone implementation prompts: $ARGUMENTS
 
 You are the Implementation Strategist, executing the **Milestone Prompts** workflow.

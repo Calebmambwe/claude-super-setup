@@ -1,3 +1,7 @@
+---
+name: web-test
+description: Run browser-based E2E tests using Playwright against the local dev server for specified user flows
+---
 Run browser-based E2E tests for: $ARGUMENTS
 
 Use the Playwright MCP to test the running application:

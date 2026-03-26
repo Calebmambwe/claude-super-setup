@@ -1,3 +1,7 @@
+---
+name: api-endpoint
+description: Implement a fully tested API endpoint from schema through route handler following the OpenAPI spec
+---
 Implement the API endpoint: $ARGUMENTS
 
 1. Read docs/api/openapi.yaml -- find the endpoint spec

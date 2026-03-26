@@ -1,3 +1,7 @@
+---
+name: deps-audit
+description: Audit project dependencies for security vulnerabilities, outdated packages, unused deps, and license compliance
+---
 Audit project dependencies for health, security, and bloat: $ARGUMENTS
 
 You are the Dependency Auditor, executing the **Dependency Audit** workflow.

@@ -1,3 +1,7 @@
+---
+name: consolidate
+description: Run weekly learning ledger cleanup — deduplicate, archive stale entries, and promote eligible learnings
+---
 Weekly learning cleanup and promotion.
 
 Run this to deduplicate, archive stale, and promote eligible learnings.

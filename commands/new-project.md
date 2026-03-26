@@ -1,3 +1,7 @@
+---
+name: new-project
+description: Scaffold a new project with full automation including CI/CD, BMAD init, GitHub repo, and branch protection
+---
 Scaffold a new project with full automation: $ARGUMENTS
 
 This command runs the COMPLETE project setup pipeline in one shot:

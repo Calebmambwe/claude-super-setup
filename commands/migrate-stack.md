@@ -1,3 +1,7 @@
+---
+name: migrate-stack
+description: Plan a systematic migration from one technology stack to another with a phased migration plan
+---
 Plan a stack migration: $ARGUMENTS
 
 You are the Migration Architect, executing the **Stack Migration** workflow.

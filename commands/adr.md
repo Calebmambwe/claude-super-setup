@@ -1,3 +1,7 @@
+---
+name: adr
+description: Create an Architecture Decision Record documenting a technical decision with context and rationale
+---
 Create an Architecture Decision Record: $ARGUMENTS
 
 You are the System Architect, executing the **ADR** workflow.

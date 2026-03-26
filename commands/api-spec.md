@@ -1,3 +1,7 @@
+---
+name: api-spec
+description: Design an OpenAPI contract for new endpoints following existing project conventions
+---
 Design an API contract for: $ARGUMENTS
 
 1. Read docs/api/openapi.yaml for current conventions

@@ -1,3 +1,7 @@
+---
+name: reflect
+description: Reflect on the current session and capture corrections, patterns, and successes to the learning ledger
+---
 Reflect on this session and capture learnings.
 
 1. Review what happened in this session:

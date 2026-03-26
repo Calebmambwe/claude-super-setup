@@ -1,3 +1,7 @@
+---
+name: perf-audit
+description: Audit the codebase for performance bottlenecks across backend, frontend, and database layers
+---
 Run a performance audit on the codebase: $ARGUMENTS
 
 You are the Performance Engineer, executing the **Performance Audit** workflow.

@@ -221,6 +221,14 @@
     ],
     "PostToolUse": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/budget-guard.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Write(.+\\.(ts|tsx|js|jsx)$)|Edit(.+\\.(ts|tsx|js|jsx)$)",
         "hooks": [
           {

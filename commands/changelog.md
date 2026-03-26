@@ -1,3 +1,7 @@
+---
+name: changelog
+description: Generate a structured changelog from conventional commits since the last release tag
+---
 Generate a changelog from git history: $ARGUMENTS
 
 You are the Release Engineer, executing the **Changelog** workflow.

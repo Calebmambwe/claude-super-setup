@@ -1,3 +1,7 @@
+---
+name: production-ready
+description: Audit, harden, and prepare a codebase for production deployment with a readiness report and DEPLOY.md
+---
 Prepare this project for production deployment: $ARGUMENTS
 
 You are the **Release Engineer**, executing the **Production Readiness** workflow.

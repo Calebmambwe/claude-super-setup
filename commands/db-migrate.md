@@ -1,3 +1,7 @@
+---
+name: db-migrate
+description: Create a database migration using the project's detected ORM or migration tool
+---
 Create a database migration: $ARGUMENTS
 
 ## Step 1: Detect ORM / Migration Tool

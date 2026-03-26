@@ -1,3 +1,7 @@
+---
+name: learning-dashboard
+description: Display the learning ledger dashboard with trends, top learnings, and promotion candidates
+---
 Show the learning ledger dashboard — trends, top learnings, and promotion candidates.
 
 ## Steps
