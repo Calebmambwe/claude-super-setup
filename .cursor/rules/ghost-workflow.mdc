@@ -1,0 +1,73 @@
+---
+description: " Fully autonomous overnight pipeline launcher — validates pre-flight, creates branch, dispatches pipeline. Invoke by asking to follow the /ghost workflow."
+alwaysApply: true
+---
+
+
+# Ghost Mode Workflow
+
+Launches a fully autonomous, self-healing pipeline. No human gates — guardrails replace manual approval.
+
+## Configuration
+
+Parse from the user's request:
+- **Feature description** (required)
+- **Trust level**: conservative (default), balanced, or aggressive
+- **Budget**: USD limit (default: 20)
+- **Max hours**: wall-clock limit (default: 8)
+- **Max tasks**: task count limit (default: 10)
+
+## Pre-flight Checks
+
+Run ALL checks. Stop if any critical check fails.
+
+**Critical:**
+1. API key is set (ANTHROPIC_API_KEY)
+2. GitHub CLI authenticated (`gh auth status`)
+3. Disk space >= 2GB
+4. Not on main/master branch
+5. `jq` available for JSON manipulation
+
+**Advisory (warn but continue):**
+1. No existing ghost session running
+
+## Create Branch
+
+```
+feat/ghost-{YYYYMMDD-HHMM}
+```
+
+Push to remote with tracking.
+
+## Write Config
+
+Write ghost-config.json with feature, trust, budget, hours, max_tasks, branch, and timestamps.
+
+## Dispatch Execution
+
+### Option A: Cursor Cloud Agent (Recommended)
+
+Launch a Cloud Agent at cursor.com/agents:
+- Provide the ghost-config.json context
+- The Cloud Agent runs on an isolated VM with automatic crash recovery
+- Video recording of the entire session is attached to the PR
+- No local resources consumed — close your laptop and sleep
+
+### Option B: Local Execution (Claude Code Terminal)
+
+If running locally via Claude Code in Cursor's terminal:
+- The ghost-run workflow handles the internal pipeline
+- Trust-level guardrails auto-approve or block based on risk
+- Pipeline: /plan → auto-approve → /auto-tasks → auto-approve → /auto-ship
+
+## Stopping Ghost Mode
+
+Create `~/.claude/ghost-stop` to signal a graceful stop at the next checkpoint.
+
+## Post-Completion
+
+The pipeline creates a PR with:
+- All implemented tasks
+- Test results
+- Code review comments
+- Video recording (Cloud Agent only)

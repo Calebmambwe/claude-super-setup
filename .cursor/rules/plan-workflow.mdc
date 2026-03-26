@@ -1,0 +1,57 @@
+---
+description: " 3-tier planning workflow — Quick Plan / Feature Spec / Full Pipeline based on task scope. Invoke by asking to follow the /plan workflow."
+alwaysApply: true
+---
+
+
+# Planning Workflow
+
+Use this workflow when the user asks you to plan a feature, architecture, or implementation.
+
+## Step 0: Research Gate
+
+Before planning, check if research is needed:
+- Task references a library/framework not yet verified → use context7 MCP
+- Task involves choosing between 2+ technical options
+- Task touches an external API
+- Task is a version upgrade or migration
+
+If YES: research first using context7 MCP, then proceed.
+
+## Step 0.5: Resource Audit
+
+Before routing, audit resources:
+- If task involves UI: check for design system rules
+- If task is a new project: check for matching stack templates
+- If project has AGENTS.md: read it for project-specific patterns
+- Search for existing implementations before creating new ones
+
+## Routing Logic
+
+Assess scope and route to the right depth:
+
+### Quick Plan (3-10 files, clear task)
+- Explore codebase, identify affected files, map dependencies
+- Output: implementation plan with file-by-file changes
+
+### Feature Spec (new feature, unclear scope)
+- Specify requirements, clarify edge cases, plan architecture
+- Output: spec + plan + task list
+
+### Full Pipeline (major feature or new product)
+- Full BMAD method: product brief, PRD, architecture, sprint planning
+- For Cursor: consider launching a Cloud Agent for this — it can run the full pipeline on an isolated VM
+- Pause after each phase for review
+
+### How to Decide
+1. "Do we know WHAT to build?" → If no: Full Pipeline
+2. "Do we know HOW to build it?" → If no: Feature Spec
+3. "Do we just need to figure out WHICH FILES to change?" → Quick Plan
+
+## Output
+
+Every plan MUST include:
+- Files to create/modify (with paths)
+- Dependency order
+- Risk assessment
+- Mermaid architecture diagrams (when applicable)

@@ -1,0 +1,67 @@
+---
+description: " Internal gate-free pipeline for Ghost Mode — auto-approves against trust guardrails. Works in both claude -p and Cursor Cloud Agent."
+alwaysApply: true
+---
+
+
+# Ghost Run Workflow (Internal)
+
+This is the internal pipeline executed during Ghost Mode. It runs inside `claude -p` (local) or inside a Cursor Cloud Agent (remote VM). Both environments are supported.
+
+Do NOT invoke directly — use the /ghost workflow to launch.
+
+## Step 1: Load Config
+
+Read ghost-config.json and extract: feature, trust level, max_tasks, project_dir.
+
+## Step 1.5: Resource Audit
+
+Ghost mode is NOT exempt from consistency checks:
+- Check for matching stack templates
+- Check if relevant skills apply (design system, backend architecture, docker)
+- Read AGENTS.md if present
+- Search for existing components to reuse
+
+## Step 2: Plan
+
+Run the /plan workflow. This produces a Quick Plan, Feature Spec, or Full Pipeline route.
+
+## Step 3: Gate 1 — Auto-approve Plan
+
+Evaluate against trust-level guardrails:
+
+| Trust | Auto-approve if | Block if |
+|-------|----------------|----------|
+| Conservative | Quick/Feature route AND tasks <= max_tasks AND no external API changes | Full Pipeline OR tasks > max_tasks |
+| Balanced | Any route AND tasks <= max_tasks * 1.5 | Full Pipeline AND tasks > max_tasks * 1.5 |
+| Aggressive | Always (warn for Full Pipeline) | Tasks > max_tasks * 2 |
+
+On block: set status to "blocked_guardrail", notify, and exit.
+
+## Step 4: Decompose into Tasks
+
+Run task decomposition to create tasks.json.
+
+## Step 5: Gate 2 — Auto-approve Tasks
+
+Evaluate tasks.json against guardrails:
+
+| Trust | Auto-approve if | Block if |
+|-------|----------------|----------|
+| Conservative | tasks <= max, 0 high-risk, files <= 30, no .env changes | Any fails |
+| Balanced | tasks <= max * 1.5, high-risk <= 2, no .env changes | high-risk > 2 OR .env changes |
+| Aggressive | tasks <= max * 2, no .env changes | Exceeds absolute limits |
+
+On block: notify and exit. .env files are NEVER auto-approved regardless of trust.
+
+## Step 6: Execute Pipeline
+
+Run the auto-ship workflow (8 phases):
+1. Pre-flight → 2. Build (Ralph Loop) → 3. Coverage gate → 4. Verify → 5. Visual verify → 6. Check → 7. Ship → 8. Self-review
+
+## Step 7: Post-completion
+
+1. Extract PR URL from the pipeline output
+2. Update config: status = "complete", pr_url = "{url}"
+3. Notify: "Ghost Mode complete! PR ready for review."
+4. If running in Cursor Cloud Agent: the video recording is automatically attached to the PR
