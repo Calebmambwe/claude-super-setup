@@ -95,10 +95,16 @@ For hero sections, use fluid type that scales smoothly between mobile and deskto
 // app/layout.tsx — load via next/font ONLY, never <link> tags
 import { Inter, JetBrains_Mono } from 'next/font/google'
 
-const sans = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
+const sans = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap', axes: ['opsz'] })
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' })
 // Apply: <html className={`${sans.variable} ${mono.variable}`}>
+// Enable in globals.css: body { font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
 ```
+
+> For comprehensive font selection, pairing rules, variable font usage, fluid type patterns, dark mode adjustments, and company font research, see the dedicated typography skill:
+> **`~/.claude/skills/typography/SKILL.md`**
+>
+> That skill covers: company font map (Stripe/Linear/Vercel/GitHub/Notion), 6 curated font stacks, next/font patterns, CSS clamp fluid scale, optical sizing, and a full anti-pattern list.
 
 ---
 
