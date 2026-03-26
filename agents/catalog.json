@@ -859,6 +859,17 @@
       "capabilities": ["acceptance-verification", "regression-detection", "scope-creep-detection", "structural-review"],
       "tools": ["Read", "Grep", "Glob", "Bash"],
       "teams": ["review", "fullstack", "backend"]
+    },
+    {
+      "name": "benchmark-runner",
+      "file": "agents/core/testing/benchmark-runner.md",
+      "source": "core",
+      "department": "testing",
+      "description": "Runs predefined regression benchmarks against Claude outputs, scores results, detects regressions, and tracks historical performance in benchmarks/history.jsonl",
+      "model_tier": "sonnet",
+      "capabilities": ["regression-benchmarking", "output-scoring", "regression-detection", "quality-tracking", "historical-comparison"],
+      "tools": ["Read", "Write", "Bash", "Grep", "Glob"],
+      "teams": []
     }
   ]
 }

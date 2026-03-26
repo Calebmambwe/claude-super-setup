@@ -1,0 +1,671 @@
+# AI RAG Complete Stack Template
+# Next.js 15 + Vercel AI SDK v4 + Multi-provider + pgvector + Document Ingestion + Rate Limiting
+
+name: ai-rag-complete
+description: "Next.js 15 + Vercel AI SDK v4 + multi-provider (OpenAI+Anthropic) + pgvector RAG + Upstash rate limiting"
+short_label: "ai-rag"
+
+init_commands:
+  - "pnpm create next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*'"
+  - "pnpm add ai @ai-sdk/openai @ai-sdk/anthropic @ai-sdk/react @supabase/supabase-js @supabase/ssr zod"
+  - "pnpm add @upstash/ratelimit @upstash/redis"
+  - "pnpm add class-variance-authority clsx tailwind-merge lucide-react"
+  - "pnpm add -D @types/node vitest @vitejs/plugin-react"
+  - "pnpm dlx shadcn@latest init --defaults"
+
+directories:
+  - src/app/api/chat
+  - src/app/api/ingest
+  - src/app/(chat)
+  - src/components/chat
+  - src/lib
+  - src/lib/supabase
+  - src/services
+  - src/types
+  - src/__tests__
+
+starter_files:
+  src/lib/env.ts: |
+    import { z } from "zod";
+
+    const envSchema = z.object({
+      NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+      OPENAI_API_KEY: z.string().startsWith("sk-"),
+      ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-"),
+      OPENAI_EMBEDDING_MODEL: z.string().default("text-embedding-3-small"),
+      UPSTASH_REDIS_REST_URL: z.string().url(),
+      UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+      // "openai" | "anthropic" — pick the default provider at deploy time
+      DEFAULT_AI_PROVIDER: z.enum(["openai", "anthropic"]).default("openai"),
+    });
+
+    export const env = envSchema.parse(process.env);
+
+  src/lib/supabase/server.ts: |
+    import { createServerClient } from "@supabase/ssr";
+    import { cookies } from "next/headers";
+
+    export async function createClient() {
+      const cookieStore = await cookies();
+      return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() { return cookieStore.getAll(); },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {}
+            },
+          },
+        }
+      );
+    }
+
+  src/lib/supabase/client.ts: |
+    import { createBrowserClient } from "@supabase/ssr";
+
+    export function createClient() {
+      return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+    }
+
+  src/lib/ai-providers.ts: |
+    import { openai } from "@ai-sdk/openai";
+    import { anthropic } from "@ai-sdk/anthropic";
+    import { env } from "./env";
+
+    // Multi-provider configuration.
+    // Add new providers here; update getModel() and MODELS accordingly.
+    // Tool calling is supported on all listed models.
+
+    export const MODELS = {
+      openai: {
+        chat: "gpt-4o",
+        fast: "gpt-4o-mini",
+      },
+      anthropic: {
+        chat: "claude-sonnet-4-5",
+        fast: "claude-haiku-3-5",
+      },
+    } as const;
+
+    export type Provider = keyof typeof MODELS;
+    export type Tier = "chat" | "fast";
+
+    // Returns the appropriate language model for the given provider and tier.
+    export function getModel(provider: Provider = env.DEFAULT_AI_PROVIDER, tier: Tier = "chat") {
+      const modelId = MODELS[provider][tier];
+      if (provider === "anthropic") return anthropic(modelId);
+      return openai(modelId);
+    }
+
+    // Embedding model — OpenAI only (Anthropic does not provide embeddings).
+    // IMPORTANT: text-embedding-3-small → 1536 dims; text-embedding-3-large → 3072 dims.
+    // If you change this, re-create the pgvector column with the new dimension count.
+    export const embeddingModel = openai.embedding(env.OPENAI_EMBEDDING_MODEL);
+
+  src/lib/rate-limit.ts: |
+    import { Ratelimit } from "@upstash/ratelimit";
+    import { Redis } from "@upstash/redis";
+    import { env } from "./env";
+
+    const redis = new Redis({
+      url: env.UPSTASH_REDIS_REST_URL,
+      token: env.UPSTASH_REDIS_REST_TOKEN,
+    });
+
+    // Chat endpoint: 20 requests per minute per identifier (IP or user ID).
+    export const chatRateLimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(20, "1 m"),
+      analytics: true,
+      prefix: "rl:chat",
+    });
+
+    // Ingest endpoint: 10 requests per minute per identifier.
+    export const ingestRateLimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, "1 m"),
+      analytics: true,
+      prefix: "rl:ingest",
+    });
+
+  src/services/ingestion.ts: |
+    import { embed } from "ai";
+    import { embeddingModel } from "@/lib/ai-providers";
+    import { createClient } from "@/lib/supabase/server";
+
+    // Chunk size and overlap are tuned for text-embedding-3-small (1536 dims, ~8k token context).
+    // Adjust CHUNK_SIZE if using a model with a different context window.
+    const CHUNK_SIZE = 1000; // characters
+    const CHUNK_OVERLAP = 200; // characters
+
+    // Split text into overlapping chunks for better retrieval coverage.
+    export function chunkText(text: string): string[] {
+      const chunks: string[] = [];
+      let start = 0;
+      while (start < text.length) {
+        const end = Math.min(start + CHUNK_SIZE, text.length);
+        chunks.push(text.slice(start, end).trim());
+        if (end === text.length) break;
+        start += CHUNK_SIZE - CHUNK_OVERLAP;
+      }
+      return chunks.filter((c) => c.length > 0);
+    }
+
+    // Embed a single text chunk via OpenAI.
+    async function embedChunk(text: string): Promise<number[]> {
+      const { embedding } = await embed({ model: embeddingModel, value: text });
+      return embedding;
+    }
+
+    // Full ingestion pipeline: chunk → embed → store.
+    // metadata is stored as JSONB and returned with search results for filtering/display.
+    export async function ingestDocument(
+      content: string,
+      metadata: Record<string, unknown> = {}
+    ): Promise<{ chunksInserted: number }> {
+      const supabase = await createClient();
+      const chunks = chunkText(content);
+
+      const rows = await Promise.all(
+        chunks.map(async (chunk) => ({
+          content: chunk,
+          embedding: await embedChunk(chunk),
+          metadata,
+        }))
+      );
+
+      const { error } = await supabase.from("documents").insert(rows);
+      if (error) throw new Error(`Ingestion failed: ${error.message}`);
+
+      return { chunksInserted: chunks.length };
+    }
+
+  src/services/retrieval.ts: |
+    import { embed } from "ai";
+    import { embeddingModel } from "@/lib/ai-providers";
+    import { createClient } from "@/lib/supabase/server";
+
+    export interface RetrievalResult {
+      id: string;
+      content: string;
+      similarity: number;
+      metadata: Record<string, unknown>;
+    }
+
+    // Semantic search via pgvector cosine similarity.
+    // Requires the match_documents RPC function in Supabase (see SQL below).
+    //
+    // SQL to run in Supabase SQL editor:
+    //   CREATE EXTENSION IF NOT EXISTS vector;
+    //
+    //   CREATE TABLE documents (
+    //     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    //     content text NOT NULL,
+    //     embedding vector(1536),
+    //     metadata jsonb DEFAULT '{}'::jsonb,
+    //     created_at timestamptz DEFAULT now()
+    //   );
+    //
+    //   CREATE INDEX ON documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+    //
+    //   CREATE OR REPLACE FUNCTION match_documents(
+    //     query_embedding vector(1536),
+    //     match_threshold float,
+    //     match_count int
+    //   ) RETURNS TABLE (id uuid, content text, similarity float, metadata jsonb)
+    //   LANGUAGE plpgsql AS $$
+    //   BEGIN
+    //     RETURN QUERY
+    //     SELECT d.id, d.content, 1 - (d.embedding <=> query_embedding) AS similarity, d.metadata
+    //     FROM documents d
+    //     WHERE 1 - (d.embedding <=> query_embedding) > match_threshold
+    //     ORDER BY d.embedding <=> query_embedding
+    //     LIMIT match_count;
+    //   END;
+    //   $$;
+
+    export async function semanticSearch(
+      query: string,
+      matchCount = 5,
+      threshold = 0.7
+    ): Promise<RetrievalResult[]> {
+      const supabase = await createClient();
+      const { embedding: queryEmbedding } = await embed({
+        model: embeddingModel,
+        value: query,
+      });
+
+      const { data, error } = await supabase.rpc("match_documents", {
+        query_embedding: queryEmbedding,
+        match_threshold: threshold,
+        match_count: matchCount,
+      });
+
+      if (error) throw new Error(`Vector search failed: ${error.message}`);
+      return (data ?? []) as RetrievalResult[];
+    }
+
+  src/app/api/chat/route.ts: |
+    import { type NextRequest, NextResponse } from "next/server";
+    import { convertToModelMessages, streamText, type UIMessage, tool } from "ai";
+    import { z } from "zod";
+    import { getModel } from "@/lib/ai-providers";
+    import { chatRateLimit } from "@/lib/rate-limit";
+    import { semanticSearch } from "@/services/retrieval";
+
+    export const maxDuration = 30;
+
+    // Tool: retrieve context from the RAG vector store.
+    // The model can call this tool explicitly for multi-turn retrieval.
+    const retrieveContext = tool({
+      description: "Search the knowledge base for relevant information to answer the user's question.",
+      parameters: z.object({
+        query: z.string().describe("The search query to look up in the knowledge base."),
+      }),
+      execute: async ({ query }) => {
+        const results = await semanticSearch(query, 4);
+        if (results.length === 0) return "No relevant context found.";
+        return results.map((r) => r.content).join("\n\n---\n\n");
+      },
+    });
+
+    export async function POST(req: NextRequest) {
+      // Rate limiting: use IP as identifier; swap for user ID when auth is added.
+      const identifier = req.headers.get("x-forwarded-for") ?? "anonymous";
+      const { success, limit, remaining } = await chatRateLimit.limit(identifier);
+
+      if (!success) {
+        return NextResponse.json(
+          { error: "Too many requests" },
+          {
+            status: 429,
+            headers: {
+              "X-RateLimit-Limit": String(limit),
+              "X-RateLimit-Remaining": String(remaining),
+            },
+          }
+        );
+      }
+
+      const { messages, provider }: { messages: UIMessage[]; provider?: string } =
+        await req.json();
+
+      // RAG: pre-retrieve context for the last user message (fallback for non-tool-calling flow).
+      const lastUserMessage = messages.findLast((m) => m.role === "user");
+      let systemPrompt =
+        "You are a helpful assistant. Use the retrieve_context tool to look up information before answering.";
+
+      if (lastUserMessage) {
+        const lastText = lastUserMessage.parts
+          .filter((p): p is { type: "text"; text: string } => p.type === "text")
+          .map((p) => p.text)
+          .join(" ");
+
+        if (lastText) {
+          const results = await semanticSearch(lastText, 3);
+          if (results.length > 0) {
+            const context = results.map((r) => r.content).join("\n\n");
+            systemPrompt = `You are a helpful assistant. Use the following context to answer, and call retrieve_context for follow-up questions.\n\nContext:\n${context}`;
+          }
+        }
+      }
+
+      const model = getModel(
+        (provider as "openai" | "anthropic" | undefined) ?? undefined
+      );
+
+      const result = streamText({
+        model,
+        system: systemPrompt,
+        messages: await convertToModelMessages(messages),
+        tools: { retrieve_context: retrieveContext },
+        maxSteps: 3, // allow up to 3 tool-call / generation cycles
+      });
+
+      return result.toUIMessageStreamResponse();
+    }
+
+  src/app/api/ingest/route.ts: |
+    import { type NextRequest, NextResponse } from "next/server";
+    import { z } from "zod";
+    import { ingestDocument } from "@/services/ingestion";
+    import { ingestRateLimit } from "@/lib/rate-limit";
+    import { err, ok } from "@/types/api";
+
+    const bodySchema = z.object({
+      content: z.string().min(1).max(500_000),
+      metadata: z.record(z.unknown()).optional().default({}),
+    });
+
+    export async function POST(req: NextRequest) {
+      const identifier = req.headers.get("x-forwarded-for") ?? "anonymous";
+      const { success } = await ingestRateLimit.limit(identifier);
+      if (!success) return NextResponse.json(err("Too many requests"), { status: 429 });
+
+      const parsed = bodySchema.safeParse(await req.json());
+      if (!parsed.success) {
+        return NextResponse.json(err(parsed.error.message), { status: 400 });
+      }
+
+      const { chunksInserted } = await ingestDocument(
+        parsed.data.content,
+        parsed.data.metadata
+      );
+
+      return NextResponse.json(ok({ chunksInserted }));
+    }
+
+  src/types/api.ts: |
+    export interface ApiResponse<T> {
+      success: boolean;
+      data: T | null;
+      error: string | null;
+      meta?: Record<string, unknown>;
+    }
+
+    export function ok<T>(data: T, meta?: Record<string, unknown>): ApiResponse<T> {
+      return { success: true, data, error: null, meta };
+    }
+
+    export function err(error: string): ApiResponse<null> {
+      return { success: false, data: null, error };
+    }
+
+  src/components/chat/ChatInterface.tsx: |
+    "use client";
+    import { useChat } from "@ai-sdk/react";
+    import { useRef, useEffect, useState } from "react";
+
+    type Provider = "openai" | "anthropic";
+
+    export function ChatInterface() {
+      const [provider, setProvider] = useState<Provider>("openai");
+
+      const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+        api: "/api/chat",
+        body: { provider },
+      });
+
+      const bottomRef = useRef<HTMLDivElement>(null);
+
+      useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, [messages]);
+
+      return (
+        <div className="flex h-full flex-col">
+          {/* Provider selector */}
+          <div className="flex items-center gap-2 border-b px-4 py-2">
+            <span className="text-xs font-medium text-gray-500">Provider:</span>
+            <select
+              value={provider}
+              onChange={(e) => setProvider(e.target.value as Provider)}
+              className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="openai">OpenAI (GPT-4o)</option>
+              <option value="anthropic">Anthropic (Claude Sonnet)</option>
+            </select>
+          </div>
+
+          {/* Message list */}
+          <div className="flex-1 overflow-y-auto space-y-4 p-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                    message.role === "user"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-900"
+                  }`}
+                >
+                  {message.parts.map((part, i) => {
+                    if (part.type === "text") {
+                      return <p key={i} className="whitespace-pre-wrap">{part.text}</p>;
+                    }
+                    if (part.type === "tool-invocation") {
+                      return (
+                        <p key={i} className="text-xs italic text-gray-400">
+                          Searching knowledge base...
+                        </p>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl bg-gray-100 px-4 py-2 text-sm text-gray-500">
+                  Thinking...
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input */}
+          <form onSubmit={handleSubmit} className="border-t p-4">
+            <div className="flex gap-2">
+              <input
+                value={input}
+                onChange={handleInputChange}
+                placeholder="Ask anything..."
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 hover:bg-blue-700"
+              >
+                Send
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+  src/app/(chat)/chat/page.tsx: |
+    import { ChatInterface } from "@/components/chat/ChatInterface";
+
+    export default function ChatPage() {
+      return (
+        <main className="flex h-screen flex-col">
+          <header className="border-b px-6 py-4">
+            <h1 className="text-xl font-bold">AI Assistant</h1>
+            <p className="text-xs text-gray-500">Powered by RAG — answers grounded in your documents</p>
+          </header>
+          <div className="flex-1 overflow-hidden">
+            <ChatInterface />
+          </div>
+        </main>
+      );
+    }
+
+  src/__tests__/smoke.test.ts: |
+    import { describe, it, expect } from "vitest";
+
+    describe("Smoke test", () => {
+      it("should pass", () => {
+        expect(true).toBe(true);
+      });
+    });
+
+  src/__tests__/ingestion.test.ts: |
+    import { describe, it, expect } from "vitest";
+    import { chunkText } from "@/services/ingestion";
+
+    describe("chunkText", () => {
+      it("returns a single chunk for short text", () => {
+        const chunks = chunkText("hello world");
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]).toBe("hello world");
+      });
+
+      it("splits long text into overlapping chunks", () => {
+        const text = "a".repeat(2500);
+        const chunks = chunkText(text);
+        expect(chunks.length).toBeGreaterThan(1);
+        // Each chunk should not exceed CHUNK_SIZE
+        chunks.forEach((c) => expect(c.length).toBeLessThanOrEqual(1000));
+      });
+
+      it("filters out empty chunks", () => {
+        const chunks = chunkText("   ");
+        expect(chunks).toHaveLength(0);
+      });
+    });
+
+commands:
+  dev: "pnpm exec next dev"
+  test: "pnpm exec vitest run"
+  build: "pnpm exec next build"
+  lint: "pnpm exec next lint"
+  typecheck: "pnpm exec tsc --noEmit"
+  format: "pnpm exec prettier --write ."
+
+package_json_scripts:
+  dev: "next dev"
+  build: "next build"
+  test: "vitest run"
+  lint: "next lint"
+  typecheck: "tsc --noEmit"
+
+env_example: |
+  NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+  OPENAI_API_KEY=sk-xxxx
+  ANTHROPIC_API_KEY=sk-ant-xxxx
+  OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+  UPSTASH_REDIS_REST_URL=https://xxxx.upstash.io
+  UPSTASH_REDIS_REST_TOKEN=xxxx
+  DEFAULT_AI_PROVIDER=openai
+
+gitignore_extra: |
+  .next/
+
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version-file: '.nvmrc'
+                cache: 'pnpm'
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm lint
+            - run: pnpm typecheck
+            - run: pnpm test -- --run
+            - run: pnpm build
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": {
+          "ghcr.io/devcontainers/features/github-cli:1": {}
+        },
+        "postCreateCommand": "pnpm install",
+        "customizations": {
+          "vscode": {
+            "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+          }
+        }
+      }
+
+claude_md: |
+  # CLAUDE.md
+
+  ## Project
+  - Stack: Next.js 15 + Vercel AI SDK v4 + multi-provider + pgvector RAG + Upstash rate limiting
+  - AI: OpenAI (gpt-4o) and Anthropic (claude-sonnet-4-5) — switchable per request
+  - Embeddings: OpenAI text-embedding-3-small (1536 dimensions)
+  - Vector store: Supabase pgvector
+  - Rate limiting: Upstash Redis sliding window
+
+  ## Commands
+  - Dev: `pnpm exec next dev`
+  - Test: `pnpm exec vitest run`
+  - Build: `pnpm exec next build`
+  - Lint: `pnpm exec next lint`
+  - Typecheck: `pnpm exec tsc --noEmit`
+
+  ## Architecture
+  - `src/app/api/chat/` — streaming chat with tool calling and RAG (POST)
+  - `src/app/api/ingest/` — document ingestion endpoint (POST)
+  - `src/app/(chat)/` — chat UI pages
+  - `src/components/chat/` — ChatInterface with provider switcher
+  - `src/lib/ai-providers.ts` — getModel() factory, MODELS map, embeddingModel
+  - `src/lib/rate-limit.ts` — Upstash rate limiters (chat, ingest)
+  - `src/services/ingestion.ts` — chunkText(), ingestDocument()
+  - `src/services/retrieval.ts` — semanticSearch() via pgvector RPC
+  - `src/lib/supabase/` — server and client Supabase clients
+
+  ## Conventions
+  - Streaming routes return result.toUIMessageStreamResponse() directly (no envelope)
+  - All other API responses use envelope: `{ success, data, error, meta }`
+  - Provider is passed in the request body — never inferred from headers
+  - NEVER use `any` type
+
+  ## Supabase Schema Notes
+  - documents: id (uuid), content (text), embedding (vector(1536)), metadata (jsonb), created_at (timestamptz)
+  - Enable pgvector: CREATE EXTENSION IF NOT EXISTS vector;
+  - Create ivfflat index for fast ANN search
+  - Create match_documents RPC (see src/services/retrieval.ts for full SQL)
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: Next.js 15 (App Router)
+  - AI SDK: Vercel AI SDK v4 (@ai-sdk/openai, @ai-sdk/anthropic, @ai-sdk/react)
+  - Providers: OpenAI (gpt-4o / gpt-4o-mini) + Anthropic (claude-sonnet-4-5 / claude-haiku-3-5)
+  - Vector DB: Supabase pgvector
+  - Embeddings: OpenAI text-embedding-3-small (1536 dims)
+  - Rate limiting: Upstash Redis (@upstash/ratelimit)
+  - Testing: Vitest
+
+  ## Patterns & Conventions
+  - getModel(provider, tier) returns the correct LanguageModel for any provider/tier combo
+  - Chat route does two-phase RAG: pre-retrieve for system prompt + expose retrieve_context tool for follow-ups
+  - maxSteps = 3 allows model to call retrieve_context and generate in one request
+  - Ingestion pipeline: chunkText (1000 chars, 200 overlap) → embed → batch insert to Supabase
+  - Rate limiting applied at route level using IP (swap for user ID when auth is added)
+
+  ## Gotchas
+  - Embedding dimensions MUST match the model AND the pgvector column definition
+    text-embedding-3-small → 1536 dims | text-embedding-3-large → 3072 dims
+    Switching models requires dropping and re-creating the embedding column
+  - maxDuration = 30 is required on streaming route handlers (Vercel limit)
+  - useChat is from @ai-sdk/react, NOT "ai" — different import path
+  - pgvector extension must be enabled in Supabase before creating vector columns
+  - match_documents RPC must be created in Supabase SQL editor (see retrieval.ts for SQL)
+  - Upstash free tier: 10k requests/day — monitor usage before scaling
+  - Tool type in Vercel AI SDK v4 is imported from "ai", not "@ai-sdk/core"
+  - convertToModelMessages is required to transform UIMessage[] for the model
+
+  ## Resolved Issues
