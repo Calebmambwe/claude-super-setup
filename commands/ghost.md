@@ -27,6 +27,8 @@ Extract from $ARGUMENTS:
 - `--telegram` — enable Telegram notifications and inbound task channel (optional)
 - `--telegram-chat-id` — override Telegram chat ID (default: auto-detect from access.json)
 - `--max-tasks` — maximum task count (default: 10)
+- `--dual` — enable dual-model comparison for implementation tasks (Opus judges)
+- `--model <id>` — override model for implementation tasks (e.g., `qwen/qwen3-coder` via OpenRouter)
 
 If no feature description is provided, ask the user what to build and stop.
 

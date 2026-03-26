@@ -144,6 +144,26 @@ Shared project context for Claude Code and Cursor agents.
 - 5 integration tests in `tests/integration/`: hooks existence (15 checks), config validation (12 checks), dispatch runner security (12 checks), ghost-notify levels (8 checks), setup-vps flags (10 checks).
 - Total: 57 assertions, all passing.
 
+## Multi-Model Routing (Sprint 6+)
+- `config/model-routing.json` — central routing config: Anthropic (primary) → OpenRouter (fallback) → Ollama (local).
+- `scripts/openrouter-client.sh` — unified OpenRouter caller. Exit codes: 0=ok, 1=auth, 2=model, 3=network, 4=rate-limit.
+- `scripts/model-router.sh` — task-type router. Reads config, resolves provider+model, implements fallback chain.
+- `scripts/dual-compare.sh` — runs 2 models in parallel, Opus judges winner. Logs to `~/.claude/logs/comparisons.jsonl`.
+- `scripts/embed.sh` — embeddings via OpenRouter or Ollama.
+- `/compare` command — user-facing dual-model comparison.
+- `OPENROUTER_API_KEY` must be in `~/.claude/.env.local`. Telegram dispatch runner sources it automatically.
+- Dual-mode is opt-in: `--dual` flag on `/build` and `/ghost`, or `dual_mode.enabled: true` in config.
+- Opus 4.6 is ALWAYS the brain — other models are workers only. Never route planning/judgment to non-Anthropic models.
+- Benchmark winner: `qwen/qwen3-coder` (9.5/10 correctness, 2.1s avg). See `docs/local-models/openrouter-benchmarks.md`.
+- `comparisons.jsonl` stores SHA256 hash of prompts, never raw prompt text (PII/IP protection).
+
+### Multi-Model Gotchas
+- jq shorthand `{ts, foo}` means `{ts: .ts, foo: .foo}` (field lookup), NOT `{ts: $ts, foo: $foo}` (variable). Always use explicit `{ts: $ts}` when using `--arg`.
+- curl `-w "%{http_code}" -o file` is the reliable pattern for separating HTTP code from body. Never parse HTTP code from response string suffix.
+- OpenRouter can return HTTP 200 with `{"error": {...}}` body — always check `.error.message` even on 200.
+- Free models (`:free` suffix) are unreliable — never use as primary for anything except triage.
+- `claude -p` outputs telemetry JSON to stdout on exit — pipe through `grep -v` to filter if capturing output.
+
 ## Maintenance
 - Update this file whenever durable project conventions change.
 - Re-run `/cursor-setup` after major setup updates.

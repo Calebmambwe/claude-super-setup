@@ -8,6 +8,11 @@ Implement: $ARGUMENTS
 
 This is the ONE command for all implementation. It replaces `/implement-design`, `/sdlc-meta-prompt`, `/milestone-prompts`, `/parallel-implement`, `/team-build`, and direct coding.
 
+## Flags
+
+- `--dual` — Run implementation tasks through dual-model comparison (scripts/dual-compare.sh). Opus judges which model's output is better.
+- `--model <id>` — Override the model for this build run (e.g., `--model qwen/qwen3-coder` to use OpenRouter directly).
+
 ## Routing Logic
 
 ### Step 0: Check for Orchestrated Pipeline
