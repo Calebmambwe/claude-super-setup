@@ -231,6 +231,40 @@ claude_md: |
   - Use ora for spinners, chalk for colored output, commander for parsing
   - NEVER use `any` type
 
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version-file: '.nvmrc'
+                cache: 'pnpm'
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm exec eslint src/
+            - run: pnpm exec tsc --noEmit
+            - run: pnpm exec vitest run
+            - run: pnpm exec tsup
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "CLI Tool Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": { "ghcr.io/devcontainers/features/github-cli:1": {} },
+        "postCreateCommand": "pnpm install",
+        "customizations": { "vscode": { "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"] } }
+      }
+
 agents_md: |
   # AGENTS.md
 

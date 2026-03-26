@@ -248,6 +248,38 @@ claude_md: |
   - Supabase client uses SecureStore adapter (not AsyncStorage)
   - NEVER use `any` type
 
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                node-version: '22'
+                cache: 'npm'
+            - run: npm ci
+            - run: npm run lint
+            - run: npx tsc --noEmit
+            - run: npm test -- --passWithNoTests
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Gluestack Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": { "ghcr.io/devcontainers/features/github-cli:1": {} },
+        "postCreateCommand": "npm install",
+        "customizations": { "vscode": { "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"] } }
+      }
+
 agents_md: |
   # AGENTS.md
 

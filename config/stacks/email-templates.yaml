@@ -1,146 +1,487 @@
+# Email Templates Stack Template
+# React Email + Resend for transactional email templates
+
 name: email-templates
-description: "React Email + Resend + TypeScript preview server"
+description: "React Email + Resend for transactional email templates with TypeScript and local preview server"
 short_label: "email"
+category: "backend"
+stack:
+  - "React Email"
+  - "Resend"
+  - "TypeScript"
+  - "Vitest"
 
 init_commands:
-  - "pnpm init"
+  - "pnpm init -y"
   - "pnpm add react-email @react-email/components resend"
-  - "pnpm add -D typescript @types/react"
+  - "pnpm add -D typescript vitest @types/node tsx"
+  - "pnpm exec tsc --init --module NodeNext --moduleResolution NodeNext --target ES2022 --strict --outDir dist --rootDir src"
+
+dependencies:
+  - react-email
+  - "@react-email/components"
+  - resend
+
+dev_dependencies:
+  - typescript
+  - vitest
+  - "@types/node"
+  - tsx
 
 directories:
   - emails
-  - components
-  - lib
-  - preview
+  - src/lib
 
 starter_files:
   emails/welcome.tsx: |
-    import { Html, Head, Body, Container, Section, Text, Button, Hr, Img } from '@react-email/components';
+    import {
+      Body,
+      Button,
+      Container,
+      Head,
+      Heading,
+      Hr,
+      Html,
+      Link,
+      Preview,
+      Section,
+      Text,
+    } from "@react-email/components";
 
     interface WelcomeEmailProps {
-      userName: string;
-      appName?: string;
+      firstName: string;
+      loginUrl: string;
+      appName: string;
     }
 
-    export default function WelcomeEmail({ userName, appName = 'Our App' }: WelcomeEmailProps) {
+    export function WelcomeEmail({ firstName, loginUrl, appName }: WelcomeEmailProps) {
       return (
         <Html>
           <Head />
-          <Body style={{ backgroundColor: '#f6f9fc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-            <Container style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-              <Section style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '40px' }}>
-                <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a1a1a' }}>
-                  Welcome to {appName}!
-                </Text>
-                <Text style={{ fontSize: '16px', color: '#4a5568', lineHeight: '24px' }}>
-                  Hi {userName}, we're excited to have you on board.
-                </Text>
-                <Button
-                  href="https://example.com/dashboard"
-                  style={{ backgroundColor: '#5B5BD6', color: '#ffffff', padding: '12px 24px', borderRadius: '6px', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}
-                >
-                  Get Started
+          <Preview>Welcome to {appName} — let's get you started</Preview>
+          <Body style={main}>
+            <Container style={container}>
+              <Heading style={h1}>Welcome, {firstName}!</Heading>
+              <Text style={text}>
+                Thanks for signing up for {appName}. We're excited to have you on board.
+              </Text>
+              <Section style={buttonContainer}>
+                <Button href={loginUrl} style={button}>
+                  Get started
                 </Button>
-                <Hr style={{ borderColor: '#e2e8f0', margin: '24px 0' }} />
-                <Text style={{ fontSize: '12px', color: '#a0aec0' }}>
-                  If you didn't create an account, you can safely ignore this email.
-                </Text>
               </Section>
+              <Hr style={hr} />
+              <Text style={footer}>
+                If you didn't create an account, you can safely ignore this email. If you have
+                questions, reply to this email or visit our{" "}
+                <Link href="https://example.com/support">support centre</Link>.
+              </Text>
             </Container>
           </Body>
         </Html>
       );
     }
 
-  emails/magic-link.tsx: |
-    import { Html, Head, Body, Container, Section, Text, Button, Hr } from '@react-email/components';
+    export default WelcomeEmail;
 
-    interface MagicLinkEmailProps {
-      magicLink: string;
-      expiresIn?: string;
+    const main = {
+      backgroundColor: "#f6f9fc",
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    };
+
+    const container = {
+      backgroundColor: "#ffffff",
+      margin: "0 auto",
+      padding: "40px 24px",
+      maxWidth: "600px",
+      borderRadius: "8px",
+    };
+
+    const h1 = {
+      color: "#1a1a1a",
+      fontSize: "28px",
+      fontWeight: "700",
+      margin: "0 0 16px",
+    };
+
+    const text = {
+      color: "#444444",
+      fontSize: "16px",
+      lineHeight: "24px",
+      margin: "0 0 24px",
+    };
+
+    const buttonContainer = {
+      margin: "0 0 32px",
+    };
+
+    const button = {
+      backgroundColor: "#0070f3",
+      borderRadius: "6px",
+      color: "#ffffff",
+      fontSize: "16px",
+      fontWeight: "600",
+      padding: "12px 24px",
+      textDecoration: "none",
+    };
+
+    const hr = {
+      borderColor: "#e6ebf1",
+      margin: "0 0 24px",
+    };
+
+    const footer = {
+      color: "#9ca3af",
+      fontSize: "14px",
+      lineHeight: "22px",
+    };
+
+  emails/reset-password.tsx: |
+    import {
+      Body,
+      Button,
+      Container,
+      Head,
+      Heading,
+      Hr,
+      Html,
+      Preview,
+      Section,
+      Text,
+    } from "@react-email/components";
+
+    interface ResetPasswordEmailProps {
+      firstName: string;
+      resetUrl: string;
+      expiresInHours?: number;
     }
 
-    export default function MagicLinkEmail({ magicLink, expiresIn = '10 minutes' }: MagicLinkEmailProps) {
+    export function ResetPasswordEmail({
+      firstName,
+      resetUrl,
+      expiresInHours = 1,
+    }: ResetPasswordEmailProps) {
       return (
         <Html>
           <Head />
-          <Body style={{ backgroundColor: '#f6f9fc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-            <Container style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-              <Section style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '40px' }}>
-                <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a1a1a' }}>
-                  Sign in to your account
-                </Text>
-                <Text style={{ fontSize: '16px', color: '#4a5568', lineHeight: '24px' }}>
-                  Click the button below to sign in. This link expires in {expiresIn}.
-                </Text>
-                <Button
-                  href={magicLink}
-                  style={{ backgroundColor: '#5B5BD6', color: '#ffffff', padding: '12px 24px', borderRadius: '6px', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}
-                >
-                  Sign In
+          <Preview>Reset your password — link expires in {expiresInHours} hour{expiresInHours !== 1 ? "s" : ""}</Preview>
+          <Body style={main}>
+            <Container style={container}>
+              <Heading style={h1}>Reset your password</Heading>
+              <Text style={text}>Hi {firstName},</Text>
+              <Text style={text}>
+                We received a request to reset the password for your account. Click the button below
+                to choose a new password. This link expires in {expiresInHours} hour
+                {expiresInHours !== 1 ? "s" : ""}.
+              </Text>
+              <Section style={buttonContainer}>
+                <Button href={resetUrl} style={button}>
+                  Reset password
                 </Button>
-                <Hr style={{ borderColor: '#e2e8f0', margin: '24px 0' }} />
-                <Text style={{ fontSize: '12px', color: '#a0aec0' }}>
-                  If you didn't request this, you can safely ignore this email.
-                </Text>
               </Section>
+              <Hr style={hr} />
+              <Text style={footer}>
+                If you didn't request a password reset, you can safely ignore this email. Your
+                password will not change.
+              </Text>
             </Container>
           </Body>
         </Html>
       );
     }
 
-  lib/send.ts: |
-    import { Resend } from 'resend';
-    import { render } from '@react-email/render';
-    import type { ComponentType } from 'react';
+    export default ResetPasswordEmail;
 
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const main = {
+      backgroundColor: "#f6f9fc",
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    };
 
-    export async function sendEmail<T extends Record<string, unknown>>({
-      to,
-      subject,
-      template: Template,
-      props,
-    }: {
-      to: string;
-      subject: string;
-      template: ComponentType<T>;
-      props: T;
-    }) {
-      const html = await render(Template(props));
-      return resend.emails.send({
-        from: process.env.EMAIL_FROM || 'noreply@example.com',
-        to,
-        subject,
-        html,
-      });
+    const container = {
+      backgroundColor: "#ffffff",
+      margin: "0 auto",
+      padding: "40px 24px",
+      maxWidth: "600px",
+      borderRadius: "8px",
+    };
+
+    const h1 = {
+      color: "#1a1a1a",
+      fontSize: "28px",
+      fontWeight: "700",
+      margin: "0 0 16px",
+    };
+
+    const text = {
+      color: "#444444",
+      fontSize: "16px",
+      lineHeight: "24px",
+      margin: "0 0 16px",
+    };
+
+    const buttonContainer = {
+      margin: "0 0 32px",
+    };
+
+    const button = {
+      backgroundColor: "#dc2626",
+      borderRadius: "6px",
+      color: "#ffffff",
+      fontSize: "16px",
+      fontWeight: "600",
+      padding: "12px 24px",
+      textDecoration: "none",
+    };
+
+    const hr = {
+      borderColor: "#e6ebf1",
+      margin: "0 0 24px",
+    };
+
+    const footer = {
+      color: "#9ca3af",
+      fontSize: "14px",
+      lineHeight: "22px",
+    };
+
+  emails/invoice.tsx: |
+    import {
+      Body,
+      Column,
+      Container,
+      Head,
+      Heading,
+      Hr,
+      Html,
+      Preview,
+      Row,
+      Section,
+      Text,
+    } from "@react-email/components";
+
+    interface LineItem {
+      description: string;
+      quantity: number;
+      unitPrice: number;
     }
 
-  package.json: |
-    {
-      "name": "email-templates",
-      "private": true,
-      "scripts": {
-        "email:dev": "email dev --port 3000",
-        "email:build": "email build",
-        "email:export": "email export --outDir out"
+    interface InvoiceEmailProps {
+      invoiceNumber: string;
+      customerName: string;
+      issuedDate: string;
+      dueDate: string;
+      lineItems: LineItem[];
+      currency?: string;
+    }
+
+    function formatCurrency(amount: number, currency: string): string {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
+    }
+
+    export function InvoiceEmail({
+      invoiceNumber,
+      customerName,
+      issuedDate,
+      dueDate,
+      lineItems,
+      currency = "USD",
+    }: InvoiceEmailProps) {
+      const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
+      return (
+        <Html>
+          <Head />
+          <Preview>Invoice {invoiceNumber} — due {dueDate}</Preview>
+          <Body style={main}>
+            <Container style={container}>
+              <Heading style={h1}>Invoice {invoiceNumber}</Heading>
+              <Text style={text}>Hi {customerName},</Text>
+              <Text style={text}>
+                Please find your invoice details below. Payment is due by {dueDate}.
+              </Text>
+
+              <Section style={metaSection}>
+                <Row>
+                  <Column>
+                    <Text style={metaLabel}>Issued</Text>
+                    <Text style={metaValue}>{issuedDate}</Text>
+                  </Column>
+                  <Column>
+                    <Text style={metaLabel}>Due</Text>
+                    <Text style={metaValue}>{dueDate}</Text>
+                  </Column>
+                  <Column>
+                    <Text style={metaLabel}>Invoice #</Text>
+                    <Text style={metaValue}>{invoiceNumber}</Text>
+                  </Column>
+                </Row>
+              </Section>
+
+              <Hr style={hr} />
+
+              {lineItems.map((item, index) => (
+                <Row key={index} style={lineRow}>
+                  <Column style={lineDesc}>
+                    <Text style={lineText}>{item.description}</Text>
+                  </Column>
+                  <Column style={lineQty}>
+                    <Text style={lineText}>x{item.quantity}</Text>
+                  </Column>
+                  <Column style={lineAmount}>
+                    <Text style={lineText}>
+                      {formatCurrency(item.quantity * item.unitPrice, currency)}
+                    </Text>
+                  </Column>
+                </Row>
+              ))}
+
+              <Hr style={hr} />
+
+              <Row style={totalRow}>
+                <Column>
+                  <Text style={totalLabel}>Total</Text>
+                </Column>
+                <Column style={totalAmountCol}>
+                  <Text style={totalAmount}>{formatCurrency(subtotal, currency)}</Text>
+                </Column>
+              </Row>
+
+              <Hr style={hr} />
+              <Text style={footer}>
+                Thank you for your business. If you have questions about this invoice, please reply
+                to this email.
+              </Text>
+            </Container>
+          </Body>
+        </Html>
+      );
+    }
+
+    export default InvoiceEmail;
+
+    const main = {
+      backgroundColor: "#f6f9fc",
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    };
+
+    const container = {
+      backgroundColor: "#ffffff",
+      margin: "0 auto",
+      padding: "40px 24px",
+      maxWidth: "600px",
+      borderRadius: "8px",
+    };
+
+    const h1 = {
+      color: "#1a1a1a",
+      fontSize: "28px",
+      fontWeight: "700",
+      margin: "0 0 16px",
+    };
+
+    const text = {
+      color: "#444444",
+      fontSize: "16px",
+      lineHeight: "24px",
+      margin: "0 0 16px",
+    };
+
+    const metaSection = { margin: "0 0 24px" };
+
+    const metaLabel = { color: "#9ca3af", fontSize: "12px", margin: "0 0 4px", textTransform: "uppercase" as const };
+    const metaValue = { color: "#1a1a1a", fontSize: "14px", fontWeight: "600", margin: "0" };
+
+    const hr = { borderColor: "#e6ebf1", margin: "0 0 16px" };
+
+    const lineRow = { margin: "0 0 8px" };
+    const lineDesc = { width: "60%" };
+    const lineQty = { width: "20%", textAlign: "center" as const };
+    const lineAmount = { width: "20%", textAlign: "right" as const };
+    const lineText = { color: "#444444", fontSize: "15px", margin: "0" };
+
+    const totalRow = { margin: "16px 0" };
+    const totalLabel = { color: "#1a1a1a", fontSize: "16px", fontWeight: "700", margin: "0" };
+    const totalAmountCol = { textAlign: "right" as const };
+    const totalAmount = { color: "#1a1a1a", fontSize: "18px", fontWeight: "700", margin: "0" };
+
+    const footer = { color: "#9ca3af", fontSize: "14px", lineHeight: "22px" };
+
+  src/lib/resend.ts: |
+    import { Resend } from "resend";
+
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY environment variable is required");
+    }
+
+    export const resend = new Resend(process.env.RESEND_API_KEY);
+
+  src/lib/send-email.ts: |
+    import type { CreateEmailOptions, CreateEmailResponse } from "resend";
+    import { resend } from "./resend";
+
+    export interface SendEmailResult {
+      id: string;
+    }
+
+    export class EmailSendError extends Error {
+      constructor(message: string, public readonly cause?: unknown) {
+        super(message);
+        this.name = "EmailSendError";
       }
     }
 
-  tsconfig.json: |
-    {
-      "compilerOptions": {
-        "target": "es2020",
-        "module": "esnext",
-        "moduleResolution": "bundler",
-        "jsx": "react-jsx",
-        "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true
-      },
-      "include": ["emails/**/*", "components/**/*", "lib/**/*"]
+    /**
+     * Type-safe wrapper around Resend's send method.
+     * Throws EmailSendError on failure so callers can handle it explicitly.
+     */
+    export async function sendEmail(
+      options: Omit<CreateEmailOptions, "from"> & { from?: string },
+    ): Promise<SendEmailResult> {
+      const from = options.from ?? process.env.EMAIL_FROM ?? "noreply@example.com";
+
+      const result: CreateEmailResponse = await resend.emails.send({
+        ...options,
+        from,
+      });
+
+      if (result.error) {
+        throw new EmailSendError(result.error.message ?? "Failed to send email", result.error);
+      }
+
+      if (!result.data?.id) {
+        throw new EmailSendError("Resend returned no email ID");
+      }
+
+      return { id: result.data.id };
     }
+
+  .env.example: |
+    # Resend API key — get yours at https://resend.com/api-keys
+    RESEND_API_KEY=re_your_api_key_here
+
+    # Default "from" address for outgoing emails (must be a verified domain in Resend)
+    EMAIL_FROM=noreply@yourdomain.com
+
+commands:
+  dev: "pnpm exec email dev --dir emails --port 3000"
+  build: "pnpm exec email export --dir emails --outDir dist/emails"
+  test: "pnpm exec vitest run"
+  typecheck: "pnpm exec tsc --noEmit"
+
+package_json_scripts:
+  dev: "email dev --dir emails --port 3000"
+  build: "email export --dir emails --outDir dist/emails"
+  test: "vitest run"
+  typecheck: "tsc --noEmit"
+
+env_example: |
+  RESEND_API_KEY=re_your_api_key_here
+  EMAIL_FROM=noreply@yourdomain.com
+
+gitignore_extra: |
+  .env
+  .env*.local
+  dist/
 
 ci_files:
   ".github/workflows/ci.yml":
@@ -159,21 +500,77 @@ ci_files:
             - uses: pnpm/action-setup@v4
             - uses: actions/setup-node@v4
               with:
-                node-version: '22'
+                node-version-file: '.nvmrc'
                 cache: 'pnpm'
             - run: pnpm install --frozen-lockfile
-            - run: pnpm exec tsc --noEmit
-            - run: pnpm email:build
+            - run: pnpm typecheck
+            - run: pnpm test -- --run
+            - run: pnpm build
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "Email Templates Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+        "features": {
+          "ghcr.io/devcontainers/features/github-cli:1": {}
+        },
+        "postCreateCommand": "pnpm install",
+        "forwardPorts": [3000],
+        "customizations": {
+          "vscode": {
+            "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+          }
+        }
+      }
 
 claude_md: |
   # CLAUDE.md
+
   ## Project
   - Stack: React Email + Resend + TypeScript
-  - Run preview: `pnpm email:dev`
-  - Build: `pnpm email:build`
-  - Export HTML: `pnpm email:export`
+  - Email templates live in `emails/` as `.tsx` files
+  - Sending logic lives in `src/lib/`
+
+  ## Commands
+  - Dev (preview server): `pnpm dev` — opens http://localhost:3000
+  - Build (export HTML): `pnpm build`
+  - Test: `pnpm exec vitest run`
+  - Typecheck: `pnpm exec tsc --noEmit`
+
+  ## Architecture
+  - `emails/` — React Email template components (one file per template)
+  - `src/lib/resend.ts` — singleton Resend client, requires RESEND_API_KEY
+  - `src/lib/send-email.ts` — type-safe `sendEmail()` wrapper that throws `EmailSendError`
+
   ## Conventions
-  - All email templates in `emails/` directory
-  - Shared components in `components/`
-  - Use inline styles (email clients don't support CSS classes)
-  - Test all emails in preview server before sending
+  - Each template is a named export + default export from its file
+  - Template props are typed with an explicit interface — no inline object types
+  - All styles are plain JS objects (React Email does not support Tailwind by default)
+  - NEVER use `any` type — use `unknown` + type guard
+  - NEVER hardcode currency formatting — use `Intl.NumberFormat`
+  - NEVER import the Resend client directly outside `src/lib/` — always go through `sendEmail()`
+  - Add a `<Preview>` component to every template for inbox snippet text
+  - Test rendering by running `pnpm dev` and opening the preview server
+
+agents_md: |
+  # AGENTS.md
+
+  ## Stack
+  - Framework: React Email
+  - Email API: Resend
+  - Language: TypeScript (strict)
+  - Testing: Vitest
+
+  ## Patterns & Conventions
+  - Templates are plain TSX components — no "use client", no Next.js imports
+  - Styles are inline JS objects (camelCase properties); no CSS files or Tailwind
+  - The `sendEmail()` helper in `src/lib/send-email.ts` is the single send path
+  - Resend client is a module-level singleton in `src/lib/resend.ts`
+
+  ## Gotchas
+  - React Email's `<Button>` renders an `<a>` tag — use `href`, not `onClick`
+  - Inline style properties that accept string literals (e.g. `textAlign`) need `as const` to satisfy TypeScript
+  - `resend.emails.send()` returns `{ data, error }` — always check `error` before reading `data`
+  - The preview server (`pnpm dev`) hot-reloads template files but not `src/lib/` changes
+
+  ## Resolved Issues

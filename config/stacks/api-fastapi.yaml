@@ -361,6 +361,35 @@ claude_md: |
   - Input validated with Pydantic schemas at route level
   - NEVER use `Any` type from typing
 
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: astral-sh/setup-uv@v4
+            - run: uv sync
+            - run: uv run ruff check src/ tests/
+            - run: uv run mypy src/
+            - run: uv run pytest
+  ".devcontainer/devcontainer.json":
+    content: |
+      {
+        "name": "FastAPI Dev Container",
+        "image": "mcr.microsoft.com/devcontainers/python:3.12",
+        "features": { "ghcr.io/devcontainers/features/github-cli:1": {} },
+        "postCreateCommand": "uv sync",
+        "customizations": { "vscode": { "extensions": ["ms-python.python", "ms-python.mypy-type-checker", "charliermarsh.ruff"] } }
+      }
+
 agents_md: |
   # AGENTS.md
 

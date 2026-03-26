@@ -244,6 +244,27 @@ claude_md: |
   - Supabase secrets passed via --dart-define, not pubspec.yaml
   - NEVER hardcode secrets in source files
 
+ci_files:
+  ".github/workflows/ci.yml":
+    content: |
+      name: CI
+      on:
+        push:
+          branches: [main]
+        pull_request:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+            - uses: subosito/flutter-action@v2
+              with:
+                flutter-version: '3.x'
+            - run: flutter pub get
+            - run: flutter analyze
+            - run: flutter test
+
 agents_md: |
   # AGENTS.md
 
