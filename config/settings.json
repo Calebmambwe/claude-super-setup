@@ -257,6 +257,20 @@
           {
             "type": "command",
             "command": "bash ~/.claude-super-setup/hooks/alert-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/teach-me-detect.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+/skills/.+/SKILL\\.md$)|Write(.+/agents/community/.+\\.md$)|Write(.+/agents/core/.+\\.md$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/teach-me-auto-skill.sh",
+            "async": true
           }
         ]
       },
