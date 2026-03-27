@@ -135,6 +135,10 @@ When compacting context, ALWAYS preserve:
 - [critical] ALWAYS validate input at system boundaries with Zod/Pydantic. Example: `const input = schema.parse(req.body)`
 - [critical] NEVER commit .env files. Check .gitignore includes `.env*` before first commit.
 - [pattern] When debugging failing tests, read the test file FIRST, then the implementation. Don't guess.
+- [critical] Framer Motion SSR: NEVER use `initial={{ opacity: 0 }}` for above-fold content. SSR renders the initial state — content is invisible until JS hydrates. Use `initial={false}` for above-fold, `whileInView` for below-fold. Always add noscript CSS fallback.
+- [critical] ALL static data must live in `src/data/` as a single source of truth — one file per data type, imported everywhere. NEVER duplicate data arrays across page files.
+- [critical] Local filesystem uploads (`fs writeFile` to `public/uploads/`) do NOT work on Vercel serverless. Use `@vercel/blob put()` for production. Always check upload storage strategy before deploying.
+- [critical] NEVER leave features half-wired. Blog page exists → must have real content. Contact form exists → must send emails (wire Resend with fallback to console.log). Images referenced → must exist (use inline SVG/gradient placeholders, not 404 paths).
 
 ## References
 See @agent_docs/ci-standards.md for CI/CD pipeline requirements
