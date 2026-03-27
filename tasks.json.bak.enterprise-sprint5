@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "feature": "Enterprise Agent Platform Sprint 5: VS Code Agent Teams, Remote Control, Smart Hub API",
+  "created_at": "2026-03-24T23:25:00Z",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "VS Code Agent Teams presets — review, feature, debug teams",
+      "description": "Create agents/teams/ directory with team preset JSON configs for VS Code integration. Each preset defines agent composition, model tiers, tool permissions, and workflow steps. Teams: review (code-reviewer + security-auditor + verifier), feature (architect + backend-dev + frontend-dev + tdd-test-writer), debug (env-doctor + test-writer-fixer + researcher).",
+      "status": "completed",
+      "priority": "P0",
+      "risk": "low",
+      "depends_on": [],
+      "files": ["agents/teams/review.json", "agents/teams/feature.json", "agents/teams/debug.json", "agents/teams/README.md"],
+      "acceptance_criteria": [
+        "agents/teams/ directory created with review.json, feature.json, debug.json",
+        "Each preset has: name, description, agents (with roles), workflow steps, model_tier",
+        "Agent references match catalog.json agent names",
+        "README.md explains the preset format, how to use in VS Code, and how to create custom presets",
+        "Presets reference existing agents from agents/core/ — no new agents invented"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Remote Control documentation",
+      "description": "Create docs/remote-control.md documenting the full remote control architecture: Telegram dispatch system, cron scheduling, parallel session management, ghost mode remote triggering, and notification channels.",
+      "status": "completed",
+      "priority": "P0",
+      "risk": "low",
+      "depends_on": [],
+      "files": ["docs/remote-control.md"],
+      "acceptance_criteria": [
+        "Documents Telegram dispatch system (tiers, routing, safety)",
+        "Documents cron scheduling via /telegram-cron",
+        "Documents parallel session management (/telegram-parallel, screen sessions)",
+        "Documents Ghost Mode remote triggering and notification flow",
+        "Includes architecture diagram (mermaid) showing message flow",
+        "References existing commands and config files with correct paths"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Worktree isolation documentation",
+      "description": "Create docs/worktree-isolation.md documenting the git worktree isolation pattern for parallel agent execution. Covers when to use worktrees, how agents work in isolation, merge strategies, and cleanup.",
+      "status": "completed",
+      "priority": "P0",
+      "risk": "low",
+      "depends_on": [],
+      "files": ["docs/worktree-isolation.md"],
+      "acceptance_criteria": [
+        "Explains git worktree concept and why it enables parallel agent execution",
+        "Documents the isolation: worktree parameter in Agent tool",
+        "Covers merge strategies: auto-merge, conflict resolution, sequential fallback",
+        "Documents cleanup: automatic cleanup on no changes, manual cleanup commands",
+        "Includes decision matrix: when to use worktree vs sequential execution",
+        "References Claude Code's built-in worktree support"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "URI handler integration documentation",
+      "description": "Create docs/uri-handler.md documenting claude:// URI scheme for VS Code deep linking. Covers URI format for opening commands, tasks, agents, and pipeline status.",
+      "status": "completed",
+      "priority": "P1",
+      "risk": "low",
+      "depends_on": [],
+      "files": ["docs/uri-handler.md"],
+      "acceptance_criteria": [
+        "Defines claude:// URI scheme with path patterns for commands, tasks, agents",
+        "Documents URI examples: claude://command/plan, claude://task/3, claude://agent/verifier",
+        "Explains VS Code URI handler registration pattern",
+        "Covers security: URI validation, allowlisted paths, no arbitrary command execution",
+        "Includes integration with Smart Hub (clickable links in dashboard)"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Smart Hub web API spec — pipeline, tasks, metrics",
+      "description": "Create docs/smart-hub/api-spec.md with OpenAPI-style endpoint definitions for the Smart Hub web interface. Covers pipeline status, task queue, and metrics dashboard endpoints.",
+      "status": "completed",
+      "priority": "P0",
+      "risk": "low",
+      "depends_on": [],
+      "files": ["docs/smart-hub/api-spec.md"],
+      "acceptance_criteria": [
+        "OpenAPI 3.1-style endpoint definitions (not full YAML, readable markdown)",
+        "GET /api/pipeline/status — returns current pipeline state, phase, progress",
+        "GET /api/tasks — returns tasks.json contents with filtering/sorting",
+        "GET /api/metrics — returns metrics.jsonl aggregated data",
+        "GET /api/agents — returns catalog.json agent list with team membership",
+        "POST /api/commands/{name}/run — trigger a command execution",
+        "Each endpoint has: path, method, request params, response schema, example response",
+        "References Smart Hub design-doc.md Tauri IPC contracts"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Enhance verifier agent with team preset awareness",
+      "description": "Update agents/core/verifier.md to add team preset verification capabilities: verify team composition matches catalog, verify agent model tiers are appropriate, verify workflow step ordering.",
+      "status": "completed",
+      "priority": "P1",
+      "risk": "low",
+      "depends_on": [1],
+      "files": ["agents/core/verifier.md"],
+      "acceptance_criteria": [
+        "Adds 'Team Preset Verification' section to verifier.md",
+        "Verifier can validate team preset JSON against catalog.json",
+        "Checks: all agents in preset exist in catalog, model tiers are valid, no circular dependencies",
+        "Preserves all existing verifier functionality (acceptance criteria, diff, regressions)",
+        "Updated invoked_by to include /team-build"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Update AGENTS.md + catalog.json for Sprint 5",
+      "description": "Add Sprint 5 sections to AGENTS.md. Update catalog.json with new team presets. Update tasks.json to Sprint 5 feature.",
+      "status": "completed",
+      "priority": "P1",
+      "risk": "low",
+      "depends_on": [1, 2, 3, 4, 5, 6],
+      "files": ["AGENTS.md", "agents/catalog.json"],
+      "acceptance_criteria": [
+        "AGENTS.md has 'VS Code Agent Teams (Sprint 5)' section",
+        "AGENTS.md has 'Remote Control Architecture (Sprint 5)' section",
+        "AGENTS.md has 'Smart Hub API (Sprint 5)' section",
+        "catalog.json has feature and debug team definitions",
+        "All new entries reference correct file paths"
+      ]
+    }
+  ]
+}

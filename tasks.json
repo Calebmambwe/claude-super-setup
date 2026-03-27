@@ -1,130 +1,444 @@
 {
   "version": 1,
-  "feature": "Enterprise Agent Platform Sprint 5: VS Code Agent Teams, Remote Control, Smart Hub API",
-  "created_at": "2026-03-24T23:25:00Z",
+  "feature": "Voice Conversation System",
+  "created_at": "2026-03-26T15:00:00Z",
+  "brief": "docs/voice-conversation-system/brief.md",
+  "design_doc": "docs/voice-conversation-system/design-doc.md",
   "tasks": [
     {
-      "id": 1,
-      "title": "VS Code Agent Teams presets — review, feature, debug teams",
-      "description": "Create agents/teams/ directory with team preset JSON configs for VS Code integration. Each preset defines agent composition, model tiers, tool permissions, and workflow steps. Teams: review (code-reviewer + security-auditor + verifier), feature (architect + backend-dev + frontend-dev + tdd-test-writer), debug (env-doctor + test-writer-fixer + researcher).",
-      "status": "completed",
+      "id": "VCS-001",
+      "title": "Create Gemini TTS script",
+      "description": "Build scripts/gemini-tts.sh — takes text input, calls Gemini 2.5 Flash TTS API, returns OGG audio file compatible with Telegram sendVoice. Handle base64 decoding, ffmpeg conversion, error handling.",
+      "milestone": 1,
       "priority": "P0",
-      "risk": "low",
+      "risk": "medium",
+      "effort": "small",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
       "depends_on": [],
-      "files": ["agents/teams/review.json", "agents/teams/feature.json", "agents/teams/debug.json", "agents/teams/README.md"],
-      "acceptance_criteria": [
-        "agents/teams/ directory created with review.json, feature.json, debug.json",
-        "Each preset has: name, description, agents (with roles), workflow steps, model_tier",
-        "Agent references match catalog.json agent names",
-        "README.md explains the preset format, how to use in VS Code, and how to create custom presets",
-        "Presets reference existing agents from agents/core/ — no new agents invented"
+      "files": ["scripts/gemini-tts.sh"],
+      "acceptance": [
+        "Script accepts text and output path as args",
+        "Calls Gemini TTS API with speech config",
+        "Outputs OGG file playable by Telegram",
+        "Handles API errors gracefully with stderr",
+        "Falls back to text-only if TTS fails"
       ]
     },
     {
-      "id": 2,
-      "title": "Remote Control documentation",
-      "description": "Create docs/remote-control.md documenting the full remote control architecture: Telegram dispatch system, cron scheduling, parallel session management, ghost mode remote triggering, and notification channels.",
-      "status": "completed",
+      "id": "VCS-002",
+      "title": "Create voice session manager script",
+      "description": "Build scripts/voice-session-manager.sh — manages voice brainstorm session state as JSON files in /tmp/voice-sessions/. Commands: start, add-exchange, get-state, end, list, cleanup.",
+      "milestone": 1,
       "priority": "P0",
       "risk": "low",
+      "effort": "small",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
       "depends_on": [],
-      "files": ["docs/remote-control.md"],
-      "acceptance_criteria": [
-        "Documents Telegram dispatch system (tiers, routing, safety)",
-        "Documents cron scheduling via /telegram-cron",
-        "Documents parallel session management (/telegram-parallel, screen sessions)",
-        "Documents Ghost Mode remote triggering and notification flow",
-        "Includes architecture diagram (mermaid) showing message flow",
-        "References existing commands and config files with correct paths"
+      "files": ["scripts/voice-session-manager.sh"],
+      "acceptance": [
+        "start creates new session JSON with unique ID",
+        "add-exchange appends to exchanges array",
+        "get-state returns current session JSON",
+        "end finalizes session and generates transcript",
+        "list shows active sessions",
+        "cleanup removes sessions older than 24h"
       ]
     },
     {
-      "id": 3,
-      "title": "Worktree isolation documentation",
-      "description": "Create docs/worktree-isolation.md documenting the git worktree isolation pattern for parallel agent execution. Covers when to use worktrees, how agents work in isolation, merge strategies, and cleanup.",
-      "status": "completed",
+      "id": "VCS-003",
+      "title": "Upgrade voice-brainstorm skill with TTS + session state",
+      "description": "Update ~/.claude/skills/voice-brainstorm/SKILL.md to: (1) use session manager for state persistence across voice notes, (2) generate TTS voice responses via gemini-tts.sh and send as Telegram voice notes, (3) track which brainstorm questions are answered, (4) detect ship-it triggers.",
+      "milestone": 1,
       "priority": "P0",
-      "risk": "low",
-      "depends_on": [],
-      "files": ["docs/worktree-isolation.md"],
-      "acceptance_criteria": [
-        "Explains git worktree concept and why it enables parallel agent execution",
-        "Documents the isolation: worktree parameter in Agent tool",
-        "Covers merge strategies: auto-merge, conflict resolution, sequential fallback",
-        "Documents cleanup: automatic cleanup on no changes, manual cleanup commands",
-        "Includes decision matrix: when to use worktree vs sequential execution",
-        "References Claude Code's built-in worktree support"
+      "risk": "medium",
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-001", "VCS-002"],
+      "files": ["~/.claude/skills/voice-brainstorm/SKILL.md"],
+      "acceptance": [
+        "Voice note triggers transcription then Claude response then TTS voice note back",
+        "Session state persists across multiple voice exchanges",
+        "Questions tracking shows progress through brainstorm",
+        "Ship-it detection triggers session end flow",
+        "Graceful fallback to text-only if TTS fails"
       ]
     },
     {
-      "id": 4,
-      "title": "URI handler integration documentation",
-      "description": "Create docs/uri-handler.md documenting claude:// URI scheme for VS Code deep linking. Covers URI format for opening commands, tasks, agents, and pipeline status.",
-      "status": "completed",
+      "id": "VCS-004",
+      "title": "Create voice-to-SDLC pipeline script",
+      "description": "Build scripts/voice-to-sdlc.sh — takes a completed voice session, cleans the transcript, generates a feature brief using brainstorm template, saves to docs/{feature}/brief.md, and optionally triggers /auto-dev.",
+      "milestone": 2,
+      "priority": "P0",
+      "risk": "medium",
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-002"],
+      "files": ["scripts/voice-to-sdlc.sh"],
+      "acceptance": [
+        "Accepts session ID or transcript path as input",
+        "Cleans transcript: removes filler, structures into sections",
+        "Generates brief following brainstorm-brief template",
+        "Saves brief to docs/{feature-name}/brief.md",
+        "Updates docs/FEATURES.md registry",
+        "Prompts for confirmation before triggering auto-dev"
+      ]
+    },
+    {
+      "id": "VCS-005",
+      "title": "Add transcript storage and formatting",
+      "description": "Extend session manager end command to save completed voice sessions to docs/voice-sessions/YYYY-MM-DD-{topic}.md with timestamps, speaker labels, key decisions, and action items.",
+      "milestone": 2,
       "priority": "P1",
       "risk": "low",
-      "depends_on": [],
-      "files": ["docs/uri-handler.md"],
-      "acceptance_criteria": [
-        "Defines claude:// URI scheme with path patterns for commands, tasks, agents",
-        "Documents URI examples: claude://command/plan, claude://task/3, claude://agent/verifier",
-        "Explains VS Code URI handler registration pattern",
-        "Covers security: URI validation, allowlisted paths, no arbitrary command execution",
-        "Includes integration with Smart Hub (clickable links in dashboard)"
+      "effort": "small",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-002"],
+      "files": ["scripts/voice-session-manager.sh"],
+      "acceptance": [
+        "Transcripts saved to docs/voice-sessions/",
+        "Format includes timestamps and speaker labels",
+        "Key decisions and action items extracted",
+        "Links to generated brief if SDLC was triggered"
       ]
     },
     {
-      "id": 5,
-      "title": "Smart Hub web API spec — pipeline, tasks, metrics",
-      "description": "Create docs/smart-hub/api-spec.md with OpenAPI-style endpoint definitions for the Smart Hub web interface. Covers pipeline status, task queue, and metrics dashboard endpoints.",
-      "status": "completed",
+      "id": "VCS-006",
+      "title": "Wire ship-it trigger into voice-brainstorm",
+      "description": "When user says ship it, build this, done during a voice session: end session, save transcript, run voice-to-sdlc.sh, show brief, on confirm trigger /auto-dev.",
+      "milestone": 2,
       "priority": "P0",
       "risk": "low",
+      "effort": "small",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-003", "VCS-004", "VCS-005"],
+      "files": ["~/.claude/skills/voice-brainstorm/SKILL.md"],
+      "acceptance": [
+        "Ship-it phrases detected in transcription",
+        "Session ends and transcript is saved",
+        "Brief generated and shown to user",
+        "User confirmation gates auto-dev trigger",
+        "Works via Telegram voice and text commands"
+      ]
+    },
+    {
+      "id": "VCS-007",
+      "title": "Scaffold voice web app with Next.js",
+      "description": "Create apps/voice-app/ with Next.js 15, TypeScript, Tailwind. Set up project structure per design doc. Include .env.example with all required API keys.",
+      "milestone": 3,
+      "priority": "P1",
+      "risk": "low",
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
       "depends_on": [],
-      "files": ["docs/smart-hub/api-spec.md"],
-      "acceptance_criteria": [
-        "OpenAPI 3.1-style endpoint definitions (not full YAML, readable markdown)",
-        "GET /api/pipeline/status — returns current pipeline state, phase, progress",
-        "GET /api/tasks — returns tasks.json contents with filtering/sorting",
-        "GET /api/metrics — returns metrics.jsonl aggregated data",
-        "GET /api/agents — returns catalog.json agent list with team membership",
-        "POST /api/commands/{name}/run — trigger a command execution",
-        "Each endpoint has: path, method, request params, response schema, example response",
-        "References Smart Hub design-doc.md Tauri IPC contracts"
+      "files": ["apps/voice-app/"],
+      "acceptance": [
+        "Next.js 15 app scaffolded with TypeScript and Tailwind",
+        "Directory structure matches design doc",
+        ".env.example lists all required API keys",
+        "App runs with pnpm dev",
+        "Landing page renders"
       ]
     },
     {
-      "id": 6,
-      "title": "Enhance verifier agent with team preset awareness",
-      "description": "Update agents/core/verifier.md to add team preset verification capabilities: verify team composition matches catalog, verify agent model tiers are appropriate, verify workflow step ordering.",
-      "status": "completed",
-      "priority": "P1",
-      "risk": "low",
-      "depends_on": [1],
-      "files": ["agents/core/verifier.md"],
-      "acceptance_criteria": [
-        "Adds 'Team Preset Verification' section to verifier.md",
-        "Verifier can validate team preset JSON against catalog.json",
-        "Checks: all agents in preset exist in catalog, model tiers are valid, no circular dependencies",
-        "Preserves all existing verifier functionality (acceptance criteria, diff, regressions)",
-        "Updated invoked_by to include /team-build"
+      "id": "VCS-008",
+      "title": "Implement Deepgram streaming STT client",
+      "description": "Build apps/voice-app/src/lib/deepgram-stt.ts — WebSocket client for Deepgram Nova-2 streaming speech-to-text.",
+      "milestone": 3,
+      "priority": "P0",
+      "risk": "medium",
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-007"],
+      "files": ["apps/voice-app/src/lib/deepgram-stt.ts"],
+      "acceptance": [
+        "WebSocket connection to Deepgram Nova-2",
+        "Streams audio chunks and receives transcriptions",
+        "Handles interim and final results",
+        "Auto-reconnects on connection drop",
+        "Exposes clean TypeScript API"
       ]
     },
     {
-      "id": 7,
-      "title": "Update AGENTS.md + catalog.json for Sprint 5",
-      "description": "Add Sprint 5 sections to AGENTS.md. Update catalog.json with new team presets. Update tasks.json to Sprint 5 feature.",
-      "status": "completed",
+      "id": "VCS-009",
+      "title": "Implement Cartesia streaming TTS client",
+      "description": "Build apps/voice-app/src/lib/cartesia-tts.ts — streaming TTS client for Cartesia Sonic with low-latency audio playback.",
+      "milestone": 3,
+      "priority": "P0",
+      "risk": "medium",
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-007"],
+      "files": ["apps/voice-app/src/lib/cartesia-tts.ts"],
+      "acceptance": [
+        "Connects to Cartesia API",
+        "Streams text and receives audio chunks",
+        "Audio playback starts before full response",
+        "Handles errors and timeouts",
+        "Clean TypeScript API with event emitters"
+      ]
+    },
+    {
+      "id": "VCS-010",
+      "title": "Implement Claude API streaming wrapper",
+      "description": "Build apps/voice-app/src/lib/claude-stream.ts — streaming Claude API client for voice conversation with brainstorming system prompt.",
+      "milestone": 3,
+      "priority": "P0",
+      "risk": "low",
+      "effort": "small",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-007"],
+      "files": ["apps/voice-app/src/lib/claude-stream.ts"],
+      "acceptance": [
+        "Streams Claude API responses",
+        "Maintains conversation history",
+        "System prompt guides brainstorming flow",
+        "Tracks brainstorm question progress",
+        "Emits partial text for live transcript"
+      ]
+    },
+    {
+      "id": "VCS-011",
+      "title": "Build Pipecat voice agent (Python)",
+      "description": "Create apps/voice-app/agent/voice-agent.py — Pipecat pipeline: Silero VAD, Deepgram STT, Claude LLM, Cartesia TTS. Runs as server process.",
+      "milestone": 3,
+      "priority": "P0",
+      "risk": "high",
+      "effort": "large",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-008", "VCS-009", "VCS-010"],
+      "files": ["apps/voice-app/agent/voice-agent.py", "apps/voice-app/agent/requirements.txt"],
+      "acceptance": [
+        "Pipecat pipeline: VAD then STT then LLM then TTS",
+        "Silero VAD detects speech start and end",
+        "Full pipeline latency under 1.5s",
+        "Handles interruptions when user speaks during Claude response",
+        "Logs transcript to session store"
+      ]
+    },
+    {
+      "id": "VCS-012",
+      "title": "Build VoiceSession and TranscriptSidebar components",
+      "description": "Create main voice conversation UI: VoiceSession.tsx, TranscriptSidebar.tsx, AudioVisualizer.tsx, SessionControls.tsx.",
+      "milestone": 3,
+      "priority": "P1",
+      "risk": "medium",
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-007"],
+      "files": [
+        "apps/voice-app/src/components/VoiceSession.tsx",
+        "apps/voice-app/src/components/TranscriptSidebar.tsx",
+        "apps/voice-app/src/components/AudioVisualizer.tsx",
+        "apps/voice-app/src/components/SessionControls.tsx"
+      ],
+      "acceptance": [
+        "VoiceSession shows mic status, timer, exchange count",
+        "AudioVisualizer shows real-time waveform",
+        "TranscriptSidebar auto-scrolls with new exchanges",
+        "SessionControls: Start, Pause, Stop, End and Build buttons",
+        "Responsive layout works on mobile 375px+",
+        "Accessible: keyboard navigation, screen reader labels"
+      ]
+    },
+    {
+      "id": "VCS-013",
+      "title": "Build session management and SDLC trigger API",
+      "description": "Create server API routes: session CRUD and SDLC trigger endpoint. File-based JSON session store.",
+      "milestone": 3,
       "priority": "P1",
       "risk": "low",
-      "depends_on": [1, 2, 3, 4, 5, 6],
-      "files": ["AGENTS.md", "agents/catalog.json"],
-      "acceptance_criteria": [
-        "AGENTS.md has 'VS Code Agent Teams (Sprint 5)' section",
-        "AGENTS.md has 'Remote Control Architecture (Sprint 5)' section",
-        "AGENTS.md has 'Smart Hub API (Sprint 5)' section",
-        "catalog.json has feature and debug team definitions",
-        "All new entries reference correct file paths"
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-007", "VCS-004"],
+      "files": [
+        "apps/voice-app/src/app/api/session/route.ts",
+        "apps/voice-app/src/app/api/sdlc/route.ts",
+        "apps/voice-app/src/lib/session-store.ts"
+      ],
+      "acceptance": [
+        "CRUD operations for voice sessions",
+        "Session store persists to JSON files",
+        "SDLC trigger calls voice-to-sdlc.sh",
+        "Input validation with Zod",
+        "Error responses follow consistent format"
+      ]
+    },
+    {
+      "id": "VCS-014",
+      "title": "Wire full voice pipeline end-to-end (web app)",
+      "description": "Connect all web app components: browser mic to Pipecat agent to Claude to TTS to browser speaker. Live transcript updates, session state sync, End and Build triggers SDLC.",
+      "milestone": 3,
+      "priority": "P0",
+      "risk": "high",
+      "effort": "large",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-011", "VCS-012", "VCS-013"],
+      "files": [
+        "apps/voice-app/src/app/session/[id]/page.tsx",
+        "apps/voice-app/src/lib/livekit-agent.ts"
+      ],
+      "acceptance": [
+        "Full voice conversation loop works in browser",
+        "Live transcript updates in real-time",
+        "End and Build button saves transcript and triggers SDLC",
+        "Handles network interruptions gracefully",
+        "Audio quality is clear and natural"
+      ]
+    },
+    {
+      "id": "VCS-015",
+      "title": "Build session history browser",
+      "description": "SessionHistory.tsx component and /sessions page listing all past voice sessions with search, filter, view transcript, and re-trigger SDLC.",
+      "milestone": 4,
+      "priority": "P2",
+      "risk": "low",
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-013"],
+      "files": [
+        "apps/voice-app/src/components/SessionHistory.tsx",
+        "apps/voice-app/src/app/page.tsx"
+      ],
+      "acceptance": [
+        "Lists all past sessions with date, topic, duration",
+        "Search and filter functionality",
+        "View full transcript of any session",
+        "Re-trigger SDLC from completed session"
+      ]
+    },
+    {
+      "id": "VCS-016",
+      "title": "Unify session format across Telegram and web",
+      "description": "Ensure both Telegram and web app voice sessions use identical JSON format and transcript output. Both write to docs/voice-sessions/.",
+      "milestone": 4,
+      "priority": "P1",
+      "risk": "low",
+      "effort": "small",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-006", "VCS-013"],
+      "files": ["scripts/voice-session-manager.sh", "apps/voice-app/src/lib/session-store.ts"],
+      "acceptance": [
+        "Telegram and web sessions use same JSON schema",
+        "Both output to docs/voice-sessions/",
+        "Session history shows both approaches",
+        "SDLC pipeline works with either source"
+      ]
+    },
+    {
+      "id": "VCS-017",
+      "title": "Add error handling and graceful degradation",
+      "description": "Harden both approaches: retry failed API calls, fallback TTS to text, fallback Whisper if Deepgram fails, handle WebSocket disconnects, session recovery.",
+      "milestone": 4,
+      "priority": "P1",
+      "risk": "low",
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-006", "VCS-014"],
+      "files": [
+        "scripts/gemini-tts.sh",
+        "scripts/voice-session-manager.sh",
+        "apps/voice-app/src/lib/deepgram-stt.ts",
+        "apps/voice-app/src/lib/cartesia-tts.ts"
+      ],
+      "acceptance": [
+        "Failed TTS falls back to text response",
+        "Failed STT retries once then reports error",
+        "WebSocket reconnects automatically",
+        "Crashed sessions can be resumed"
+      ]
+    },
+    {
+      "id": "VCS-018",
+      "title": "Write tests for all scripts and components",
+      "description": "Test suite: gemini-tts.sh, voice-session-manager.sh, voice-to-sdlc.sh, web app components, API routes.",
+      "milestone": 4,
+      "priority": "P1",
+      "risk": "low",
+      "effort": "medium",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-006", "VCS-014"],
+      "files": ["tests/voice-system/", "apps/voice-app/tests/"],
+      "acceptance": [
+        "Shell script tests use bash assertions",
+        "React components tested with Testing Library",
+        "API routes tested with integration tests",
+        "80%+ coverage on new code"
+      ]
+    },
+    {
+      "id": "VCS-019",
+      "title": "Write documentation",
+      "description": "Create docs/voice-conversation-system/README.md and apps/voice-app/README.md covering setup, usage, API keys, troubleshooting.",
+      "milestone": 4,
+      "priority": "P2",
+      "risk": "low",
+      "effort": "small",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-017"],
+      "files": ["docs/voice-conversation-system/README.md", "apps/voice-app/README.md"],
+      "acceptance": [
+        "Setup instructions for both approaches",
+        "API key configuration documented",
+        "Usage guide with examples",
+        "Troubleshooting covers common issues"
+      ]
+    },
+    {
+      "id": "VCS-020",
+      "title": "Create /voice-chat unified entry point skill",
+      "description": "New /voice-chat skill that detects context (Telegram vs terminal) and routes to the appropriate voice approach.",
+      "milestone": 4,
+      "priority": "P2",
+      "risk": "low",
+      "effort": "small",
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "depends_on": ["VCS-006", "VCS-014"],
+      "files": ["~/.claude/skills/voice-chat/SKILL.md"],
+      "acceptance": [
+        "Detects Telegram vs terminal context",
+        "Telegram: starts voice-brainstorm session",
+        "Terminal: opens web app URL or provides instructions",
+        "Help text explains both approaches"
       ]
     }
   ]
