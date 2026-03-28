@@ -66,6 +66,13 @@ Findings format: `[READABILITY-{severity}] {file}:{line} — {description}`
 - Run typecheck: `pnpm typecheck` or `mypy .`
 - Report any failures
 
+**Agent 6: Visual Verification (visual-tester agent, Sonnet)** — only if frontend files in scope
+- Run `/visual-verify` to check console errors, network failures, and layout
+- Run `/visual-regression` at 3 viewports (mobile 375px, tablet 768px, desktop 1440px)
+- Use `visual-tester` agent for interactive UI flow testing on changed pages
+- Report visual regressions, broken layouts, and accessibility issues
+- Findings format: `[VISUAL-{severity}] {page}@{viewport} — {description}`
+
 ### Step 3: Compile Results
 
 Merge all findings into a single report:
@@ -106,6 +113,12 @@ CRITICAL:
 HIGH:
 - {finding}
 
+### Visual Verification: {N} findings (if frontend files in scope)
+CRITICAL:
+- [VISUAL-CRITICAL] {page}@{viewport} — {finding}
+WARNING:
+- [VISUAL-WARNING] {page}@{viewport} — {finding}
+
 ### Review Summary
 | Gate | Findings | Critical | Blocking? |
 |------|----------|----------|-----------|
@@ -113,6 +126,7 @@ HIGH:
 | B: Ownership | {N} | {N} | {YES/NO} |
 | C: Readability | {N} | {N} | NO (advisory) |
 | Security | {N} | {N} | {YES/NO} |
+| Visual | {N} | {N} | {YES/NO} |
 
 ### Verdict: PASS / FAIL
 {FAIL if: any Gate A CRITICAL, any Gate B CRITICAL, any Security CRITICAL, or test failures}
@@ -144,7 +158,8 @@ Before declaring PASS, suggest the user verify changes visually:
 After code review, any TODO/FIXME/HACK tags found in new code appear in the Todo Tree sidebar. Report these as non-blocking warnings.
 
 ## Rules
-- ALWAYS run all five agents in parallel (not sequentially) — 3 code review gates + security + tests
+- ALWAYS run all agents in parallel (not sequentially) — 3 code review gates + security + tests + visual (if frontend)
+- Agent 6 (Visual) only launches if changed files include .tsx/.jsx/.css/.html or files in components/pages/app directories
 - ALWAYS run tests — don't skip even if "just a small change"
 - Gate A (Correctness) CRITICAL = must fix before merge — these are bugs
 - Gate B (Ownership) CRITICAL = must fix before merge — these create maintenance debt

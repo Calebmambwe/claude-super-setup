@@ -34,6 +34,18 @@ Search THIS project for existing implementations before creating new ones:
 - Existing routes/API patterns: `ls src/routes/ src/api/ src/controllers/ 2>/dev/null`
 - If a match exists: EXTEND or REUSE it — do NOT create a parallel implementation
 
+### 3b. UI Library Check (UI work only)
+Before creating ANY icon, animation, or interactive component:
+- Icons → use Lucide, Phosphor (`@phosphor-icons/react`), Tabler (`@tabler/icons-react`), or Heroicons ONLY. Never generate custom SVG icons.
+- List/table transitions → use AutoAnimate (`@formkit/auto-animate`) before writing custom animation code
+- Scroll animations → use GSAP ScrollTrigger for scroll-driven sequences, Motion (Framer) for React state
+- Micro-animations → use `tailwindcss-motion` CSS utilities before JS animation
+- Date pickers/comboboxes → use Ark UI (`@ark-ui/react`) before building custom
+- Dashboard charts → use Tremor (`@tremor/react`) before building custom
+- Landing page effects → check Aceternity UI (ui.aceternity.com) and Magic UI (magicui.design) before building custom
+- Page sections → check shadcnblocks (shadcnblocks.com) for existing blocks before building custom
+- Full reference: `docs/research/ui-libraries-reference.md`
+
 ### 4. AGENTS.md Check
 - If AGENTS.md exists: read it in full (project-specific gotchas and patterns)
 - If absent: create one after the first non-trivial task
@@ -53,6 +65,9 @@ Even for small changes, check two things:
 - [critical] NEVER write a BMAD artifact (PRD, architecture, brief) without reading the matching template
 - [critical] NEVER write an SDLC prompt from scratch — derive from `~/.claude/config/prompts/`
 - [critical] NEVER ignore project AGENTS.md — it contains hard-won lessons from prior sessions
+- [critical] NEVER use AI-generated, custom SVG, or emoji-style icons — only approved icon libraries (Lucide, Phosphor, Tabler, Heroicons)
+- [critical] NEVER build custom date pickers, comboboxes, or charts — use Ark UI or Tremor
+- [critical] NEVER skip checking Aceternity UI / Magic UI / shadcnblocks before building landing page sections from scratch
 
 ## Enforcement
 

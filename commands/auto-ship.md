@@ -100,20 +100,41 @@ This catches obvious issues early and saves time vs the full `/check` pipeline.
 
 **Update checkpoint:** `{"phase": 2.5, "verify": "pass"}`
 
-### Phase 2.75: Visual Verification
+### Phase 2.75: Visual Verification (3-Tool Pipeline)
 
 **This phase is MANDATORY if any completed tasks touched frontend files** (`.tsx`, `.jsx`, `.css`, `.html`, or files in `components/`, `pages/`, `app/`).
 
-If frontend files were changed:
-- Run `/visual-verify` to check for console errors and visual regressions
-- If issues found, fix them (max 1 visual fix cycle)
-- Report visual verification results in the final report
+If frontend files were changed, run ALL three visual tools in sequence:
+
+**Step A: `/visual-verify`** — Launch the app, navigate pages, check for:
+- Console errors (JS exceptions, unhandled rejections)
+- Network failures (4xx/5xx API responses)
+- Broken layouts (via screenshot + accessibility snapshot)
+- Basic interaction tests (nav links, buttons, forms)
+
+**Step B: `/visual-regression`** — Compare screenshots against baselines at 3 viewports:
+- Mobile (375px), Tablet (768px), Desktop (1440px)
+- Pixel-diff comparison against stored baselines
+- Design system compliance (no hardcoded colors, focus states present)
+- If no baseline exists, create one automatically
+
+**Step C: `visual-tester` agent** — Deep interactive verification:
+- Launch as an Agent (subagent_type: "visual-tester") for thorough UI interaction
+- Test user flows specific to the completed tasks
+- Verify form submissions, modals, tooltips, transitions
+- Check responsive behavior across breakpoints
+- Report any accessibility issues found during interaction
+
+**Evaluation:**
+- If ANY tool reports CRITICAL issues → fix them (max 1 visual fix cycle per tool)
+- After fix cycle, re-run only the failed tool (not all three)
+- Report all visual verification results in the final report
 
 If NO frontend files were changed:
 - Skip this phase
 - Report: "Visual verification skipped — no frontend changes detected"
 
-**Update checkpoint:** `{"phase": 2.75, "visual": "pass|skipped"}`
+**Update checkpoint:** `{"phase": 2.75, "visual": "pass|skipped", "visual_tools": ["visual-verify", "visual-regression", "visual-tester"]}`
 
 **Notify:**
 ```bash

@@ -107,6 +107,17 @@ Notify per task: "Task N/M complete: {title}"
 If a task fails 3 times, mark it blocked and continue to next task.
 ```
 
+**Phase 5.5: Visual Verification Pipeline** (MANDATORY if .tsx/.jsx/.css/.html files changed)
+```
+Run all 3 visual tools in sequence:
+  a. /visual-verify — console errors, network failures, layout checks, basic interactions
+  b. /visual-regression — screenshot comparison at mobile/tablet/desktop viewports
+  c. visual-tester agent — deep interactive UI verification of completed task flows
+If any tool reports CRITICAL issues, fix (max 1 cycle) and re-run that tool only.
+Skip this phase entirely if no frontend files were changed.
+Notify: "Visual verification complete: {pass/N issues found}"
+```
+
 **Phase 6: Quality Gate**
 ```
 Run /check
@@ -190,6 +201,7 @@ Pipeline trace:
   Design Doc      {duration}  {✓/skipped}
   Plan + Tasks    {duration}  ✓ ({N} tasks)
   Build All       {duration}  {completed}/{total} tasks
+  Visual Verify   {duration}  {✓/skipped} (verify + regression + tester)
   Check           {duration}  {verdict}
   Ship            {duration}  PR #{number}
   Reflect         {duration}  {n} learnings

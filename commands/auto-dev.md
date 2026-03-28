@@ -22,7 +22,10 @@ Full chain:
   │   ├── /auto-build-all (Ralph Loop per task)
   │   ├── Coverage gate (80% for new code)
   │   ├── Direct verification (test + lint + typecheck)
-  │   ├── Visual verification (if UI changes)
+  │   ├── Visual verification pipeline (if UI changes):
+  │   │   ├── /visual-verify (console errors, network, layout)
+  │   │   ├── /visual-regression (3-viewport screenshot diff)
+  │   │   └── visual-tester agent (interactive UI flows)
   │   ├── /check (code review + security + quality)
   │   ├── /ship (commit + PR)
   │   └── Self-review (PR review comments)
@@ -65,7 +68,10 @@ This executes the full build pipeline autonomously:
 2. Build all tasks (Ralph Loop: plan → implement → verify → fix)
 3. Coverage gate (80% threshold for new code)
 4. Direct verification (pnpm test && lint && typecheck)
-5. Visual verification (mandatory if .tsx/.jsx/.css files changed)
+5. Visual verification pipeline (mandatory if .tsx/.jsx/.css files changed):
+     a. `/visual-verify` — console errors, network failures, layout checks
+     b. `/visual-regression` — screenshot comparison at 3 viewports
+     c. `visual-tester` agent — deep interactive UI verification
 6. Check gate (code review + security audit)
 7. Ship (conventional commit + PR)
 8. Self-review (PR review toolkit posts comments)
@@ -107,5 +113,5 @@ Total: {total duration}
 - ALWAYS pause for human approval after /plan and after /auto-tasks
 - NEVER skip the check gate — quality is non-negotiable
 - If /auto-ship fails, report clearly and stop — don't restart from scratch
-- Visual verification is MANDATORY if any .tsx/.jsx/.css/.html files were changed
+- Visual verification (all 3 tools: /visual-verify + /visual-regression + visual-tester agent) is MANDATORY if any .tsx/.jsx/.css/.html files were changed
 - This command is a pipeline orchestrator — it NEVER duplicates logic from sub-commands

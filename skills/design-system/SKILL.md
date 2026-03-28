@@ -9,23 +9,115 @@ The design system is law. NEVER write custom styles in components. NEVER use dir
 
 ---
 
-## Color Palette (Template — customize per project)
+## Color Palettes (pick one per project, NEVER mix palettes)
 
-### Base Tokens
-- Primary: #6366f1 (Indigo) — CTAs, links, active states
-- Primary Dark: #4f46e5 — hover states
-- Primary Light: #818cf8 — backgrounds, badges
-- Secondary: #f59e0b (Amber) — accents, highlights, ratings
-- Background: #0f172a (Slate 900) — page background
-- Surface: #1e293b (Slate 800) — cards, panels
-- Surface Elevated: #334155 (Slate 700) — dropdowns, popovers
-- Text: #f8fafc (Slate 50) — primary text
-- Muted: #94a3b8 (Slate 400) — secondary text, placeholders
-- Border: rgba(255, 255, 255, 0.1) — subtle borders
-- Accent: #22d3ee (Cyan) — badges, highlights, data viz
-- Error: #ef4444 — errors, destructive actions
-- Success: #22c55e — success states, positive indicators
-- Warning: #f59e0b — warnings (shares with Secondary)
+Choose a palette based on the project's personality. Each is derived from a world-class reference.
+
+### Palette: Vercel (minimal, developer-focused — vercel.com)
+Best for: dev tools, dashboards, technical products
+```
+--background:       #000000        --background-light: #FFFFFF
+--foreground:       #EDEDED        --foreground-light: #171717
+--surface:          #111111        --surface-light:    #FAFAFA
+--surface-elevated: #1A1A1A        --surface-el-light: #F5F5F5
+--primary:          #FFFFFF        --primary-light:    #000000
+--muted:            #888888        --muted-light:      #666666
+--border:           #333333        --border-light:     #EAEAEA
+--accent:           #0070F3        --accent both modes
+--error:            #EE0000        --success: #0070F3
+```
+
+### Palette: Linear (focused, calm authority — linear.app)
+Best for: SaaS, productivity tools, project management
+```
+--background:       #0A0A0F        --background-light: #FFFFFF
+--foreground:       #F1F1F4        --foreground-light: #1B1B1F
+--surface:          #16161D        --surface-light:    #F7F7F8
+--surface-elevated: #1F1F28        --surface-el-light: #EFEFEF
+--primary:          #5E6AD2        --primary (indigo, both modes)
+--primary-hover:    #7B85E0
+--muted:            #787882        --muted-light:      #8B8B94
+--border:           #26262E        --border-light:     #E8E8EC
+--accent:           #8B5CF6        --accent: violet highlight
+--error:            #E5484D        --success: #30A46C
+```
+
+### Palette: Stripe (trustworthy, premium fintech — stripe.com)
+Best for: fintech, payments, enterprise SaaS, B2B
+```
+--background:       #0A2540        --background-light: #FFFFFF
+--foreground:       #F6F9FC        --foreground-light: #425466
+--surface:          #143556        --surface-light:    #F6F9FC
+--surface-elevated: #1D4469        --surface-el-light: #EDF2F7
+--primary:          #635BFF        --primary (both modes)
+--primary-hover:    #7A73FF
+--muted:            #8898AA        --muted-light:      #8898AA
+--border:           #1E4976        --border-light:     #E3E8EE
+--accent:           #00D4FF        --cyan accent
+--error:            #DF1B41        --success: #2DD4BF
+--gradient:         linear-gradient(135deg, #635BFF, #00D4FF, #7C3AED)
+```
+
+### Palette: Supabase (developer-friendly, growth — supabase.com)
+Best for: developer platforms, open source, databases
+```
+--background:       #1C1C1C        --background-light: #FCFCFC
+--foreground:       #EDEDED        --foreground-light: #11181C
+--surface:          #2A2A2A        --surface-light:    #F8F9FA
+--surface-elevated: #333333        --surface-el-light: #F1F3F5
+--primary:          #3ECF8E        --primary (emerald, both)
+--primary-hover:    #34B27B
+--muted:            #7E7E7E        --muted-light:      #687076
+--border:           #3A3A3A        --border-light:     #DFE3E6
+--accent:           #6EE7B7        --accent: light emerald
+--error:            #F75F5F        --success: #3ECF8E
+```
+
+### Palette: Apple (premium, minimal — apple.com)
+Best for: consumer products, premium brands, hardware
+```
+--background:       #000000        --background-light: #FBFBFD
+--foreground:       #F5F5F7        --foreground-light: #1D1D1F
+--surface:          #161617        --surface-light:    #F5F5F7
+--surface-elevated: #1D1D1F        --surface-el-light: #E8E8ED
+--primary:          #0071E3        --primary (blue, both)
+--primary-hover:    #0077ED
+--muted:            #86868B        --muted-light:      #6E6E73
+--border:           #424245        --border-light:     #D2D2D7
+--accent:           #BF5AF2        --accent: purple
+--error:            #FF453A        --success: #30D158
+--gradient:         linear-gradient(90deg, #2997FF, #BF5AF2, #FF375F)
+```
+
+### Palette: Warm (food, lifestyle, creative — custom)
+Best for: food apps, social platforms, creative tools, lifestyle brands
+```
+--background:       #1A1412        --background-light: #FFFBF5
+--foreground:       #F5EDE4        --foreground-light: #2D1F14
+--surface:          #261E18        --surface-light:    #FFF7ED
+--surface-elevated: #332820        --surface-el-light: #FFF1E0
+--primary:          #F97316        --primary (orange, both)
+--primary-hover:    #EA580C
+--muted:            #9C8B7D        --muted-light:      #78716C
+--border:           #3D3028        --border-light:     #E7DDD0
+--accent:           #F43F5E        --accent: rose
+--error:            #EF4444        --success: #22C55E
+--gradient:         linear-gradient(135deg, #F97316, #F43F5E, #EC4899)
+```
+
+### How to Apply a Palette
+In `globals.css`, define tokens under `:root` (light) and `.dark` (dark):
+```css
+:root {
+  --background: 255 251 245;   /* light mode values */
+  --foreground: 45 31 20;
+  /* ... all tokens from chosen palette */
+}
+.dark {
+  --background: 26 20 18;     /* dark mode values */
+  --foreground: 245 237 228;
+}
+```
 
 ### Dark/Light Mode
 Use `next-themes` for mode switching. Prevent FOUC with `suppressHydrationWarning` on `<html>`. Define tokens as CSS variables in `globals.css` under `:root` (light) and `.dark` (dark). NEVER use conditional class logic in components — let the theme provider handle it.
@@ -34,23 +126,93 @@ Use `next-themes` for mode switching. Prevent FOUC with `suppressHydrationWarnin
 
 ## Typography
 
-- Headings: Space Grotesk (variable), font-weight 700
-- Body: DM Sans (variable), font-weight 400/500
-- Mono: JetBrains Mono (variable)
-- Scale: 12 / 14 / 16 / 18 / 20 / 24 / 30 / 36 / 48 / 60
-- Line heights: tight (1.1) for display, snug (1.3) for headings, relaxed (1.6) for body
-- Fluid type for hero headlines: `clamp(2.5rem, 5vw, 3.75rem)`
-- Load via `next/font` with `display: 'swap'` — NEVER use `<link>` tags for fonts
+### Font Stacks (pick one pair per project)
+
+| Use Case | Heading Font | Body Font | Mono Font | Reference |
+|----------|-------------|-----------|-----------|-----------|
+| Developer tools | **Geist Sans** | Geist Sans | Geist Mono | Vercel |
+| SaaS / productivity | **Inter Display** (600-800) | Inter (400-500) | JetBrains Mono | Linear |
+| Premium / fintech | **Sohne** or **Plus Jakarta Sans** (600-800) | Inter (400-500) | IBM Plex Mono | Stripe |
+| Consumer / lifestyle | **Cabinet Grotesk** or **Satoshi** (700-900) | Plus Jakarta Sans (400-500) | Fira Code | Apple vibes |
+| Editorial / content | **Playfair Display** (700) | Source Serif Pro (400) | Fira Code | NYT/Medium |
+
+### Default Stack (when in doubt)
+- Headings: **Inter** (variable, weight 600-800) — the most versatile, used by Linear, GitHub, Figma
+- Body: **Inter** (variable, weight 400-500)
+- Mono: **Geist Mono** or **JetBrains Mono**
+- Display (hero): **Plus Jakarta Sans** (weight 800) or **Inter Display** (weight 800)
+
+### Type Scale
+- 12 / 14 / 16 / 18 / 20 / 24 / 30 / 36 / 48 / 60 / 72 / 96
+- Line heights: tight (1.05) for display/hero, snug (1.2) for headings, normal (1.5) for body, relaxed (1.7) for long-form
+- Letter spacing: `-0.02em` for display, `-0.015em` for headings, `0` for body, `0.05em` for overlines/labels
+- Fluid type for hero headlines: `clamp(2.5rem, 5vw + 1rem, 5rem)`
+- Overline labels: `text-[11px] font-semibold uppercase tracking-[0.08em]` (like Linear's section labels)
+
+### Typography Rules
+- Load via `next/font` with `display: 'swap'` — NEVER use `<link>` tags or CDN fonts
+- ALWAYS use font-weight from the variable font — never load multiple static weights
+- Hero text should be 48-96px with tight line-height and negative letter-spacing
+- Body text minimum 16px, never smaller than 14px for readability
+- Use `text-balance` on headings for better line wrapping
 
 ---
 
 ## Icon System
 
-- Library: Lucide React (`lucide-react`)
+### Approved Libraries (priority order)
+1. **Lucide React** (`lucide-react`) — default, ships with shadcn/ui. 1,500+ icons.
+2. **Phosphor Icons** (`@phosphor-icons/react`) — 9,000+ icons, 6 weights (Thin/Light/Regular/Bold/Fill/Duotone). Use for expressive, distinctive UIs.
+3. **Tabler Icons** (`@tabler/icons-react`) — 5,600+ icons. Best for dashboard/SaaS technical icons Lucide lacks.
+4. **Heroicons** (`@heroicons/react`) — 316 pixel-perfect icons from the Tailwind team. 4 variants (Outline/Solid/Mini/Micro).
+
+### Icon Rules
 - Sizes: 16px (inline text), 20px (buttons, nav), 24px (section icons), 32px (feature cards)
 - Stroke width: 1.5 (consistent across all uses)
 - Color: inherit from parent text color — NEVER hardcode icon colors
 - Import individually: `import { ArrowRight } from 'lucide-react'` — NEVER import the barrel
+- For Phosphor: configure `optimizePackageImports: ['@phosphor-icons/react']` in `next.config.js`
+- NEVER use AI-generated, custom SVG, or emoji-style icons — only use approved libraries above
+
+---
+
+## Approved UI Libraries
+
+### Component Libraries (beyond shadcn/ui)
+| Library | npm | Use For |
+|---------|-----|---------|
+| **Ark UI** | `@ark-ui/react` | Date pickers, comboboxes, color pickers — headless primitives Radix lacks |
+| **Tremor** | `@tremor/react` | Dashboard charts, KPI cards, analytics data tables |
+| **HeroUI** | `@heroui/react` | Alternative styled components with React Aria a11y |
+
+### Premium Copy-Paste Collections (no npm — copy source)
+| Library | URL | Use For |
+|---------|-----|---------|
+| **Aceternity UI** | https://ui.aceternity.com | Animated hero sections, glowing cards, beam effects, spotlight |
+| **Magic UI** | https://magicui.design | Shimmer, marquee, typing, particle effects. CLI: `npx magicui-cli add` |
+| **shadcnblocks** | https://www.shadcnblocks.com | 1,400+ pre-built page blocks for shadcn stack |
+| **Origin UI** | https://originui.com | Advanced shadcn extensions (timelines, richer dialogs) |
+| **Cult UI** | https://cult-ui.com | Motion-heavy components with Framer Motion |
+
+### Animation Libraries
+| Library | npm | Size | Use For |
+|---------|-----|------|---------|
+| **Motion** (Framer) | `motion` | 85KB | Page transitions, gestures, scroll — already in stack |
+| **GSAP** | `gsap` | 78KB | Scroll-driven sequences, SVG morph, cinematic timelines. **100% free** (2025+) |
+| **AutoAnimate** | `@formkit/auto-animate` | 2KB | Zero-config smooth transitions for list/table add/remove/reorder |
+| **tailwindcss-motion** | `tailwindcss-motion` | 5KB | CSS-only utility animations (`motion-preset-bounce`, etc.) |
+
+### Color & Theme Tools (no install — web tools)
+- **tints.dev** — Generate 11-shade Tailwind palette from one hex color
+- **uicolors.app** — Alternative palette generator with live preview
+
+### When to Use What
+- **Default UI**: shadcn/ui (always)
+- **Missing primitive**: Ark UI (date picker, combobox, color picker)
+- **Dashboard/charts**: Tremor
+- **Landing page wow**: Aceternity UI + GSAP scroll sequences
+- **Subtle polish**: Magic UI shimmer + AutoAnimate lists
+- **Page sections**: shadcnblocks reference library
 
 ---
 
@@ -352,8 +514,70 @@ Add noise texture for depth: `bg-[url('/noise.svg')] bg-repeat opacity-[0.02]`
 
 ---
 
+## GSAP Scroll Patterns
+
+### ScrollTrigger (landing pages, marketing sections)
+```tsx
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+gsap.registerPlugin(ScrollTrigger);
+
+// Pin + scrub animation
+gsap.to('.hero-text', {
+  scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
+  y: -100, opacity: 0,
+});
+```
+Use GSAP for: scroll-pinned sequences, SVG morphing, text splitting (SplitText), cinematic timelines.
+Use Motion (Framer) for: React state-driven UI, gestures, layout animations, simple scroll reveals.
+
+### AutoAnimate (lists and tables — zero config)
+```tsx
+import { useAutoAnimate } from '@formkit/auto-animate/react';
+const [parent] = useAutoAnimate();
+// Usage: <ul ref={parent}>{items.map(...)}</ul>
+```
+Add to ANY list, table, or dynamic content. Instant smooth add/remove/reorder with zero config.
+
+### tailwindcss-motion (CSS-only micro-animations)
+```html
+<div class="motion-preset-fade-in motion-duration-500">Fades in</div>
+<button class="motion-preset-bounce hover:motion-preset-pulse">Bouncy</button>
+```
+Use for: hover states, entrance animations, skeleton loaders — anywhere JS animation is overkill.
+
+---
+
+## Project Setup Checklist (new projects)
+
+When scaffolding a new project, ensure these are installed:
+```bash
+# Icons (always)
+pnpm add lucide-react @phosphor-icons/react @tabler/icons-react
+
+# Animation (always)
+pnpm add @formkit/auto-animate tailwindcss-motion
+
+# Animation (landing pages / marketing)
+pnpm add gsap
+
+# Components (when needed)
+pnpm add @ark-ui/react        # complex interactive primitives
+pnpm add @tremor/react         # dashboards only
+```
+
+In `next.config.js`:
+```js
+experimental: {
+  optimizePackageImports: ['@phosphor-icons/react', '@tabler/icons-react', 'lucide-react'],
+}
+```
+
+---
+
 ## Anti-Patterns (NEVER DO)
 
+- NEVER use AI-generated, custom SVG, or emoji-style icons — only use approved icon libraries
 - NEVER use pure black (#000) — use Slate 900 or the background token
 - NEVER mix border-radius styles on the same page
 - NEVER use more than 3 font weights
@@ -366,4 +590,6 @@ Add noise texture for depth: `bg-[url('/noise.svg')] bg-repeat opacity-[0.02]`
 - NEVER use spinners for content loading — use skeleton screens
 - NEVER skip `prefers-reduced-motion` handling
 - NEVER use `<img>` tags — use `next/image` for optimization
-- NEVER import entire icon libraries — import individually from lucide-react
+- NEVER import entire icon libraries — import individually
+- NEVER use GSAP for simple hover/focus animations — use Motion or tailwindcss-motion
+- NEVER skip `optimizePackageImports` when using Phosphor or Tabler icons

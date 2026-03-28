@@ -124,8 +124,12 @@ You can safely close this terminal and go to sleep.
 1. Plans the feature (auto-approved via {trust} guardrails)
 2. Decomposes into tasks (auto-approved via {trust} guardrails)
 3. Builds all tasks (Ralph Loop: plan -> implement -> verify -> fix)
-4. Runs quality checks (code review + security audit)
-5. Creates PR and self-reviews
+4. Runs visual verification pipeline (if frontend files changed):
+   - /visual-verify (console errors, network, layout)
+   - /visual-regression (3-viewport screenshot diff)
+   - visual-tester agent (interactive UI flows)
+5. Runs quality checks (code review + security audit)
+6. Creates PR and self-reviews
 6. Sends push notification with PR link
 
 Sweet dreams.

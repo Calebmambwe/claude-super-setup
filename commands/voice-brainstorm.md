@@ -246,17 +246,49 @@ Next steps:
 - Concatenate transcriptions
 - Treat as one long input
 
-## Voice Response (Phase 2)
+## Voice Response (TTS — Active)
 
-When Phase 2 is implemented, after generating the text response:
+After generating the text response, also send a voice note back:
 
 ```bash
-# Generate voice response
-bash scripts/voice-respond.sh "response text" /tmp/voice-response.mp3
-
-# Send as voice message via Telegram
-# Use the reply MCP tool with files parameter
-reply(chat_id, "response text", files=["/tmp/voice-response.mp3"])
+# Generate voice response via Gemini TTS (free)
+bash scripts/gemini-tts.sh "response text" /tmp/tts-response-$(date +%s).ogg
 ```
 
-This makes it a true voice-to-voice conversation — the user speaks, Claude speaks back.
+Then send both text AND voice via Telegram:
+```
+reply(chat_id, "response text", files=["/tmp/tts-response-TIMESTAMP.ogg"])
+```
+
+If TTS fails (script exits non-zero), fall back to text-only — never block the conversation on TTS failure.
+
+## Session Manager Integration
+
+Instead of the simple JSON file at `~/.claude/voice-brainstorm-session.json`, use the session manager:
+
+```bash
+# Start session
+SESSION_ID=$(bash scripts/voice-session-manager.sh start "$CHAT_ID" "$TOPIC")
+
+# Add exchange
+bash scripts/voice-session-manager.sh add-exchange "$SESSION_ID" user "$TRANSCRIPTION"
+bash scripts/voice-session-manager.sh add-exchange "$SESSION_ID" assistant "$RESPONSE"
+
+# End session (saves transcript to docs/voice-sessions/)
+bash scripts/voice-session-manager.sh end "$SESSION_ID"
+```
+
+Both the old JSON approach and new session manager are compatible — the session manager stores richer state in `/tmp/voice-sessions/`.
+
+## Ship-It → SDLC Pipeline
+
+When the user says **"ship it"**, **"build this"**, **"build it"**, **"done"**, or **"that's enough"**:
+
+1. End the session: `bash scripts/voice-session-manager.sh end "$SESSION_ID"`
+2. Run the SDLC pipeline: `bash scripts/voice-to-sdlc.sh "$SESSION_ID" --feature-name "$FEATURE_NAME"`
+3. Show the generated brief to the user for confirmation
+4. If user confirms → trigger `/auto-dev $FEATURE_NAME`
+
+This completes the full loop: **speak → brainstorm → brief → auto-dev → PR**
+
+The voice-to-sdlc.sh script handles: transcript cleanup, brief generation, FEATURES.md update, and optional auto-dev trigger.

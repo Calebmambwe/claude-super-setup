@@ -31,6 +31,16 @@ This is the ONE command for end-to-end feature development. It chains `/plan →
    - **yes** → move to Phase 3
    - **fix** → address the issue, then re-gate
 
+### Phase 2.5: VISUAL VERIFY (if frontend files changed)
+If any .tsx/.jsx/.css/.html files were modified during build:
+1. Run `/visual-verify` — console errors, network failures, layout checks
+2. Run `/visual-regression` — screenshot comparison at 3 viewports (mobile/tablet/desktop)
+3. Run `visual-tester` agent — deep interactive UI verification of changed flows
+4. **GATE:** "Visual verification complete. {results summary}. Proceed to quality check? [yes / fix]"
+   - **yes** → move to Phase 3
+   - **fix** → address visual issues, then re-gate
+If no frontend files changed, skip to Phase 3 automatically.
+
 ### Phase 3: CHECK
 1. Run `/check` (parallel: code-review + security + tests)
 2. If **FAIL:** list findings, ask user to fix or let you fix, then re-run /check
@@ -64,6 +74,7 @@ Phases:
   Research: {conducted / not needed}
   Plan: {Quick Plan / Feature Spec / Full Pipeline}
   Build: {N files created, M modified, P tests added}
+  Visual: {PASS / skipped} (verify + regression + tester)
   Check: PASS (tests: X/X, lint: clean, security: clean)
   Ship: PR #{number} — {url}
 ```

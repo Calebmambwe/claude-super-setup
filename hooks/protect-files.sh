@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 # Block writes to critical configuration files
-set -euo pipefail
+# PreToolUse hook — outputs decision JSON to stdout (NOT stderr)
+set -eo pipefail
+
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || echo "")
+
+# If no file path, allow
+if [ -z "$FILE_PATH" ]; then
+  echo '{"decision": "allow"}'
+  exit 0
+fi
 
 PROTECTED_PATTERNS=(
   ".env"
@@ -22,9 +30,10 @@ PROTECTED_PATTERNS=(
 
 for pattern in "${PROTECTED_PATTERNS[@]}"; do
   if [[ "$FILE_PATH" == *"$pattern"* ]]; then
-    echo "{\"decision\": \"block\", \"reason\": \"Protected file: $FILE_PATH matches '$pattern'. Use the package manager or environment tools instead.\"}" >&2
-    exit 2
+    echo "{\"decision\": \"block\", \"reason\": \"Protected file: $FILE_PATH matches '$pattern'. Use the package manager or environment tools instead.\"}"
+    exit 0
   fi
 done
 
+echo '{"decision": "allow"}'
 exit 0
