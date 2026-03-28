@@ -213,6 +213,16 @@ if [[ "$REGRESSION_COUNT" -gt 0 ]]; then
       source: "post-session-benchmark"
     }' >> "$ALERTS_FILE"
 
-  # macOS notification
-  osascript -e "display notification \"${REGRESSION_COUNT} regression(s) detected. Score: ${OVERALL_SCORE}%\" with title \"Benchmark Alert\" sound name \"Basso\"" 2>/dev/null || true
+  # Triple-channel notification (macOS + ntfy + Telegram) via ghost-notify
+  NOTIFY_SCRIPT="$SCRIPT_DIR/ghost-notify.sh"
+  REGRESSION_MSG="${REGRESSION_COUNT} benchmark regression(s) detected. Score: ${OVERALL_SCORE}%"
+  for detail in "${REGRESSION_DETAILS[@]}"; do
+    REGRESSION_MSG="${REGRESSION_MSG}\n  - ${detail}"
+  done
+  if [[ -x "$NOTIFY_SCRIPT" ]]; then
+    bash "$NOTIFY_SCRIPT" warning "$REGRESSION_MSG" &>/dev/null &
+  else
+    # Fallback to macOS-only if ghost-notify not available
+    osascript -e "display notification \"${REGRESSION_COUNT} regression(s) detected. Score: ${OVERALL_SCORE}%\" with title \"Benchmark Alert\" sound name \"Basso\"" 2>/dev/null || true
+  fi
 fi

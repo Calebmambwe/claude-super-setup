@@ -91,6 +91,14 @@ if [ "$TOOL_CALLS" -gt "$TASK_MAX_TOOL_CALLS" ]; then
     "$NOW" "$SESSION_ID" "$TOOL_CALLS" "$TASK_MAX_TOOL_CALLS" "$TOOL_NAME" \
     >> "$LOG_FILE" 2>/dev/null || true
 
+  # Send notification on first block only (prevent spam)
+  BLOCK_SENTINEL="$HOME/.claude/.budget-block-notified-${SESSION_ID}"
+  if [ ! -f "$BLOCK_SENTINEL" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    bash "$SCRIPT_DIR/ghost-notify.sh" warning "Budget exhausted: ${TOOL_CALLS}/${TASK_MAX_TOOL_CALLS} tool calls. Session blocked. Override: TASK_MAX_TOOL_CALLS=500" &>/dev/null &
+    touch "$BLOCK_SENTINEL" 2>/dev/null || true
+  fi
+
   jq -n -c \
     --arg reason "$MSG" \
     '{"decision":"block","reason":$reason}'

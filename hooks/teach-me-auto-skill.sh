@@ -26,8 +26,12 @@ if echo "$FILE_PATH" | grep -q "skills/.*/SKILL.md"; then
 
   # Notify via Telegram if bot is available
   if [ -f "$HOME/.claude/channels/telegram/.env" ]; then
-    BOT_TOKEN=$(grep 'BOT_TOKEN=' "$HOME/.claude/channels/telegram/.env" 2>/dev/null | sed 's/^BOT_TOKEN=//' | tr -d '[:space:]')
-    CHAT_ID=$(grep 'TELEGRAM_CHAT_ID' "$HOME/.claude/.env.local" 2>/dev/null | sed 's/^TELEGRAM_CHAT_ID=//' | tr -d '[:space:]')
+    BOT_TOKEN=$(grep -m1 '^TELEGRAM_BOT_TOKEN=' "$HOME/.claude/channels/telegram/.env" 2>/dev/null | sed 's/^TELEGRAM_BOT_TOKEN=//; s/[[:space:]]*$//' || echo "")
+    CHAT_ID=$(grep -m1 '^TELEGRAM_CHAT_ID=' "$HOME/.claude/.env.local" 2>/dev/null | sed 's/^TELEGRAM_CHAT_ID=//; s/[[:space:]]*$//' || echo "")
+    # Fallback: try access.json for chat ID
+    if [ -z "$CHAT_ID" ] && [ -f "$HOME/.claude/channels/telegram/access.json" ]; then
+      CHAT_ID=$(jq -r '.allowFrom[0] // ""' "$HOME/.claude/channels/telegram/access.json" 2>/dev/null || echo "")
+    fi
     if [ -n "$BOT_TOKEN" ] && [ -n "$CHAT_ID" ]; then
       curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
         --data-urlencode "chat_id=${CHAT_ID}" \
