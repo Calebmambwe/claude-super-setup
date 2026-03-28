@@ -1,0 +1,118 @@
+{
+  "run_id": "run-20260328-060149",
+  "task_id": "reg-001",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 12,
+  "timestamp": "2026-03-28T06:01:49Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "interface User",
+      "id:",
+      "email:",
+      "name:",
+      "role:",
+      "createdAt:"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-060230",
+  "task_id": "reg-001",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 11,
+  "timestamp": "2026-03-28T06:02:30Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "interface User",
+      "id:",
+      "email:",
+      "name:",
+      "role:",
+      "createdAt:"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-060230",
+  "task_id": "reg-002",
+  "tier": 1,
+  "category": "bug-fixing",
+  "score": 75,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 11,
+  "timestamp": "2026-03-28T06:02:30Z",
+  "violations": [
+    "forbidden: user.email;"
+  ],
+  "details": {
+    "contains_matched": [
+      "function getUserEmail",
+      "null",
+      "return"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "user.email;"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-060230",
+  "task_id": "reg-010",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 57,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 22,
+  "timestamp": "2026-03-28T06:02:30Z",
+  "violations": [
+    "missing: set -euo pipefail",
+    "missing: #!/usr/bin/env bash",
+    "missing: find"
+  ],
+  "details": {
+    "contains_matched": [
+      ".log",
+      "tar",
+      "date"
+    ],
+    "contains_missing": [
+      "set -euo pipefail",
+      "#!/usr/bin/env bash",
+      "find"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}

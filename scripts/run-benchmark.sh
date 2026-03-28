@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
 # Usage: ./scripts/run-benchmark.sh [--tier 1|2|3] [--task task-id]
 # Runs benchmark tasks and records results to benchmarks/history.jsonl
@@ -136,7 +136,10 @@ for task_file in "${TASK_FILES[@]}"; do
   # --- Score: contains checks ---
   CONTAINS_MATCHED=()
   CONTAINS_MISSING=()
-  mapfile -t CONTAINS_LIST < <(jq -r '.expected_output.contains[]?' "$task_file")
+  CONTAINS_LIST=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && CONTAINS_LIST+=("$line")
+  done < <(jq -r '.expected_output.contains[]?' "$task_file" 2>/dev/null || true)
 
   for check in "${CONTAINS_LIST[@]}"; do
     if echo "$RAW_OUTPUT" | grep -qF "$check"; then
@@ -148,7 +151,10 @@ for task_file in "${TASK_FILES[@]}"; do
 
   # --- Score: not_contains checks ---
   NOT_CONTAINS_VIOLATIONS=()
-  mapfile -t NOT_CONTAINS_LIST < <(jq -r '.expected_output.not_contains[]?' "$task_file")
+  NOT_CONTAINS_LIST=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && NOT_CONTAINS_LIST+=("$line")
+  done < <(jq -r '.expected_output.not_contains[]?' "$task_file" 2>/dev/null || true)
 
   for check in "${NOT_CONTAINS_LIST[@]}"; do
     if echo "$RAW_OUTPUT" | grep -qF "$check"; then
