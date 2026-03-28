@@ -499,6 +499,39 @@
           }
         ]
       }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/worktree-lifecycle.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/worktree-lifecycle.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/teammate-idle.sh",
+            "async": true
+          }
+        ]
+      }
     ]
   },
   "statusLine": {

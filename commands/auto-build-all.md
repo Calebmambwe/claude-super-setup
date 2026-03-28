@@ -57,9 +57,14 @@ For each dependency level, process all tasks before moving to the next level.
 
 **Parallel execution** (tasks in the same parallel group):
 - Use the Agent tool to spawn up to 3 concurrent `/auto-build` agents
-- Each agent runs in isolation mode (`isolation: "worktree"`) for file safety
+- **MANDATORY: pass `isolation: "worktree"` to every parallel Agent call** — this gives each agent a fresh context window (~40% usage) and prevents file conflicts
+- Example Agent call for parallel tasks:
+  ```
+  Agent(prompt: "/auto-build {task-id}", isolation: "worktree", run_in_background: true)
+  ```
 - Wait for all parallel agents to complete before proceeding
 - Merge results: if any agent failed, report but continue with successful ones
+- After merge, run `git diff --stat` to verify no conflicts were introduced
 
 **Sequential execution** (high-risk tasks or file overlap):
 - Run `/auto-build` directly (no agent, no worktree)

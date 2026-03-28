@@ -1,0 +1,32 @@
+{
+  "name": "quality-gate",
+  "description": "Quality gate team — code reviewer, security auditor, regression tester running in parallel",
+  "agents": [
+    {
+      "name": "code-reviewer",
+      "role": "Review all changed code for correctness, patterns, maintainability. Check against CLAUDE.md rules and AGENTS.md patterns.",
+      "model": "opus",
+      "isolation": "worktree",
+      "tools": ["Read", "Grep", "Glob", "Bash"]
+    },
+    {
+      "name": "security-auditor",
+      "role": "Scan for OWASP Top 10 vulnerabilities, hardcoded secrets, SQL injection, XSS, insecure dependencies.",
+      "model": "sonnet",
+      "isolation": "worktree",
+      "tools": ["Read", "Grep", "Glob", "Bash"]
+    },
+    {
+      "name": "regression-tester",
+      "role": "Run the regression gate (scripts/regression-gate.sh) at appropriate tier. Report all broken links, console errors, dead routes.",
+      "model": "sonnet",
+      "isolation": "worktree",
+      "tools": ["Read", "Bash", "Grep"]
+    }
+  ],
+  "orchestration": {
+    "max_concurrent": 3,
+    "merge_strategy": "report-only",
+    "conflict_resolution": "block-on-critical"
+  }
+}

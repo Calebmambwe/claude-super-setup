@@ -123,14 +123,15 @@ You can safely close this terminal and go to sleep.
 ### How It Works
 1. Plans the feature (auto-approved via {trust} guardrails)
 2. Decomposes into tasks (auto-approved via {trust} guardrails)
-3. Builds all tasks (Ralph Loop: plan -> implement -> verify -> fix)
-4. Runs visual verification pipeline (if frontend files changed):
+3. Builds all tasks using parallel worktree agents (isolation: "worktree") for independent tasks
+4. Runs /regression-gate --tier 3 (exhaustive: all pages, API health, forms, performance, full a11y)
+5. Runs visual verification pipeline (if frontend files changed):
    - /visual-verify (console errors, network, layout)
    - /visual-regression (3-viewport screenshot diff)
    - visual-tester agent (interactive UI flows)
-5. Runs quality checks (code review + security audit)
-6. Creates PR and self-reviews
-6. Sends push notification with PR link
+6. Runs quality checks (quality-gate team: 6 parallel agents with worktree isolation)
+7. Creates PR and self-reviews
+8. Sends push notification with PR link
 
 Sweet dreams.
 ```

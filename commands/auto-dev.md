@@ -19,14 +19,15 @@ Full chain:
   │   ├── /auto-tasks (decompose into tasks.json)
   │   └── Human gate: approve tasks
   ├── Phase B: /auto-ship (build + check + ship)
-  │   ├── /auto-build-all (Ralph Loop per task)
+  │   ├── /auto-build-all (parallel worktree agents for independent tasks)
   │   ├── Coverage gate (80% for new code)
   │   ├── Direct verification (test + lint + typecheck)
+  │   ├── /regression-gate --tier 2 (broken links, API health, forms, responsive)
   │   ├── Visual verification pipeline (if UI changes):
   │   │   ├── /visual-verify (console errors, network, layout)
   │   │   ├── /visual-regression (3-viewport screenshot diff)
   │   │   └── visual-tester agent (interactive UI flows)
-  │   ├── /check (code review + security + quality)
+  │   ├── /check (quality-gate team: 6 parallel agents with worktree isolation)
   │   ├── /ship (commit + PR)
   │   └── Self-review (PR review comments)
   └── Phase C: /reflect (capture learnings)

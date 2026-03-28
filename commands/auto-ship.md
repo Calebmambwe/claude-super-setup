@@ -58,7 +58,7 @@ Run `/auto-build-all` — for each pending task, this runs the Ralph Loop:
 3. Verify (code-reviewer agent checks acceptance criteria)
 4. Fix (up to 2 cycles if verification found issues)
 
-Tasks execute in dependency order with parallel execution for independent tasks.
+Tasks execute in dependency order. Independent tasks run in parallel with `isolation: "worktree"` for fresh context per agent (~40% usage vs 80-90%). See `rules/agent-teams.md` and `config/teams/` for team presets.
 Progress reported after each task. Stops after 3 consecutive failures.
 
 **Update checkpoint:** `{"phase": 2, "tasks_completed": {n}}`
@@ -99,6 +99,25 @@ If any fail, attempt to fix (max 1 cycle) before proceeding to Phase 2.75.
 This catches obvious issues early and saves time vs the full `/check` pipeline.
 
 **Update checkpoint:** `{"phase": 2.5, "verify": "pass"}`
+
+### Phase 2.6: Regression Gate (Mandatory for Web Apps)
+
+If the project has a dev server (package.json with "dev" script), run the regression gate:
+```bash
+bash scripts/regression-gate.sh --tier 2 --project-dir .
+```
+
+This checks: all links work, all API routes respond, all images load, all forms have handlers, responsive layout at 3 breakpoints, basic accessibility.
+
+**If FAIL (exit 1):**
+1. Read the failure report — identify each broken item
+2. Fix each issue (max 1 fix cycle)
+3. Re-run the gate
+4. If still failing → add CRITICAL to final report and BLOCK shipping
+
+**If PASS (exit 0):** Continue to Phase 2.75.
+
+**Update checkpoint:** `{"phase": 2.6, "regression_gate": "pass|fail"}`
 
 ### Phase 2.75: Visual Verification (3-Tool Pipeline)
 

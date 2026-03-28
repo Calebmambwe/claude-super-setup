@@ -16,9 +16,16 @@ This is the ONE command you run before merging. It replaces `/code-review`, `/se
 - If no branch: `git diff --staged` for staged changes, or `git diff` for unstaged
 - If nothing changed: "No changes to review. Commit or stage changes first."
 
-### Step 2: Run Parallel Review Agents (5 agents, 3 code review gates)
+### Step 2: Run Parallel Review Agents (6 agents, 3 code review gates)
 
-Launch ALL five agents in parallel using the Agent tool:
+Launch ALL agents in parallel using the Agent tool with `isolation: "worktree"` for file safety and fresh context (~40% usage per agent instead of 80-90%):
+
+**MANDATORY:** Every Agent call in this step MUST include `isolation: "worktree"`. This uses the quality-gate team preset pattern from `config/teams/quality-gate.json`.
+
+Also run the regression gate as part of verification:
+```bash
+bash scripts/regression-gate.sh --tier 1 --project-dir .
+```
 
 **Agent 1: Code Review — Gate A: Correctness (code-reviewer agent, Opus)**
 Focus ONLY on whether the code is correct:

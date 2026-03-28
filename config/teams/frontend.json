@@ -1,0 +1,34 @@
+{
+  "name": "frontend",
+  "description": "Frontend team — UI builder, accessibility auditor, visual verifier working in parallel",
+  "agents": [
+    {
+      "name": "ui-builder",
+      "role": "Build React/Next.js components following the design system. Use Tailwind, shadcn/ui, approved icon libraries only.",
+      "model": "sonnet",
+      "isolation": "worktree",
+      "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+    },
+    {
+      "name": "a11y-checker",
+      "role": "Audit all components for WCAG 2.2 AA — ARIA attributes, focus management, color contrast, keyboard navigation",
+      "model": "sonnet",
+      "isolation": "worktree",
+      "tools": ["Read", "Grep", "Glob", "Bash"],
+      "depends_on": "ui-builder"
+    },
+    {
+      "name": "visual-qa",
+      "role": "Verify the running app visually at 3 viewports (375px, 768px, 1440px) — check layout, responsiveness, interactions",
+      "model": "sonnet",
+      "isolation": "worktree",
+      "tools": ["Read", "Bash", "Grep"],
+      "depends_on": "ui-builder"
+    }
+  ],
+  "orchestration": {
+    "max_concurrent": 3,
+    "merge_strategy": "sequential",
+    "conflict_resolution": "orchestrator-decides"
+  }
+}
