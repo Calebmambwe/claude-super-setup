@@ -179,6 +179,28 @@ else
   OVERALL_SCORE=0
 fi
 
+# --- Write run-level summary to history (matches run-benchmark.sh format) ---
+PASSED_COUNT=$((TASK_COUNT - REGRESSION_COUNT))
+jq -n \
+  --arg run_id "$RUN_ID" \
+  --argjson total "$TASK_COUNT" \
+  --argjson passed "$PASSED_COUNT" \
+  --argjson failed "$REGRESSION_COUNT" \
+  --argjson score "$OVERALL_SCORE" \
+  --arg tier "1" \
+  --arg timestamp "$RUN_TIMESTAMP" \
+  --arg source "post-session-benchmark" \
+  '{
+    run_id: $run_id,
+    total: $total,
+    passed: $passed,
+    failed: $failed,
+    score: $score,
+    tier: $tier,
+    timestamp: $timestamp,
+    source: $source
+  }' >> "$HISTORY_FILE"
+
 # --- Log session summary ---
 SUMMARY="[post-session-benchmark] run=$RUN_ID tasks=$TASK_COUNT score=${OVERALL_SCORE}% regressions=$REGRESSION_COUNT"
 echo "$SUMMARY" >> "$SESSION_LOG"

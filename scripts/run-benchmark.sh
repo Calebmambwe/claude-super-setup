@@ -379,8 +379,9 @@ else
 fi
 echo ""
 
-# Exit with non-zero if any failures
-if [[ "$FAILED" -gt 0 ]]; then
+# Exit code: use BENCHMARK_STRICT=1 to fail on task failures (default: always exit 0)
+# The self-improve pipeline needs benchmarks to complete even when some tasks fail
+if [[ "${BENCHMARK_STRICT:-0}" == "1" ]] && [[ "$FAILED" -gt 0 ]]; then
   exit 1
 fi
 

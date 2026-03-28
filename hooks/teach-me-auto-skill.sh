@@ -50,10 +50,8 @@ fi
 # Detect new command creation
 if echo "$FILE_PATH" | grep -qE "commands/.*\.md$"; then
   CMD_NAME=$(basename "$FILE_PATH" .md)
-  # Only log if this is a NEW file (not an edit of existing)
-  if [ ! -f "$FILE_PATH" ] 2>/dev/null; then
-    echo "[$TIMESTAMP] COMMAND_CREATED: $CMD_NAME ($FILE_PATH)" >> "$LOG_FILE"
-  fi
+  # Log all command file writes (at PostToolUse time, the file always exists)
+  echo "[$TIMESTAMP] COMMAND_WRITTEN: $CMD_NAME ($FILE_PATH)" >> "$LOG_FILE"
 fi
 
 # Always allow — this is a logging hook, never blocks

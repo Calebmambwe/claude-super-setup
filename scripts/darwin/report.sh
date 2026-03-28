@@ -104,7 +104,8 @@ TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
   # External Intel section
   if [ -n "$INTEL_DIR" ] && [ -d "$INTEL_DIR" ]; then
-    INTEL_FILES=$(find "$INTEL_DIR" -name "*.json" -newer "$INTEL_DIR" -mtime -1 2>/dev/null | head -10)
+    # Find intel files modified today (not -newer dir which compares to dir mtime)
+    INTEL_FILES=$(find "$INTEL_DIR" -name "*.json" -mtime -1 2>/dev/null | head -10)
     if [ -n "$INTEL_FILES" ]; then
       echo "## External Intelligence"
       echo ""
