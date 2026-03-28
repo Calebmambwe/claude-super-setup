@@ -1,0 +1,13 @@
+{
+  "id": "reg-015",
+  "tier": 1,
+  "category": "bug-fixing",
+  "description": "Fix this bash script that has 3 bugs:\n\n#!/bin/bash\nset -euo pipefail\n\nfor file in $(ls *.txt); do\n  count=$(cat $file | wc -l)\n  if [ $count -gt 10 ]; then\n    echo \"$file has $count lines\"\n  fi\ndone\n\nBugs: 1) ls parsing is unsafe with spaces in filenames, 2) unquoted variable expansions, 3) useless use of cat. Fix all three and explain each fix.",
+  "time_limit_seconds": 60,
+  "expected_output": {
+    "contains": ["glob", "\"$file\"", "wc -l", "quote"],
+    "not_contains": ["$(ls"],
+    "validate_syntax": true,
+    "language": "bash"
+  }
+}

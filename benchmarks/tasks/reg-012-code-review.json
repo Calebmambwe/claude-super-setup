@@ -1,0 +1,12 @@
+{
+  "id": "reg-012",
+  "tier": 2,
+  "category": "code-review",
+  "description": "Review this code and list all security issues:\n\nconst app = express();\napp.get('/user', (req, res) => {\n  const id = req.query.id;\n  const result = db.query(`SELECT * FROM users WHERE id = ${id}`);\n  res.json(result);\n});\napp.post('/login', (req, res) => {\n  const { password } = req.body;\n  if (password === 'admin123') res.json({ token: 'abc123' });\n});\n\nList each vulnerability and how to fix it.",
+  "time_limit_seconds": 60,
+  "expected_output": {
+    "contains": ["SQL injection", "hardcoded", "parameterized"],
+    "not_contains": [],
+    "validate_syntax": false
+  }
+}
