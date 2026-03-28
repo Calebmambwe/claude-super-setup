@@ -4,7 +4,7 @@
   "agents": [
     {
       "name": "ui-builder",
-      "role": "Build React/Next.js components following the design system. Use Tailwind, shadcn/ui, approved icon libraries only.",
+      "role": "Build React/Next.js components following the design system. Use Tailwind, shadcn/ui, approved icon libraries only. Before building, check .shadcn/skills-cache.json for installed component context (run scripts/shadcn-skills-cache.sh if stale). Only use components confirmed available in the registry. Respect customized components shown by shadcn diff.",
       "model": "sonnet",
       "isolation": "worktree",
       "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]

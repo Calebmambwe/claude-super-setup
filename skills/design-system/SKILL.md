@@ -608,6 +608,32 @@ experimental: {
 
 ---
 
+## Registry Context (shadcn/skills integration)
+
+For projects with a `components.json` file (shadcn/ui projects), agents MUST check the actual component registry before building UI. This prevents using components that aren't installed or ignoring customizations.
+
+### Before Building Any Component
+
+1. **Check cached registry context** — read `.shadcn/skills-cache.json` if it exists (less than 1 hour old)
+2. **If no cache or stale** — run `pnpm dlx shadcn@latest skills 2>/dev/null` to get structured context about installed components, their versions, and available primitives
+3. **Check for registry drift** — run `pnpm dlx shadcn@latest diff 2>/dev/null` to see which components have been customized vs stock
+
+### How to Use the Context
+
+- **Installed components**: only use components listed in the skills output — don't assume availability
+- **Customized components**: if `diff` shows modifications, preserve customizations when updating
+- **Missing components**: if a needed component isn't installed, install it with `pnpm dlx shadcn@latest add <component>` before using
+
+### Graceful Degradation
+
+If the project has no `components.json`, skip all registry checks silently. The design system tokens and patterns above remain the source of truth regardless.
+
+### Cache Script
+
+Run `scripts/shadcn-skills-cache.sh <project-dir>` to generate/refresh the cache. The cache is stored at `<project-dir>/.shadcn/skills-cache.json` and expires after 1 hour.
+
+---
+
 ## Anti-Patterns (NEVER DO)
 
 - NEVER use AI-generated, custom SVG, or emoji-style icons — only use approved icon libraries
