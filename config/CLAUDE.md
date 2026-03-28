@@ -139,6 +139,10 @@ When compacting context, ALWAYS preserve:
 - [critical] ALL static data must live in `src/data/` as a single source of truth — one file per data type, imported everywhere. NEVER duplicate data arrays across page files.
 - [critical] Local filesystem uploads (`fs writeFile` to `public/uploads/`) do NOT work on Vercel serverless. Use `@vercel/blob put()` for production. Always check upload storage strategy before deploying.
 - [critical] NEVER leave features half-wired. Blog page exists → must have real content. Contact form exists → must send emails (wire Resend with fallback to console.log). Images referenced → must exist (use inline SVG/gradient placeholders, not 404 paths).
+- [critical] Next.js 16: cookies(), headers(), params, searchParams are ALL async — must await them. This changed from Next.js 14 where some were sync.
+- [critical] shadcn/ui CLI v4: ALWAYS run `shadcn docs <component>` before implementing. Use `--diff` to detect registry drift. Use `gap-*` not `space-*`, semantic colors only, forms need FieldGroup+Field wrappers.
+- [pattern] Next.js 16 browser log forwarding: set `logging.browserToTerminal: true` in next.config.ts to see client errors in terminal — essential for AI agent debugging.
+- [pattern] Check `.next/dev/lock` for port conflicts before starting another dev server — contains PID to kill.
 
 ## References
 See @agent_docs/ci-standards.md for CI/CD pipeline requirements

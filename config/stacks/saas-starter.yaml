@@ -1,8 +1,8 @@
 # SaaS Starter Stack Template
-# Next.js 15 + Supabase Auth + Stripe + Resend + shadcn/ui
+# Next.js 16 + Supabase Auth + Stripe + Resend + shadcn/ui CLI v4
 
 name: saas-starter
-description: "Next.js 15 + Supabase Auth + Stripe + Resend + shadcn/ui"
+description: "Next.js 16 + Supabase Auth + Stripe + Resend + shadcn/ui CLI v4"
 short_label: "saas"
 
 init_commands:
@@ -12,6 +12,8 @@ init_commands:
   - "pnpm add -D tailwindcss-motion"
   - "pnpm add -D @types/node vitest @vitejs/plugin-react"
   - "pnpm dlx shadcn@latest init --defaults"
+  - "pnpm dlx skills add shadcn/ui"
+  - "npx @next/codemod@latest agents-md"
 
 directories:
   - src/app/(auth)

@@ -46,6 +46,22 @@ Before creating ANY icon, animation, or interactive component:
 - Page sections → check shadcnblocks (shadcnblocks.com) for existing blocks before building custom
 - Full reference: `docs/research/ui-libraries-reference.md`
 
+### 3c. shadcn/skills Check (projects with components.json)
+If the project has a `components.json` file, shadcn/skills is available:
+- ALWAYS run `pnpm dlx shadcn@latest docs <component>` before implementing any shadcn component
+- ALWAYS run `pnpm dlx shadcn@latest diff` to check for registry drift before modifying components
+- Use `--dry-run` flag when adding components to preview changes
+- Use `pnpm dlx shadcn@latest info --json` to understand project config (base library, aliases, icon library)
+- Follow composition rules: `gap-*` not `space-*`, `size-*` not `w-*`+`h-*`, semantic colors only
+- If shadcn/skills not installed: `pnpm dlx skills add shadcn/ui`
+
+### 3d. next-browser Check (Next.js 16+ projects)
+If the project uses Next.js 16+, next-browser provides AI agent DevTools:
+- Use `next-browser tree` to inspect component trees when debugging UI
+- Use `next-browser ppr lock/unlock` to analyze static shell coverage
+- If not installed: `pnpm dlx skills add vercel-labs/next-browser`
+- Ensure `logging.browserToTerminal: true` in next.config.ts for terminal error forwarding
+
 ### 4. AGENTS.md Check
 - If AGENTS.md exists: read it in full (project-specific gotchas and patterns)
 - If absent: create one after the first non-trivial task
@@ -68,6 +84,9 @@ Even for small changes, check two things:
 - [critical] NEVER use AI-generated, custom SVG, or emoji-style icons — only approved icon libraries (Lucide, Phosphor, Tabler, Heroicons)
 - [critical] NEVER build custom date pickers, comboboxes, or charts — use Ark UI or Tremor
 - [critical] NEVER skip checking Aceternity UI / Magic UI / shadcnblocks before building landing page sections from scratch
+- [critical] NEVER implement a shadcn component without running `shadcn docs <component>` first — the API may have changed in CLI v4
+- [critical] NEVER use `space-x-*`/`space-y-*` with flex layouts — use `gap-*` (enforced by shadcn/skills)
+- [critical] NEVER use raw Tailwind colors in shadcn projects — use semantic tokens (`bg-primary`, `text-muted-foreground`)
 
 ## Enforcement
 

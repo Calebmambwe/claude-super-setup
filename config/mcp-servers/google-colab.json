@@ -1,0 +1,11 @@
+{
+  "name": "google-colab",
+  "description": "Connect AI agents to Google Colab notebooks with GPU runtimes (T4/L4). Use for ML/data work.",
+  "install_note": "Requires: git, python, uv package manager. Run: pip install uv",
+  "when_to_install": "When doing ML/data science work that needs GPU compute or notebook integration",
+  "config": {
+    "command": "uvx",
+    "args": ["git+https://github.com/googlecolab/colab-mcp"]
+  },
+  "add_to_settings": "Copy the 'config' block into ~/.claude/settings.json under mcpServers.google-colab"
+}

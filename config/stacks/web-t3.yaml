@@ -1,14 +1,16 @@
 # Web Stack Template — T3
-# Next.js 15 + tRPC v11 + Prisma + NextAuth.js v5 + Tailwind CSS
+# Next.js 16 + tRPC v11 + Prisma + NextAuth.js v5 + Tailwind CSS
 
 name: web-t3
-description: "Next.js 15 + tRPC v11 + Prisma + NextAuth.js v5 + Tailwind CSS"
+description: "Next.js 16 + tRPC v11 + Prisma + NextAuth.js v5 + Tailwind CSS"
 short_label: "t3"
 
 init_commands:
   - "pnpm create t3-app@latest . --CI --nextAuth --prisma --tailwind --trpc --appRouter --noGit --importAlias '@/*'"
   - "pnpm add @phosphor-icons/react @tabler/icons-react @formkit/auto-animate"
   - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom prettier tailwindcss-motion"
+  - "pnpm dlx skills add shadcn/ui"
+  - "npx @next/codemod@latest agents-md"
 
 directories:
   - src/app
