@@ -9,6 +9,39 @@ The design system is law. NEVER write custom styles in components. NEVER use dir
 
 ---
 
+## shadcn/skills Integration (CLI v4)
+
+If the project has `components.json`, shadcn/skills is active. Follow these rules:
+
+### Before ANY shadcn component work:
+1. `pnpm dlx shadcn@latest info --json` — get project config (framework, base library, icon library, aliases)
+2. `pnpm dlx shadcn@latest docs <component>` — read official docs before implementing
+3. `pnpm dlx shadcn@latest search <query>` — find components in the registry
+
+### Before modifying shadcn components:
+1. `pnpm dlx shadcn@latest diff` — check if local components have drifted from registry
+2. `pnpm dlx shadcn@latest add <component> --dry-run` — preview what will change
+
+### Composition Rules (enforced by shadcn/skills):
+- Use `gap-*` with flex layouts — NEVER `space-x-*` or `space-y-*`
+- Use `size-*` for equal width/height — NEVER separate `w-*` + `h-*`
+- Use semantic color tokens (`bg-primary`, `text-muted-foreground`) — NEVER raw Tailwind colors
+- NEVER use manual `dark:` overrides — let the theme system handle it
+- Forms: MUST use `FieldGroup` + `Field` wrappers with `data-invalid` + `aria-invalid`
+- `InputGroup` requires `InputGroupInput` or `InputGroupTextarea` children
+- Dialog/Sheet/Drawer MUST have a Title element for accessibility
+- Items nest in Group containers (e.g., `SelectItem` inside `SelectGroup`)
+- Full Card composition: Header → Title → Description → Content → Footer
+
+### next-browser (Agent DevTools — Next.js 16+):
+When debugging UI issues in Next.js projects, use next-browser commands:
+- `next-browser tree` — inspect React component tree with props/hooks/state
+- `next-browser ppr lock` / `unlock` — analyze PPR static shell vs dynamic holes
+- `next-browser screenshot` — capture current state
+- Install: `pnpm dlx skills add vercel-labs/next-browser`
+
+---
+
 ## Color Palettes (pick one per project, NEVER mix palettes)
 
 Choose a palette based on the project's personality. Each is derived from a world-class reference.
