@@ -225,6 +225,11 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/auto-learn.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/scripts/cleanup-project.sh \"$CWD\"",
+            "async": true
           }
         ]
       }
