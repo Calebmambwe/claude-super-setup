@@ -8,7 +8,8 @@ short_label: "saas-complete"
 init_commands:
   - "pnpm create next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*'"
   - "pnpm add @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js resend zod"
-  - "pnpm add class-variance-authority clsx tailwind-merge lucide-react"
+  - "pnpm add class-variance-authority clsx tailwind-merge lucide-react @phosphor-icons/react @tabler/icons-react @formkit/auto-animate"
+  - "pnpm add -D tailwindcss-motion"
   - "pnpm add -D @types/node vitest @vitejs/plugin-react"
   - "pnpm dlx shadcn@latest init --defaults"
 

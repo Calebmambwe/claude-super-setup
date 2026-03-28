@@ -7,7 +7,8 @@ short_label: "t3"
 
 init_commands:
   - "pnpm create t3-app@latest . --CI --nextAuth --prisma --tailwind --trpc --appRouter --noGit --importAlias '@/*'"
-  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom prettier"
+  - "pnpm add @phosphor-icons/react @tabler/icons-react @formkit/auto-animate"
+  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom prettier tailwindcss-motion"
 
 directories:
   - src/app

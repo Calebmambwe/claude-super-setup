@@ -7,8 +7,8 @@ short_label: "web-v4"
 
 init_commands:
   - "pnpm create next-app . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*' --yes"
-  - "pnpm add zod framer-motion lucide-react next-themes"
-  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom @testing-library/user-event vitest-axe jsdom prettier prettier-plugin-tailwindcss eslint-plugin-jsx-a11y @next/bundle-analyzer"
+  - "pnpm add zod framer-motion lucide-react next-themes @phosphor-icons/react @tabler/icons-react @formkit/auto-animate"
+  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom @testing-library/user-event vitest-axe jsdom prettier prettier-plugin-tailwindcss eslint-plugin-jsx-a11y @next/bundle-analyzer tailwindcss-motion"
   - "pnpm dlx shadcn@latest init -y --base-color neutral"
 
 directories:

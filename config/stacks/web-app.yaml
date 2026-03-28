@@ -7,8 +7,8 @@ short_label: "web"
 
 init_commands:
   - "pnpm create next-app . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*' --yes"
-  - "pnpm add @supabase/supabase-js @supabase/ssr zod framer-motion lucide-react next-themes"
-  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom prettier @next/bundle-analyzer prettier-plugin-tailwindcss"
+  - "pnpm add @supabase/supabase-js @supabase/ssr zod framer-motion lucide-react next-themes @phosphor-icons/react @tabler/icons-react @formkit/auto-animate"
+  - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom prettier @next/bundle-analyzer prettier-plugin-tailwindcss tailwindcss-motion"
   - "pnpm dlx shadcn@latest init -y"
 
 directories:
