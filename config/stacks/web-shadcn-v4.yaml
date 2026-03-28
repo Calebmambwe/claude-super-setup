@@ -10,6 +10,8 @@ init_commands:
   - "pnpm add zod framer-motion lucide-react next-themes @phosphor-icons/react @tabler/icons-react @formkit/auto-animate"
   - "pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom @testing-library/user-event vitest-axe jsdom prettier prettier-plugin-tailwindcss eslint-plugin-jsx-a11y @next/bundle-analyzer tailwindcss-motion"
   - "pnpm dlx shadcn@latest init -y --base-color neutral"
+  - "pnpm dlx shadcn@latest migrate radix"
+  - "pnpm dlx shadcn@latest mcp init --client claude"
   - "pnpm dlx skills add shadcn/ui"
   - "pnpm dlx skills add vercel-labs/next-browser"
   - "npx @next/codemod@latest agents-md"

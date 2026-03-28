@@ -12,6 +12,8 @@ init_commands:
   - "pnpm add -D tailwindcss-motion"
   - "pnpm add -D @types/node vitest @vitejs/plugin-react"
   - "pnpm dlx shadcn@latest init --defaults"
+  - "pnpm dlx shadcn@latest migrate radix"
+  - "pnpm dlx shadcn@latest mcp init --client claude"
   - "pnpm dlx skills add shadcn/ui"
   - "npx @next/codemod@latest agents-md"
 

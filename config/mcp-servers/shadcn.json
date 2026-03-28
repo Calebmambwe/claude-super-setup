@@ -1,0 +1,12 @@
+{
+  "name": "shadcn",
+  "description": "shadcn/ui MCP server — gives AI agents structured access to component registries, docs, and CLI commands",
+  "install_note": "Auto-configured per project via 'pnpm dlx shadcn@latest mcp init --client claude'. Creates .mcp.json in project root.",
+  "when_to_install": "Any project using shadcn/ui — gives agents ability to search, install, and inspect components via MCP",
+  "config": {
+    "command": "npx",
+    "args": ["-y", "shadcn@latest", "mcp"]
+  },
+  "project_level": true,
+  "add_to_project": "Add to project .mcp.json (not global settings.json) — each project has its own registry config"
+}
