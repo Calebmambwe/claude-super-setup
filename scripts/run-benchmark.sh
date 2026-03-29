@@ -128,7 +128,8 @@ for task_file in "${TASK_FILES[@]}"; do
   # --dangerously-skip-permissions prevents the interactive trust prompt from
   # blocking the process (which caused 60s timeouts and false 14% scores).
   RAW_OUTPUT=""
-  if ! RAW_OUTPUT=$(timeout "$task_time_limit" claude --print --dangerously-skip-permissions "$task_description" 2>/dev/null); then
+  BENCHMARK_MODEL="${BENCHMARK_MODEL:-claude-opus-4-6}"
+  if ! RAW_OUTPUT=$(timeout "$task_time_limit" claude --print --dangerously-skip-permissions --model "$BENCHMARK_MODEL" "$task_description" 2>/dev/null); then
     RAW_OUTPUT=""
   fi
 
