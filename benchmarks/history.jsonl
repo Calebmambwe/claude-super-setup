@@ -116,3 +116,1839 @@
     "syntax_valid": true
   }
 }
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-001",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 23,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "interface User",
+      "id:",
+      "email:",
+      "name:",
+      "role:",
+      "createdAt:"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-002",
+  "tier": 1,
+  "category": "bug-fixing",
+  "score": 75,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 14,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "forbidden: user.email;"
+  ],
+  "details": {
+    "contains_matched": [
+      "function getUserEmail",
+      "null",
+      "return"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "user.email;"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-003",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 77,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 25,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "missing: z.object",
+    "missing: z.string"
+  ],
+  "details": {
+    "contains_matched": [
+      "email",
+      "name",
+      "role",
+      "password",
+      "createUserSchema",
+      "CreateUserInput"
+    ],
+    "contains_missing": [
+      "z.object",
+      "z.string"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-004",
+  "tier": 2,
+  "category": "refactoring",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 12,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "function",
+      "return",
+      "reduce"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-005",
+  "tier": 2,
+  "category": "test-writing",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 15,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "describe",
+      "it(",
+      "expect",
+      "toThrow",
+      "calculateDiscount"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-006",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 28,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 49,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "missing: router.post",
+    "missing: req.body",
+    "missing: res.status(400)",
+    "missing: res.status(201)",
+    "forbidden: any"
+  ],
+  "details": {
+    "contains_matched": [
+      "/api/users",
+      "randomUUID"
+    ],
+    "contains_missing": [
+      "router.post",
+      "req.body",
+      "res.status(400)",
+      "res.status(201)"
+    ],
+    "not_contains_violations": [
+      "any"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-007",
+  "tier": 2,
+  "category": "bug-fixing",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 16,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "try",
+      "catch",
+      "response.ok",
+      "throw",
+      "console.error"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-008",
+  "tier": 3,
+  "category": "code-generation",
+  "score": 57,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 31,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "missing: onClick",
+    "missing: return (",
+    "forbidden: any"
+  ],
+  "details": {
+    "contains_matched": [
+      "UserCard",
+      "interface",
+      "onEdit",
+      "onDelete"
+    ],
+    "contains_missing": [
+      "onClick",
+      "return ("
+    ],
+    "not_contains_violations": [
+      "any"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-009",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 88,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 13,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "missing: HAVING"
+  ],
+  "details": {
+    "contains_matched": [
+      "SELECT",
+      "JOIN",
+      "WHERE",
+      "GROUP BY",
+      "ORDER BY",
+      "COUNT",
+      "created_at"
+    ],
+    "contains_missing": [
+      "HAVING"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-010",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 71,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 22,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "missing: set -euo pipefail",
+    "missing: #!/usr/bin/env bash"
+  ],
+  "details": {
+    "contains_matched": [
+      "find",
+      ".log",
+      "tar",
+      "date"
+    ],
+    "contains_missing": [
+      "set -euo pipefail",
+      "#!/usr/bin/env bash"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-011",
+  "tier": 1,
+  "category": "accessibility",
+  "score": 85,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 33,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "TypeScript syntax error"
+  ],
+  "details": {
+    "contains_matched": [
+      "aria-busy",
+      "aria-disabled",
+      "focus-visible",
+      "role",
+      "button"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": false
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-012",
+  "tier": 2,
+  "category": "code-review",
+  "score": 0,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 24,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "missing: SQL injection",
+    "missing: hardcoded",
+    "missing: parameterized"
+  ],
+  "details": {
+    "contains_matched": [
+      ""
+    ],
+    "contains_missing": [
+      "SQL injection",
+      "hardcoded",
+      "parameterized"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-013",
+  "tier": 2,
+  "category": "api-design",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 23,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "POST",
+      "GET",
+      "PUT",
+      "DELETE",
+      "200",
+      "201",
+      "404",
+      "pagination"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-014",
+  "tier": 2,
+  "category": "documentation",
+  "score": 33,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 22,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "missing: Usage",
+    "missing: taskr add",
+    "missing: taskr list",
+    "missing: Configuration"
+  ],
+  "details": {
+    "contains_matched": [
+      "install",
+      "npm"
+    ],
+    "contains_missing": [
+      "Usage",
+      "taskr add",
+      "taskr list",
+      "Configuration"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-230203",
+  "task_id": "reg-015",
+  "tier": 1,
+  "category": "bug-fixing",
+  "score": 83,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 15,
+  "timestamp": "2026-03-28T23:02:03Z",
+  "violations": [
+    "forbidden: $(ls"
+  ],
+  "details": {
+    "contains_matched": [
+      "glob",
+      "\"$file\"",
+      "wc -l",
+      "quote"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "$(ls"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-001",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 28,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 23,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "missing: interface User",
+    "missing: id:",
+    "missing: email:",
+    "missing: role:",
+    "missing: createdAt:"
+  ],
+  "details": {
+    "contains_matched": [
+      "name:"
+    ],
+    "contains_missing": [
+      "interface User",
+      "id:",
+      "email:",
+      "role:",
+      "createdAt:"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-002",
+  "tier": 1,
+  "category": "bug-fixing",
+  "score": 75,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 13,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "forbidden: user.email;"
+  ],
+  "details": {
+    "contains_matched": [
+      "function getUserEmail",
+      "null",
+      "return"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "user.email;"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-003",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 88,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 19,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "missing: z.object"
+  ],
+  "details": {
+    "contains_matched": [
+      "email",
+      "z.string",
+      "name",
+      "role",
+      "password",
+      "createUserSchema",
+      "CreateUserInput"
+    ],
+    "contains_missing": [
+      "z.object"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-004",
+  "tier": 2,
+  "category": "refactoring",
+  "score": 83,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 11,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "forbidden: console.log"
+  ],
+  "details": {
+    "contains_matched": [
+      "function",
+      "return",
+      "reduce"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "console.log"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-005",
+  "tier": 2,
+  "category": "test-writing",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 14,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "describe",
+      "it(",
+      "expect",
+      "toThrow",
+      "calculateDiscount"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-006",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 28,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 22,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "missing: router.post",
+    "missing: /api/users",
+    "missing: req.body",
+    "missing: res.status(400)",
+    "missing: res.status(201)"
+  ],
+  "details": {
+    "contains_matched": [
+      "randomUUID"
+    ],
+    "contains_missing": [
+      "router.post",
+      "/api/users",
+      "req.body",
+      "res.status(400)",
+      "res.status(201)"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-007",
+  "tier": 2,
+  "category": "bug-fixing",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 14,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "try",
+      "catch",
+      "response.ok",
+      "throw",
+      "console.error"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-008",
+  "tier": 3,
+  "category": "code-generation",
+  "score": 57,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 23,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "missing: onClick",
+    "missing: return (",
+    "forbidden: any"
+  ],
+  "details": {
+    "contains_matched": [
+      "UserCard",
+      "interface",
+      "onEdit",
+      "onDelete"
+    ],
+    "contains_missing": [
+      "onClick",
+      "return ("
+    ],
+    "not_contains_violations": [
+      "any"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-009",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 88,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 15,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "missing: HAVING"
+  ],
+  "details": {
+    "contains_matched": [
+      "SELECT",
+      "JOIN",
+      "WHERE",
+      "GROUP BY",
+      "ORDER BY",
+      "COUNT",
+      "created_at"
+    ],
+    "contains_missing": [
+      "HAVING"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-010",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 71,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 24,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "missing: #!/usr/bin/env bash",
+    "missing: date"
+  ],
+  "details": {
+    "contains_matched": [
+      "set -euo pipefail",
+      "find",
+      ".log",
+      "tar"
+    ],
+    "contains_missing": [
+      "#!/usr/bin/env bash",
+      "date"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-011",
+  "tier": 1,
+  "category": "accessibility",
+  "score": 85,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 43,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "TypeScript syntax error"
+  ],
+  "details": {
+    "contains_matched": [
+      "aria-busy",
+      "aria-disabled",
+      "focus-visible",
+      "role",
+      "button"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": false
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-012",
+  "tier": 2,
+  "category": "code-review",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 22,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "SQL injection",
+      "hardcoded",
+      "parameterized"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-013",
+  "tier": 2,
+  "category": "api-design",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 27,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "POST",
+      "GET",
+      "PUT",
+      "DELETE",
+      "200",
+      "201",
+      "404",
+      "pagination"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-014",
+  "tier": 2,
+  "category": "documentation",
+  "score": 16,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 25,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "missing: npm",
+    "missing: Usage",
+    "missing: taskr add",
+    "missing: taskr list",
+    "missing: Configuration"
+  ],
+  "details": {
+    "contains_matched": [
+      "install"
+    ],
+    "contains_missing": [
+      "npm",
+      "Usage",
+      "taskr add",
+      "taskr list",
+      "Configuration"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-231536",
+  "task_id": "reg-015",
+  "tier": 1,
+  "category": "bug-fixing",
+  "score": 83,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 16,
+  "timestamp": "2026-03-28T23:15:36Z",
+  "violations": [
+    "forbidden: $(ls"
+  ],
+  "details": {
+    "contains_matched": [
+      "glob",
+      "\"$file\"",
+      "wc -l",
+      "quote"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "$(ls"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-001",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 28,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 19,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "missing: interface User",
+    "missing: id:",
+    "missing: email:",
+    "missing: role:",
+    "missing: createdAt:"
+  ],
+  "details": {
+    "contains_matched": [
+      "name:"
+    ],
+    "contains_missing": [
+      "interface User",
+      "id:",
+      "email:",
+      "role:",
+      "createdAt:"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-002",
+  "tier": 1,
+  "category": "bug-fixing",
+  "score": 75,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 14,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "forbidden: user.email;"
+  ],
+  "details": {
+    "contains_matched": [
+      "function getUserEmail",
+      "null",
+      "return"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "user.email;"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-003",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 17,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "z.object",
+      "email",
+      "z.string",
+      "name",
+      "role",
+      "password",
+      "createUserSchema",
+      "CreateUserInput"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-004",
+  "tier": 2,
+  "category": "refactoring",
+  "score": 83,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 13,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "forbidden: console.log"
+  ],
+  "details": {
+    "contains_matched": [
+      "function",
+      "return",
+      "reduce"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "console.log"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-005",
+  "tier": 2,
+  "category": "test-writing",
+  "score": 16,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 15,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "missing: describe",
+    "missing: it(",
+    "missing: expect",
+    "missing: toThrow",
+    "missing: calculateDiscount"
+  ],
+  "details": {
+    "contains_matched": [
+      ""
+    ],
+    "contains_missing": [
+      "describe",
+      "it(",
+      "expect",
+      "toThrow",
+      "calculateDiscount"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-006",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 42,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 28,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "missing: router.post",
+    "missing: req.body",
+    "missing: res.status(400)",
+    "missing: res.status(201)"
+  ],
+  "details": {
+    "contains_matched": [
+      "/api/users",
+      "randomUUID"
+    ],
+    "contains_missing": [
+      "router.post",
+      "req.body",
+      "res.status(400)",
+      "res.status(201)"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-007",
+  "tier": 2,
+  "category": "bug-fixing",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 12,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "try",
+      "catch",
+      "response.ok",
+      "throw",
+      "console.error"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-008",
+  "tier": 3,
+  "category": "code-generation",
+  "score": 57,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 60,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "missing: onClick",
+    "missing: return (",
+    "forbidden: any"
+  ],
+  "details": {
+    "contains_matched": [
+      "UserCard",
+      "interface",
+      "onEdit",
+      "onDelete"
+    ],
+    "contains_missing": [
+      "onClick",
+      "return ("
+    ],
+    "not_contains_violations": [
+      "any"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-009",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 88,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 16,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "missing: HAVING"
+  ],
+  "details": {
+    "contains_matched": [
+      "SELECT",
+      "JOIN",
+      "WHERE",
+      "GROUP BY",
+      "ORDER BY",
+      "COUNT",
+      "created_at"
+    ],
+    "contains_missing": [
+      "HAVING"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-010",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 71,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 22,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "missing: #!/usr/bin/env bash",
+    "missing: date"
+  ],
+  "details": {
+    "contains_matched": [
+      "set -euo pipefail",
+      "find",
+      ".log",
+      "tar"
+    ],
+    "contains_missing": [
+      "#!/usr/bin/env bash",
+      "date"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-011",
+  "tier": 1,
+  "category": "accessibility",
+  "score": 85,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 23,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "TypeScript syntax error"
+  ],
+  "details": {
+    "contains_matched": [
+      "aria-busy",
+      "aria-disabled",
+      "focus-visible",
+      "role",
+      "button"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": false
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-012",
+  "tier": 2,
+  "category": "code-review",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 23,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "SQL injection",
+      "hardcoded",
+      "parameterized"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-013",
+  "tier": 2,
+  "category": "api-design",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 29,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "POST",
+      "GET",
+      "PUT",
+      "DELETE",
+      "200",
+      "201",
+      "404",
+      "pagination"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-014",
+  "tier": 2,
+  "category": "documentation",
+  "score": 16,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 26,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "missing: install",
+    "missing: npm",
+    "missing: taskr add",
+    "missing: taskr list",
+    "missing: Configuration"
+  ],
+  "details": {
+    "contains_matched": [
+      "Usage"
+    ],
+    "contains_missing": [
+      "install",
+      "npm",
+      "taskr add",
+      "taskr list",
+      "Configuration"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260328-233226",
+  "task_id": "reg-015",
+  "tier": 1,
+  "category": "bug-fixing",
+  "score": 83,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 15,
+  "timestamp": "2026-03-28T23:32:26Z",
+  "violations": [
+    "forbidden: $(ls"
+  ],
+  "details": {
+    "contains_matched": [
+      "glob",
+      "\"$file\"",
+      "wc -l",
+      "quote"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "$(ls"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-001",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 13,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "interface User",
+      "id:",
+      "email:",
+      "name:",
+      "role:",
+      "createdAt:"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-002",
+  "tier": 1,
+  "category": "bug-fixing",
+  "score": 75,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 10,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [
+    "forbidden: user.email;"
+  ],
+  "details": {
+    "contains_matched": [
+      "function getUserEmail",
+      "null",
+      "return"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "user.email;"
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-003",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 11,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "z.object",
+      "email",
+      "z.string",
+      "name",
+      "role",
+      "password",
+      "createUserSchema",
+      "CreateUserInput"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-004",
+  "tier": 2,
+  "category": "refactoring",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 12,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "function",
+      "return",
+      "reduce"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-005",
+  "tier": 2,
+  "category": "test-writing",
+  "score": 16,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 11,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [
+    "missing: describe",
+    "missing: it(",
+    "missing: expect",
+    "missing: toThrow",
+    "missing: calculateDiscount"
+  ],
+  "details": {
+    "contains_matched": [
+      ""
+    ],
+    "contains_missing": [
+      "describe",
+      "it(",
+      "expect",
+      "toThrow",
+      "calculateDiscount"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-006",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 15,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "router.post",
+      "/api/users",
+      "req.body",
+      "res.status(400)",
+      "res.status(201)",
+      "randomUUID"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-007",
+  "tier": 2,
+  "category": "bug-fixing",
+  "score": 16,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 11,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [
+    "missing: try",
+    "missing: catch",
+    "missing: response.ok",
+    "missing: throw",
+    "missing: console.error"
+  ],
+  "details": {
+    "contains_matched": [
+      ""
+    ],
+    "contains_missing": [
+      "try",
+      "catch",
+      "response.ok",
+      "throw",
+      "console.error"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-008",
+  "tier": 3,
+  "category": "code-generation",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 13,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "UserCard",
+      "interface",
+      "onEdit",
+      "onDelete",
+      "onClick",
+      "return ("
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-009",
+  "tier": 2,
+  "category": "code-generation",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 15,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "SELECT",
+      "JOIN",
+      "WHERE",
+      "GROUP BY",
+      "ORDER BY",
+      "COUNT",
+      "HAVING",
+      "created_at"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-010",
+  "tier": 1,
+  "category": "code-generation",
+  "score": 28,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 21,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [
+    "missing: set -euo pipefail",
+    "missing: #!/usr/bin/env bash",
+    "missing: find",
+    "missing: .log",
+    "missing: date"
+  ],
+  "details": {
+    "contains_matched": [
+      "tar"
+    ],
+    "contains_missing": [
+      "set -euo pipefail",
+      "#!/usr/bin/env bash",
+      "find",
+      ".log",
+      "date"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-011",
+  "tier": 1,
+  "category": "accessibility",
+  "score": 14,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 29,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [
+    "missing: aria-busy",
+    "missing: aria-disabled",
+    "missing: focus-visible",
+    "missing: role",
+    "missing: button",
+    "TypeScript syntax error"
+  ],
+  "details": {
+    "contains_matched": [
+      ""
+    ],
+    "contains_missing": [
+      "aria-busy",
+      "aria-disabled",
+      "focus-visible",
+      "role",
+      "button"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": false
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-012",
+  "tier": 2,
+  "category": "code-review",
+  "score": 0,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 18,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [
+    "missing: SQL injection",
+    "missing: hardcoded",
+    "missing: parameterized"
+  ],
+  "details": {
+    "contains_matched": [
+      ""
+    ],
+    "contains_missing": [
+      "SQL injection",
+      "hardcoded",
+      "parameterized"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-013",
+  "tier": 2,
+  "category": "api-design",
+  "score": 100,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 20,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [],
+  "details": {
+    "contains_matched": [
+      "POST",
+      "GET",
+      "PUT",
+      "DELETE",
+      "200",
+      "201",
+      "404",
+      "pagination"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-014",
+  "tier": 2,
+  "category": "documentation",
+  "score": 16,
+  "pass": false,
+  "regression": false,
+  "duration_seconds": 28,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [
+    "missing: install",
+    "missing: npm",
+    "missing: taskr add",
+    "missing: taskr list",
+    "missing: Configuration"
+  ],
+  "details": {
+    "contains_matched": [
+      "Usage"
+    ],
+    "contains_missing": [
+      "install",
+      "npm",
+      "taskr add",
+      "taskr list",
+      "Configuration"
+    ],
+    "not_contains_violations": [
+      ""
+    ],
+    "syntax_valid": true
+  }
+}
+{
+  "run_id": "run-20260329-012034",
+  "task_id": "reg-015",
+  "tier": 1,
+  "category": "bug-fixing",
+  "score": 83,
+  "pass": true,
+  "regression": false,
+  "duration_seconds": 13,
+  "timestamp": "2026-03-29T01:20:34Z",
+  "violations": [
+    "forbidden: $(ls"
+  ],
+  "details": {
+    "contains_matched": [
+      "glob",
+      "\"$file\"",
+      "wc -l",
+      "quote"
+    ],
+    "contains_missing": [
+      ""
+    ],
+    "not_contains_violations": [
+      "$(ls"
+    ],
+    "syntax_valid": true
+  }
+}

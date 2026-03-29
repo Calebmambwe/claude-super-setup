@@ -13,13 +13,11 @@
       "priority": "P0",
       "risk": "low",
       "effort": "small",
-      "status": "completed",
-      "attempts": 1,
+      "status": "pending",
+      "attempts": 0,
       "max_attempts": 3,
       "depends_on": [],
-      "files": [
-        "docs/sharp-knife-redesign/baseline.json"
-      ],
+      "files": ["docs/sharp-knife-redesign/baseline.json"],
       "acceptance": [
         "All 15 benchmark tasks scored",
         "Pass rate and average score recorded",
@@ -34,15 +32,11 @@
       "priority": "P0",
       "risk": "low",
       "effort": "small",
-      "status": "completed",
-      "attempts": 1,
+      "status": "pending",
+      "attempts": 0,
       "max_attempts": 3,
-      "depends_on": [
-        "SKR-001"
-      ],
-      "files": [
-        "~/.claude/CLAUDE.md"
-      ],
+      "depends_on": ["SKR-001"],
+      "files": ["~/.claude/CLAUDE.md"],
       "acceptance": [
         "CLAUDE.md is ~80 lines",
         "Contains: Identity, Workflow, Verification, Two-Correction Rule, Research, Critical Gotchas, Compact section",
@@ -58,15 +52,11 @@
       "priority": "P0",
       "risk": "medium",
       "effort": "small",
-      "status": "completed",
-      "attempts": 1,
+      "status": "pending",
+      "attempts": 0,
       "max_attempts": 3,
-      "depends_on": [
-        "SKR-002"
-      ],
-      "files": [
-        "~/.claude-super-setup/rules/core.md"
-      ],
+      "depends_on": ["SKR-002"],
+      "files": ["~/.claude-super-setup/rules/core.md"],
       "acceptance": [
         "Contains git rules (branches, conventional commits, no force push)",
         "Contains slimmed resource audit checklist",
@@ -84,15 +74,11 @@
       "priority": "P0",
       "risk": "low",
       "effort": "small",
-      "status": "completed",
-      "attempts": 1,
+      "status": "pending",
+      "attempts": 0,
       "max_attempts": 3,
-      "depends_on": [
-        "SKR-002"
-      ],
-      "files": [
-        "~/.claude-super-setup/rules/frontend.md"
-      ],
+      "depends_on": ["SKR-002"],
+      "files": ["~/.claude-super-setup/rules/frontend.md"],
       "acceptance": [
         "Contains visual verification 3-tool pipeline",
         "Contains regression gate tiers",
@@ -109,13 +95,10 @@
       "priority": "P0",
       "risk": "low",
       "effort": "small",
-      "status": "completed",
-      "attempts": 1,
+      "status": "pending",
+      "attempts": 0,
       "max_attempts": 3,
-      "depends_on": [
-        "SKR-003",
-        "SKR-004"
-      ],
+      "depends_on": ["SKR-003", "SKR-004"],
       "files": [
         "~/.claude-super-setup/rules/git.md",
         "~/.claude-super-setup/rules/consistency.md",
@@ -138,16 +121,11 @@
       "priority": "P0",
       "risk": "low",
       "effort": "small",
-      "status": "completed",
-      "attempts": 1,
+      "status": "pending",
+      "attempts": 0,
       "max_attempts": 3,
-      "depends_on": [
-        "SKR-005"
-      ],
-      "files": [
-        "~/.claude/skills/",
-        "~/.claude/skills-archive/"
-      ],
+      "depends_on": ["SKR-005"],
+      "files": ["~/.claude/skills/", "~/.claude/skills-archive/"],
       "acceptance": [
         "6 directories moved to skills-archive",
         "design-system and backend-architecture remain in skills/",
@@ -163,15 +141,11 @@
       "priority": "P0",
       "risk": "medium",
       "effort": "medium",
-      "status": "completed",
-      "attempts": 1,
+      "status": "pending",
+      "attempts": 0,
       "max_attempts": 3,
-      "depends_on": [
-        "SKR-006"
-      ],
-      "files": [
-        "~/.claude/settings.json"
-      ],
+      "depends_on": ["SKR-006"],
+      "files": ["~/.claude/settings.json"],
       "acceptance": [
         "SessionStart: 1 hook (task reminder)",
         "SessionEnd: 2 hooks (session-end + auto-learn)",
@@ -192,16 +166,11 @@
       "priority": "P1",
       "risk": "low",
       "effort": "small",
-      "status": "completed",
-      "attempts": 1,
+      "status": "pending",
+      "attempts": 0,
       "max_attempts": 3,
-      "depends_on": [
-        "SKR-007"
-      ],
-      "files": [
-        "tasks.json",
-        "tasks-archive/voice-system-tasks.json"
-      ],
+      "depends_on": ["SKR-007"],
+      "files": ["tasks.json", "tasks-archive/voice-system-tasks.json"],
       "acceptance": [
         "Voice system tasks archived to tasks-archive/",
         "tasks.json contains only sharp-knife-redesign tasks",
@@ -220,12 +189,8 @@
       "status": "pending",
       "attempts": 0,
       "max_attempts": 3,
-      "depends_on": [
-        "SKR-008"
-      ],
-      "files": [
-        "docs/sharp-knife-redesign/after.json"
-      ],
+      "depends_on": ["SKR-008"],
+      "files": ["docs/sharp-knife-redesign/after.json"],
       "acceptance": [
         "All 15 benchmark tasks scored",
         "Before/after comparison documented",
