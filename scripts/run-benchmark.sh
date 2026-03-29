@@ -125,13 +125,75 @@ for task_file in "${TASK_FILES[@]}"; do
   START_TS=$(date +%s)
 
   # Invoke Claude with the task description
+  # --dangerously-skip-permissions prevents the interactive trust prompt from
+  # blocking the process (which caused 60s timeouts and false 14% scores).
   RAW_OUTPUT=""
-  if ! RAW_OUTPUT=$(timeout "$task_time_limit" claude --print "$task_description" 2>/dev/null); then
+  if ! RAW_OUTPUT=$(timeout "$task_time_limit" claude --print --dangerously-skip-permissions "$task_description" 2>/dev/null); then
     RAW_OUTPUT=""
   fi
 
   END_TS=$(date +%s)
   DURATION=$((END_TS - START_TS))
+
+  # If output is empty (timeout or error), score 0 immediately — skip all checks.
+  if [[ -z "$RAW_OUTPUT" ]]; then
+    CONTAINS_MATCHED=()
+    CONTAINS_MISSING=()
+    NOT_CONTAINS_VIOLATIONS=()
+    SYNTAX_VALID=true
+    EARNED=0
+    MAX_POINTS=$(jq '[.expected_output.contains // [] | length, .expected_output.not_contains // [] | length] | add' "$task_file" 2>/dev/null || echo 1)
+    [[ "$(jq -r '.expected_output.validate_syntax // false' "$task_file")" == "true" ]] && MAX_POINTS=$((MAX_POINTS + 1))
+    SCORE=0
+    PASS="false"
+    PASS_LABEL="FAIL"
+    FAILURE_NOTES+=("$task_id: Score 0% — no output (timeout or error)")
+    RESULT_ROWS+=("$(printf '| %-22s | %-20s | %3d%% | %-4s | %-16s | %ds |' \
+      "$task_id" "$task_category" "$SCORE" "$PASS_LABEL" "-" "$DURATION")")
+    echo "FAIL (0%) in ${DURATION}s [timeout/no output]"
+    # Still write to history so regressions can be tracked
+    CONTAINS_MATCHED_JSON="[]"
+    CONTAINS_MISSING_JSON=$(jq '.expected_output.contains // []' "$task_file" 2>/dev/null || echo "[]")
+    NOT_CONTAINS_VIOLATIONS_JSON="[]"
+    VIOLATIONS_JSON=$(jq '[.expected_output.contains // [] | .[] | "missing: " + .] | . + (if .expected_output.validate_syntax then ["timeout/no output"] else [] end)' "$task_file" 2>/dev/null || echo '["timeout/no output"]')
+    RESULT_JSON=$(jq -n \
+      --arg run_id "$RUN_ID" \
+      --arg task_id "$task_id" \
+      --argjson tier "$task_tier" \
+      --arg category "$task_category" \
+      --argjson score 0 \
+      --argjson pass false \
+      --argjson regression false \
+      --argjson duration "$DURATION" \
+      --arg timestamp "$RUN_TIMESTAMP" \
+      --argjson violations '["timeout/no output"]' \
+      --argjson contains_matched "[]" \
+      --argjson contains_missing "$CONTAINS_MISSING_JSON" \
+      --argjson not_contains_violations "[]" \
+      --argjson syntax_valid true \
+      '{
+        run_id: $run_id,
+        task_id: $task_id,
+        tier: $tier,
+        category: $category,
+        score: $score,
+        pass: $pass,
+        regression: $regression,
+        duration_seconds: $duration,
+        timestamp: $timestamp,
+        violations: $violations,
+        details: {
+          contains_matched: $contains_matched,
+          contains_missing: $contains_missing,
+          not_contains_violations: $not_contains_violations,
+          syntax_valid: $syntax_valid
+        }
+      }')
+    echo "$RESULT_JSON" >> "$HISTORY_FILE"
+    TOTAL=$((TOTAL + 1))
+    FAILED=$((FAILED + 1))
+    continue
+  fi
 
   # --- Score: contains checks ---
   CONTAINS_MATCHED=()
