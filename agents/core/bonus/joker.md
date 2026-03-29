@@ -5,6 +5,7 @@ color: yellow
 tools: Write
 department: bonus
 model: haiku
+effort: low
 escalation: none
 ---
 

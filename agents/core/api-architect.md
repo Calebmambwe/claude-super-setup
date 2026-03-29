@@ -3,6 +3,7 @@ name: api-architect
 department: engineering
 description: Designs robust, consistent API contracts using OpenAPI 3.1 specifications
 model: opus
+effort: high
 memory: user
 skills: [backend-architecture]
 tools: Read, Write, Grep, Glob

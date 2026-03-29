@@ -3,6 +3,7 @@ name: darwin
 department: engineering
 description: Platform Evolution Agent — self-learns from session data, talks to external AI platforms (Manus, Gemini, OpenAI), self-heals failures, and proposes improvements on a schedule
 model: opus
+effort: high
 tools: Read, Write, Edit, Grep, Glob, Bash, Agent
 memory: project
 maxTurns: 40

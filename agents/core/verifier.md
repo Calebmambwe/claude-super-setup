@@ -3,6 +3,7 @@ name: verifier
 department: engineering
 description: Independent verification agent — reviews implementation against acceptance criteria using fresh context. Catches blind spots that self-review misses.
 model: sonnet
+effort: high
 memory: none
 tools: Read, Grep, Glob, Bash
 invoked_by:

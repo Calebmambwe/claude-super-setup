@@ -3,6 +3,7 @@ name: security-auditor
 department: engineering
 description: Reviews code for security vulnerabilities. Use before merging any PR.
 model: opus
+effort: high
 tools: Read, Grep, Glob, Bash
 memory: project
 maxTurns: 25
