@@ -125,13 +125,27 @@ for task_file in "${TASK_FILES[@]}"; do
   START_TS=$(date +%s)
 
   # Invoke Claude with the task description
+  # Run from PROJECT_ROOT so claude picks up CLAUDE.md, skills, and rules
+  # Use --output-format text to get raw output without markdown wrapping
   RAW_OUTPUT=""
-  if ! RAW_OUTPUT=$(timeout "$task_time_limit" claude --print "$task_description" 2>/dev/null); then
+  CLAUDE_FLAGS="--print"
+  OUTPUT_FORMAT=$(jq -r '.output_format // "text"' "$task_file")
+  if [[ "$OUTPUT_FORMAT" == "code" ]]; then
+    CLAUDE_FLAGS="--print --output-format text"
+  fi
+  if ! RAW_OUTPUT=$(cd "$PROJECT_ROOT" && timeout "$task_time_limit" claude $CLAUDE_FLAGS "$task_description" 2>/dev/null); then
     RAW_OUTPUT=""
   fi
 
   END_TS=$(date +%s)
   DURATION=$((END_TS - START_TS))
+
+  # --- Extract code from markdown code blocks for better matching ---
+  # claude --print wraps code in ```lang ... ``` blocks. Extract all code blocks
+  # and concatenate with the raw output for comprehensive matching.
+  CODE_BLOCKS=$(echo "$RAW_OUTPUT" | sed -n '/^```/,/^```$/p' | sed '/^```/d')
+  MATCH_TEXT="${RAW_OUTPUT}
+${CODE_BLOCKS}"
 
   # --- Score: contains checks ---
   CONTAINS_MATCHED=()
@@ -142,7 +156,10 @@ for task_file in "${TASK_FILES[@]}"; do
   done < <(jq -r '.expected_output.contains[]?' "$task_file" 2>/dev/null || true)
 
   for check in "${CONTAINS_LIST[@]}"; do
-    if echo "$RAW_OUTPUT" | grep -qF "$check"; then
+    # Try exact match first, then case-insensitive match
+    if echo "$MATCH_TEXT" | grep -qF "$check"; then
+      CONTAINS_MATCHED+=("$check")
+    elif echo "$MATCH_TEXT" | grep -qiF "$check"; then
       CONTAINS_MATCHED+=("$check")
     else
       CONTAINS_MISSING+=("$check")
@@ -157,7 +174,7 @@ for task_file in "${TASK_FILES[@]}"; do
   done < <(jq -r '.expected_output.not_contains[]?' "$task_file" 2>/dev/null || true)
 
   for check in "${NOT_CONTAINS_LIST[@]}"; do
-    if echo "$RAW_OUTPUT" | grep -qF "$check"; then
+    if echo "$MATCH_TEXT" | grep -qF "$check"; then
       NOT_CONTAINS_VIOLATIONS+=("$check")
     fi
   done

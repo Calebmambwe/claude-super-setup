@@ -2,12 +2,21 @@
   "id": "reg-007",
   "tier": 2,
   "category": "bug-fixing",
-  "description": "Add proper error handling to this async function that fetches a user from an API. The current version has no error handling:\n\nasync function fetchUser(userId: string): Promise<User> {\n  const response = await fetch(`https://api.example.com/users/${userId}`);\n  const data = await response.json();\n  return data;\n}\n\nAdd error handling that: checks if response.ok is false and throws an error with the status code, wraps the entire function in try/catch, logs the error, and re-throws it.",
+  "description": "Add proper error handling to this async function that fetches a user from an API. The current version has no error handling:\n\nasync function fetchUser(userId: string): Promise<User> {\n  const response = await fetch(`https://api.example.com/users/${userId}`);\n  const data = await response.json();\n  return data;\n}\n\nAdd error handling that: checks if response.ok is false and throws an error with the status code, wraps the entire function in try/catch, logs the error, and re-throws it.\n\nOutput ONLY the raw code. No explanations, no markdown formatting, no commentary. Just the code.",
   "expected_output": {
     "type": "code",
     "language": "typescript",
-    "contains": ["try", "catch", "response.ok", "throw", "console.error"],
-    "not_contains": ["any"]
+    "contains": [
+      "try",
+      "catch",
+      "response.ok",
+      "throw",
+      "console.error"
+    ],
+    "not_contains": [
+      "any"
+    ]
   },
-  "time_limit_seconds": 90
+  "time_limit_seconds": 90,
+  "output_format": "code"
 }

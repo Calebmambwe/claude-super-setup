@@ -2,12 +2,22 @@
   "id": "reg-006",
   "tier": 2,
   "category": "code-generation",
-  "description": "Create an Express.js POST route handler for /api/users that: validates the request body has email and name fields, returns 400 with an error message if validation fails, creates a user object with a generated id (use crypto.randomUUID()), returns 201 with the created user object on success. Use TypeScript.",
+  "description": "Create an Express.js POST route handler for /api/users that: validates the request body has email and name fields, returns 400 with an error message if validation fails, creates a user object with a generated id (use crypto.randomUUID()), returns 201 with the created user object on success. Use TypeScript.\n\nOutput ONLY the raw code. No explanations, no markdown formatting, no commentary. Just the code.",
   "expected_output": {
     "type": "code",
     "language": "typescript",
-    "contains": ["router.post", "/api/users", "req.body", "res.status(400)", "res.status(201)", "randomUUID"],
-    "not_contains": ["any"]
+    "contains": [
+      "router.post",
+      "/api/users",
+      "req.body",
+      "res.status(400)",
+      "res.status(201)",
+      "randomUUID"
+    ],
+    "not_contains": [
+      "any"
+    ]
   },
-  "time_limit_seconds": 120
+  "time_limit_seconds": 120,
+  "output_format": "code"
 }

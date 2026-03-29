@@ -2,12 +2,19 @@
   "id": "reg-002",
   "tier": 1,
   "category": "bug-fixing",
-  "description": "Fix the null check bug in this TypeScript function. It crashes when user is null:\n\nfunction getUserEmail(user: User | null): string {\n  return user.email;\n}\n\nReturn the fixed function that safely returns an empty string when user is null.",
+  "description": "Fix the null check bug in this TypeScript function. It crashes when user is null:\n\nfunction getUserEmail(user: User | null): string {\n  return user.email;\n}\n\nReturn the fixed function that safely returns an empty string when user is null.\n\nOutput ONLY the raw code. No explanations, no markdown formatting, no commentary. Just the code.",
   "expected_output": {
     "type": "code",
     "language": "typescript",
-    "contains": ["function getUserEmail", "null", "return"],
-    "not_contains": ["user.email;"]
+    "contains": [
+      "function getUserEmail",
+      "null",
+      "return"
+    ],
+    "not_contains": [
+      "user.email;"
+    ]
   },
-  "time_limit_seconds": 60
+  "time_limit_seconds": 60,
+  "output_format": "code"
 }

@@ -2,11 +2,21 @@
   "id": "reg-013",
   "tier": 2,
   "category": "api-design",
-  "description": "Design a REST API for a todo list app. Include endpoints for: create todo, list todos with pagination, get single todo, update todo, delete todo. Use proper HTTP methods and status codes. Show the OpenAPI-style route definitions with request/response shapes in TypeScript.",
+  "description": "Design a REST API for a todo list app. Include endpoints for: create todo, list todos with pagination, get single todo, update todo, delete todo. Use proper HTTP methods and status codes. Show the OpenAPI-style route definitions with request/response shapes in TypeScript.\n\nOutput ONLY the raw code. No explanations, no markdown formatting, no commentary. Just the code.",
   "time_limit_seconds": 90,
   "expected_output": {
-    "contains": ["POST", "GET", "PUT", "DELETE", "200", "201", "404", "pagination"],
+    "contains": [
+      "POST",
+      "GET",
+      "PUT",
+      "DELETE",
+      "200",
+      "201",
+      "404",
+      "pagination"
+    ],
     "not_contains": [],
     "validate_syntax": false
-  }
+  },
+  "output_format": "code"
 }

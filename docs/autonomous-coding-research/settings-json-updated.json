@@ -1,0 +1,411 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "none",
+    "TASK_MAX_TOOL_CALLS": "500"
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "NotebookEdit",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(pnpm *)",
+      "Bash(bun *)",
+      "Bash(uv *)",
+      "Bash(python -m pytest *)",
+      "Bash(pytest *)",
+      "Bash(node *)",
+      "Bash(brew *)",
+      "Bash(which *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(echo *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(docker *)",
+      "Bash(docker-compose *)",
+      "Bash(gh *)",
+      "Bash(claude *)",
+      "Bash(cd *)",
+      "Bash(pwd)",
+      "Bash(open *)",
+      "Bash(curl *)",
+      "Bash(tar *)",
+      "Bash(unzip *)",
+      "Bash(mv *)",
+      "Bash(rm -f *)",
+      "Bash(rm -- *)",
+      "Bash(ruff *)",
+      "Bash(mypy *)",
+      "Bash(find *)",
+      "Bash(jq *)",
+      "Bash(wc *)",
+      "Bash(diff *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(sort *)",
+      "Bash(actionlint *)",
+      "Bash(screen *)",
+      "Bash(caffeinate *)",
+      "Bash(kill $*)",
+      "Bash(ngrok *)",
+      "Bash(pip *)",
+      "Bash(pip3 *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(tsc *)",
+      "Bash(eslint *)",
+      "Bash(prettier *)",
+      "Bash(cargo *)",
+      "Bash(go *)",
+      "Bash(make *)",
+      "Bash(cmake *)",
+      "Bash(sed *)",
+      "Bash(awk *)",
+      "Bash(chmod *)",
+      "Bash(chown *)",
+      "Bash(ln *)",
+      "Bash(touch *)",
+      "Bash(env *)",
+      "Bash(export *)",
+      "Bash(source *)",
+      "Bash(tree *)",
+      "Bash(du *)",
+      "Bash(df *)",
+      "Bash(ps *)",
+      "Bash(lsof *)",
+      "Bash(whoami)",
+      "Bash(hostname)",
+      "Bash(date *)",
+      "Bash(xargs *)",
+      "Bash(tmux *)",
+      "mcp__plugin_telegram_telegram__reply",
+      "mcp__plugin_telegram_telegram__download_attachment",
+      "mcp__plugin_telegram_telegram__edit_message",
+      "mcp__plugin_telegram_telegram__react",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "mcp__github__create_pull_request",
+      "mcp__github__create_branch",
+      "mcp__github__create_issue",
+      "mcp__github__create_or_update_file",
+      "mcp__github__get_file_contents",
+      "mcp__github__get_issue",
+      "mcp__github__get_pull_request",
+      "mcp__github__list_commits",
+      "mcp__github__list_issues",
+      "mcp__github__list_pull_requests",
+      "mcp__github__search_code",
+      "mcp__github__search_repositories",
+      "mcp__github__push_files",
+      "mcp__github__fork_repository",
+      "mcp__github__add_issue_comment",
+      "mcp__github__update_issue",
+      "mcp__github__get_pull_request_files",
+      "mcp__github__get_pull_request_status",
+      "mcp__github__get_pull_request_reviews",
+      "mcp__github__get_pull_request_comments",
+      "mcp__github__create_pull_request_review",
+      "mcp__github__search_issues",
+      "mcp__github__search_users",
+      "mcp__github__update_pull_request_branch",
+      "mcp__memory__read_graph",
+      "mcp__memory__search_nodes",
+      "mcp__memory__open_nodes",
+      "mcp__memory__create_entities",
+      "mcp__memory__create_relations",
+      "mcp__memory__add_observations",
+      "mcp__memory__delete_entities",
+      "mcp__memory__delete_observations",
+      "mcp__memory__delete_relations",
+      "mcp__learning__record_learning",
+      "mcp__learning__search_learnings",
+      "mcp__learning__get_project_learnings",
+      "mcp__learning__get_learning_stats",
+      "mcp__learning__promote_learning",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_fill_form",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "mcp__plugin_playwright_playwright__browser_install",
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "mcp__plugin_playwright_playwright__browser_run_code",
+      "mcp__plugin_playwright_playwright__browser_tabs",
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "mcp__plugin_playwright_playwright__browser_type",
+      "mcp__plugin_playwright_playwright__browser_hover",
+      "mcp__plugin_playwright_playwright__browser_select_option",
+      "mcp__plugin_playwright_playwright__browser_handle_dialog",
+      "mcp__plugin_playwright_playwright__browser_file_upload",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_network_requests",
+      "mcp__plugin_playwright_playwright__browser_navigate_back",
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "mcp__plugin_playwright_playwright__browser_drag"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Read(./secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*credential*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.docker/config.json)",
+      "Read(**/*secret*)",
+      "Write(.env*)",
+      "Bash(rm -rf *)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf .)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -r *)",
+      "Bash(chmod 777 *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(*> /dev/sd*)",
+      "Bash(pkill *)",
+      "Bash(killall *)",
+      "Bash(curl * | sh)",
+      "Bash(curl * | bash)",
+      "Bash(curl * | python*)",
+      "Bash(wget * | sh)",
+      "Bash(eval *)",
+      "Bash(sudo rm *)",
+      "Bash(sudo shutdown *)",
+      "Bash(sudo reboot *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/session-end.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/auto-learn.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/budget-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+\\.(ts|tsx|js|jsx)$)|Edit(.+\\.(ts|tsx|js|jsx)$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "prettier --write -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || npx prettier --write -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+\\.(json|css|md)$)|Edit(.+\\.(json|css|md)$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "prettier --write -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || npx prettier --write -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+\\.py$)|Edit(.+\\.py$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff format -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || true; ruff check --fix -- \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+/research\\.md$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/sdlc-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+/brief\\.md$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/sdlc-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+/design-doc\\.md$)|Write(.+/reverse-doc\\.md$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/sdlc-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+/prompts/milestone-.+\\.md$)|Write(.+/prompts/implementation-prompt\\.md$)|Write(.+/prompts/sdlc-prompt-.+\\.md$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/sdlc-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.+/prd\\.md$)|Write(.+/architecture\\.md$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/sdlc-gate.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write(.+/brief\\.md$)|Write(.+/product-brief\\.md$)|Write(.+/research\\.md$)|Write(.+/prd\\.md$)|Write(.+/architecture\\.md$)|Write(.+/design-doc\\.md$)|Write(.+/reverse-doc\\.md$)|Write(.+/prompts/milestone-.+\\.md$)|Write(.+/prompts/implementation-prompt\\.md$)|Write(.+/prompts/sdlc-prompt-.+\\.md$)|Write(.+/prompts/README\\.md$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/version-prompt.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git commit.*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "source ~/.claude/hooks/headless-guard.sh && [[ \"$IS_HEADLESS\" == \"true\" ]] && echo '{\"decision\":\"allow\"}' && exit 0 || true"
+          },
+          {
+            "type": "prompt",
+            "prompt": "Before committing, verify: 1) Have tests been run and do they pass? 2) Has linting been run? 3) Is the commit message using conventional format (feat:, fix:, test:, etc.)? If tests or lint haven't been run in this session, respond with {\"decision\": \"block\", \"reason\": \"Run tests and lint before committing.\"}. Otherwise {\"decision\": \"allow\"}.",
+            "timeout": 45
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git push.*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/branch-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit(.+\\.lock$)|Write(.+\\.lock$)|Edit(.+/package-lock\\.json$)|Write(.+/package-lock\\.json$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"decision\": \"block\", \"reason\": \"Lock files should not be manually edited. Use the package manager.\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'CRITICAL CONTEXT TO PRESERVE: Review the current task list, key files being modified, and any in-progress decisions. Carry these forward after compaction.'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude-super-setup/hooks/ghost-notify.sh success \"Claude session complete\" 2>/dev/null || true",
+            "async": false
+          },
+          {
+            "type": "command",
+            "command": "source ~/.claude/hooks/headless-guard.sh && [[ \"$IS_HEADLESS\" == \"true\" ]] && echo '{\"decision\":\"allow\"}' && exit 0 || true"
+          },
+          {
+            "type": "prompt",
+            "prompt": "Before stopping, verify ALL of the following:\n\n1. TASK COMPLETION: All tasks from the task list are completed or explicitly deferred with a reason.\n2. TESTS RAN: If code was written or modified, tests were run and pass.\n3. NO RATIONALIZATION: Check your last response — did you say 'we can address this later' or similar? If so, STOP. Either fix the issue now or explicitly flag it as a known limitation.\n4. VERIFICATION: If implementation was done, were the verification commands run? (test, lint, typecheck)\n\nIf anything is incomplete, respond with {\"decision\": \"block\", \"reason\": \"Incomplete: [what remains]\"}.\nOtherwise respond with {\"decision\": \"allow\"}.",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "ralph-loop@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true,
+    "telegram@claude-plugins-official": true
+  },
+  "companyAnnouncements": [
+    "Workflow: /plan -> /build -> /check -> /ship -> /reflect",
+    "Run /consolidate weekly to clean up learnings."
+  ],
+  "skipDangerousModePermissionPrompt": true,
+  "mcpServers": {
+    "knowledge-rag": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp",
+        "python3",
+        "~/.claude-super-setup/mcp-servers/knowledge-rag-server.py"
+      ],
+      "env": {}
+    }
+  }
+}

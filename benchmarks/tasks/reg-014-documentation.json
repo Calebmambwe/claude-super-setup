@@ -2,11 +2,19 @@
   "id": "reg-014",
   "tier": 2,
   "category": "documentation",
-  "description": "Write a README.md for a CLI tool called 'taskr' that manages todo items from the terminal. Include: project description, installation instructions (npm), usage examples (add, list, done, remove commands), configuration section, and contributing guidelines. Make it professional and concise.",
+  "description": "Write a README.md for a CLI tool called 'taskr' that manages todo items from the terminal. Include: project description, installation instructions (npm), usage examples (add, list, done, remove commands), configuration section, and contributing guidelines. Make it professional and concise.\n\nOutput ONLY the raw code. No explanations, no markdown formatting, no commentary. Just the code.",
   "time_limit_seconds": 60,
   "expected_output": {
-    "contains": ["install", "npm", "Usage", "taskr add", "taskr list", "Configuration"],
+    "contains": [
+      "install",
+      "npm",
+      "Usage",
+      "taskr add",
+      "taskr list",
+      "Configuration"
+    ],
     "not_contains": [],
     "validate_syntax": false
-  }
+  },
+  "output_format": "code"
 }

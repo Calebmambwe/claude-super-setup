@@ -2,12 +2,24 @@
   "id": "reg-009",
   "tier": 2,
   "category": "code-generation",
-  "description": "Write a SQL query that returns all users who: registered in the last 30 days, have the role 'user' (not 'admin' or 'viewer'), have placed at least one order. Use a JOIN with an orders table. Return columns: user_id, name, email, created_at, order_count. Order by order_count descending. Tables: users (id, name, email, role, created_at), orders (id, user_id, created_at).",
+  "description": "Write a SQL query that returns all users who: registered in the last 30 days, have the role 'user' (not 'admin' or 'viewer'), have placed at least one order. Use a JOIN with an orders table. Return columns: user_id, name, email, created_at, order_count. Order by order_count descending. Tables: users (id, name, email, role, created_at), orders (id, user_id, created_at).\n\nOutput ONLY the raw code. No explanations, no markdown formatting, no commentary. Just the code.",
   "expected_output": {
     "type": "code",
     "language": "sql",
-    "contains": ["SELECT", "JOIN", "WHERE", "GROUP BY", "ORDER BY", "COUNT", "HAVING", "created_at"],
-    "not_contains": ["SELECT *"]
+    "contains": [
+      "SELECT",
+      "JOIN",
+      "WHERE",
+      "GROUP BY",
+      "ORDER BY",
+      "COUNT",
+      "HAVING",
+      "created_at"
+    ],
+    "not_contains": [
+      "SELECT *"
+    ]
   },
-  "time_limit_seconds": 90
+  "time_limit_seconds": 90,
+  "output_format": "code"
 }
