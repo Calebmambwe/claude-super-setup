@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 # Self-Improvement Sync — Ensures Mac and VPS share learning/skill improvements
 # Runs on Mac after each self-improvement cron job.
