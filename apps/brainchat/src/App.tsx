@@ -15,6 +15,7 @@ export function App() {
   const [isListening, setIsListening] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [ttsProvider, setTtsProvider] = useState<"gemini"|"openai"|"browser">("gemini");
   const wsRef = useRef<WebSocket | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const recRef = useRef<SpeechRecognition | null>(null);
@@ -46,25 +47,41 @@ export function App() {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streaming]);
 
-  // --- TTS (Browser with best voice) ---
-  const speak = useCallback((text: string) => {
-    if (!voiceOn || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
+  // --- TTS (Gemini / OpenAI / Browser) ---
+  const speak = useCallback(async (text: string) => {
+    if (!voiceOn) return;
     const clean = text.replace(/#{1,6}\s/g,"").replace(/\*{1,2}/g,"").replace(/`[^`]*`/g,"").replace(/---[^-]*---/g,"").slice(0, 3000);
-    const utt = new SpeechSynthesisUtterance(clean);
-    utt.rate = 1.1; utt.pitch = 1.0;
-    const voices = window.speechSynthesis.getVoices();
-    const good = voices.find(v => v.name.includes("Google UK English Female"))
-      || voices.find(v => v.name.includes("Samantha"))
-      || voices.find(v => v.name.includes("Google") && v.lang.startsWith("en"))
-      || voices.find(v => v.name.includes("Karen"))
-      || voices.find(v => v.lang.startsWith("en") && v.localService);
-    if (good) utt.voice = good;
-    utt.onstart = () => setIsSpeaking(true);
-    utt.onend = () => { setIsSpeaking(false); if (liveMode) startListening(); };
-    utt.onerror = () => { setIsSpeaking(false); if (liveMode) startListening(); };
-    window.speechSynthesis.speak(utt);
-  }, [voiceOn, liveMode]);
+    
+    if (ttsProvider === "browser") {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(clean);
+      utt.rate = 1.1;
+      const voices = window.speechSynthesis.getVoices();
+      const good = voices.find(v => v.name.includes("Google UK English Female")) || voices.find(v => v.name.includes("Samantha")) || voices.find(v => v.lang.startsWith("en"));
+      if (good) utt.voice = good;
+      utt.onstart = () => setIsSpeaking(true);
+      utt.onend = () => { setIsSpeaking(false); if (liveMode) startListening(); };
+      utt.onerror = () => { setIsSpeaking(false); if (liveMode) startListening(); };
+      window.speechSynthesis.speak(utt);
+      return;
+    }
+
+    // API TTS (Gemini or OpenAI)
+    try {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      setIsSpeaking(true);
+      const resp = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: clean, provider: ttsProvider }) });
+      if (!resp.ok) { setIsSpeaking(false); if (liveMode) startListening(); return; }
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); setIsSpeaking(false); if (liveMode) startListening(); };
+      audio.onerror = () => { setIsSpeaking(false); if (liveMode) startListening(); };
+      audio.play();
+    } catch { setIsSpeaking(false); if (liveMode) startListening(); }
+  }, [voiceOn, liveMode, ttsProvider]);
 
   // --- Speech Recognition (continuous with silence detection) ---
   const startListening = useCallback(() => {
@@ -159,6 +176,7 @@ export function App() {
         <div style={S.hdrR}>
           {exchanges > 0 && <span style={S.xBadge}>{exchanges}</span>}
           <button onClick={() => setVoiceOn(!voiceOn)} style={S.hBtn}>{voiceOn ? "\u{1F50A}" : "\u{1F507}"}</button>
+          <select value={ttsProvider} onChange={(e) => setTtsProvider(e.target.value as "gemini"|"openai"|"browser")} style={S.sel}><option value="gemini">Gemini</option><option value="openai">OpenAI</option><option value="browser">Browser</option></select>
           <button onClick={() => { setMessages([]); setExchanges(0); setBriefPath(""); stopListening(); setLiveMode(false); }} style={S.hBtn}>New</button>
           <button onClick={() => wsRef.current?.send(JSON.stringify({ type: "export" }))} style={{...S.hBtn, ...(messages.length ? {background:"#1e1b4b",color:"#a78bfa"} : {})}} disabled={!messages.length}>Export</button>
         </div>
@@ -245,6 +263,7 @@ const S: Record<string, React.CSSProperties> = {
   brand:{fontWeight:600,fontSize:16,color:"#fafafa",letterSpacing:"-0.02em"},
   statusDot:{width:7,height:7,borderRadius:"50%"},
   xBadge:{fontSize:11,color:"#71717a",background:"#18181b",padding:"2px 7px",borderRadius:10,fontWeight:600},
+  sel:{background:"#18181b",border:"1px solid #27272a",borderRadius:8,padding:"4px 6px",color:"#a1a1aa",fontSize:11,cursor:"pointer"},
   hBtn:{background:"transparent",border:"1px solid #27272a",borderRadius:8,padding:"5px 10px",color:"#a1a1aa",cursor:"pointer",fontSize:13,fontWeight:500},
   chat:{flex:1,overflowY:"auto" as const,padding:"16px 12px",display:"flex",flexDirection:"column",gap:14},
   hero:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:1,textAlign:"center" as const,position:"relative" as const},

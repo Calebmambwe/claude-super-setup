@@ -133,43 +133,92 @@ async function streamClaude(
   }
 }
 
-// OpenAI TTS endpoint
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+
+// TTS endpoint — supports gemini, openai, browser (toggle via query param)
 app.post("/api/tts", async (req, res) => {
-  if (!OPENAI_API_KEY) {
-    res.status(503).json({ error: "No OpenAI key for TTS" });
-    return;
-  }
-  const { text } = req.body;
+  const { text, provider = "gemini" } = req.body;
   if (!text) { res.status(400).json({ error: "No text" }); return; }
 
   try {
-    const ttsResp = await fetch("https://api.openai.com/v1/audio/speech", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "tts-1",
-        input: text.slice(0, 4096),
-        voice: "nova",
-        response_format: "mp3",
-        speed: 1.05,
-      }),
-    });
+    if (provider === "gemini" && GEMINI_API_KEY) {
+      // Gemini TTS
+      const ttsResp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: text.slice(0, 4000) }] }],
+            generationConfig: {
+              responseModalities: ["AUDIO"],
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
+            },
+          }),
+        }
+      );
+      if (!ttsResp.ok) { res.status(ttsResp.status).json({ error: "Gemini TTS error" }); return; }
+      const data = await ttsResp.json();
+      const audioPart = data.candidates?.[0]?.content?.parts?.find((p: Record<string, unknown>) => p.inlineData);
+      if (!audioPart) { res.status(500).json({ error: "No audio in response" }); return; }
 
-    if (!ttsResp.ok) {
-      res.status(ttsResp.status).json({ error: "TTS API error" });
-      return;
+      const pcmBuffer = Buffer.from(audioPart.inlineData.data, "base64");
+      // Convert raw PCM to WAV for browser playback
+      const wavHeader = createWavHeader(pcmBuffer.length, 24000, 16, 1);
+      const wavBuffer = Buffer.concat([wavHeader, pcmBuffer]);
+      res.set({ "Content-Type": "audio/wav", "Cache-Control": "no-cache" });
+      res.send(wavBuffer);
+
+    } else if (provider === "openai" && OPENAI_API_KEY) {
+      // OpenAI TTS
+      const ttsResp = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "tts-1", input: text.slice(0, 4096), voice: "nova", response_format: "mp3", speed: 1.05 }),
+      });
+      if (!ttsResp.ok) { res.status(ttsResp.status).json({ error: "OpenAI TTS error" }); return; }
+      res.set({ "Content-Type": "audio/mpeg", "Cache-Control": "no-cache" });
+      res.send(Buffer.from(await ttsResp.arrayBuffer()));
+
+    } else {
+      res.status(503).json({ error: "No TTS provider available", available: { gemini: !!GEMINI_API_KEY, openai: !!OPENAI_API_KEY } });
     }
-
-    res.set({ "Content-Type": "audio/mpeg", "Cache-Control": "no-cache" });
-    const arrayBuf = await ttsResp.arrayBuffer();
-    res.send(Buffer.from(arrayBuf));
   } catch (err) {
     res.status(500).json({ error: "TTS failed" });
   }
 });
+
+// Available TTS providers
+app.get("/api/tts/providers", (_req, res) => {
+  res.json({
+    providers: [
+      ...(GEMINI_API_KEY ? [{ id: "gemini", name: "Gemini (Kore)", active: true }] : []),
+      ...(OPENAI_API_KEY ? [{ id: "openai", name: "OpenAI (Nova)", active: true }] : []),
+      { id: "browser", name: "Browser Voice", active: true },
+    ],
+    default: GEMINI_API_KEY ? "gemini" : OPENAI_API_KEY ? "openai" : "browser",
+  });
+});
+
+function createWavHeader(dataSize: number, sampleRate: number, bitsPerSample: number, channels: number): Buffer {
+  const header = Buffer.alloc(44);
+  const byteRate = sampleRate * channels * bitsPerSample / 8;
+  const blockAlign = channels * bitsPerSample / 8;
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + dataSize, 4);
+  header.write("WAVE", 8);
+  header.write("fmt ", 12);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(channels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(byteRate, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(bitsPerSample, 34);
+  header.write("data", 36);
+  header.writeUInt32LE(dataSize, 40);
+  return header;
+}
 
 wss.on("connection", (ws: WebSocket) => {
   const sessionId = `bc-${Date.now()}`;
