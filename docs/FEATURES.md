@@ -11,3 +11,4 @@
 | [browser-error-monitor](browser-error-monitor/brief.md) | 📝 Brief | [brief.md](browser-error-monitor/brief.md) | — | Playwright CDP daemon + PostToolUse hook for automatic browser runtime error detection and agent feedback |
 | [voice-conversation-system](voice-conversation-system/brief.md) | ⚙️ Built | [brief.md](voice-conversation-system/brief.md) | [design-doc.md](voice-conversation-system/design-doc.md) | Two-approach voice brainstorming (Telegram + LiveKit web app) with auto SDLC pipeline |
 | [regression-gate](regression-gate/brief.md) | 📝 Brief | [brief.md](regression-gate/brief.md) | — | 3-tier mandatory quality gate (smoke/full/exhaustive) — blocks shipping broken apps |
+| [auto-mode-pipelines](brainstorm/daily-improvement-2026-03-30.md) | 📝 Brief | [brief](brainstorm/daily-improvement-2026-03-30.md) | — | Enable Auto Mode permission classifier for autonomous pipelines — safer than broad allowlists |
