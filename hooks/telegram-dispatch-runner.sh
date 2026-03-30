@@ -11,6 +11,7 @@
 # CRITICAL: Does NOT pipe stdout through tee (breaks TTY detection).
 
 set -euo pipefail
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 COMMAND="${1:?Usage: telegram-dispatch-runner.sh <command> <args> <project_dir> <session_name>}"
 ARGS="${2:-}"
