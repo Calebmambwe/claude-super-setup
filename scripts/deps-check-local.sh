@@ -66,7 +66,7 @@ if [ "$USE_AI" = "--ai" ]; then
   AUDIT_DATA=$(cat "$REPORT_DIR/audit.json" | head -c 5000)
   OUTDATED_DATA=$(cat "$REPORT_DIR/outdated.json" | head -c 5000)
 
-  claude -p "Analyze these dependency check results. Be concise.
+  claude -p --permission-mode auto "Analyze these dependency check results. Be concise.
 
 AUDIT RESULTS:
 $AUDIT_DATA
