@@ -71,7 +71,7 @@ case "$PHASE" in
 
   docs-scan)
     notify "Starting daily docs scan..."
-    $CLAUDE_BIN -p --dangerously-skip-permissions \
+    $CLAUDE_BIN -p --permission-mode auto \
       "You are running as an automated daily improvement agent. Do the following:
 
 1. Fetch and read the Claude Code documentation at https://docs.anthropic.com/en/docs/claude-code/overview
@@ -100,7 +100,7 @@ $SUMMARY"
 
   trend-research)
     notify "Starting trend research..."
-    $CLAUDE_BIN -p --dangerously-skip-permissions \
+    $CLAUDE_BIN -p --permission-mode auto \
       "You are running as an automated daily improvement agent. Do the following:
 
 1. Search the web for the latest trends in:
@@ -140,7 +140,7 @@ $SUMMARY"
     [ -f "$DOCS_REPORT" ] && CONTEXT="$CONTEXT\n\n--- DOCS SCAN ---\n$(cat "$DOCS_REPORT")"
     [ -f "$TREND_REPORT" ] && CONTEXT="$CONTEXT\n\n--- TREND RESEARCH ---\n$(cat "$TREND_REPORT")"
 
-    $CLAUDE_BIN -p --dangerously-skip-permissions \
+    $CLAUDE_BIN -p --permission-mode auto \
       "You are running as an automated daily improvement agent.
 
 Context from today's research:
@@ -177,7 +177,7 @@ $SUMMARY"
       exit 0
     fi
 
-    $CLAUDE_BIN -p --dangerously-skip-permissions \
+    $CLAUDE_BIN -p --permission-mode auto \
       "You are running as an automated daily improvement agent.
 
 Read the improvement brief at $BRIEF and implement it using /auto-dev.
@@ -204,7 +204,7 @@ $SUMMARY"
 
   benchmark-report)
     notify "Starting benchmark run..."
-    $CLAUDE_BIN -p --dangerously-skip-permissions \
+    $CLAUDE_BIN -p --permission-mode auto \
       "You are running as an automated daily improvement agent.
 
 1. Run /benchmark to measure current agent quality
@@ -231,7 +231,7 @@ $SUMMARY"
 
   qwen-eval)
     notify "Starting Qwen3 Coder SDLC evaluation..."
-    $CLAUDE_BIN -p --dangerously-skip-permissions \
+    $CLAUDE_BIN -p --permission-mode auto \
       "You are running as an automated daily improvement agent.
 
 Research and evaluate Qwen3 Coder (qwen/qwen3-coder) for integration into our SDLC:

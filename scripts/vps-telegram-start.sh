@@ -134,4 +134,4 @@ log "Launching Claude with channels..."
 cd "$WORK_DIR"
 
 # Use exec to replace this shell with Claude (supervisor gets Claude's PID directly)
-exec "$CLAUDE_BIN" --dangerously-skip-permissions --channels plugin:telegram@claude-plugins-official
+exec "$CLAUDE_BIN" --permission-mode auto --channels plugin:telegram@claude-plugins-official
