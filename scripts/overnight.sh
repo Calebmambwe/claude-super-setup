@@ -88,7 +88,7 @@ run_tmux() {
   echo "Kill with:    tmux kill-session -t $session_name"
 
   tmux new-session -d -s "$session_name" -c "$PROJECT_DIR" \
-    "claude -p \"$CLAUDE_PROMPT\" 2>&1 | tee \"$LOG_FILE\"; echo ''; echo 'Overnight run complete. Press Enter to close.'; read"
+    "claude -p --permission-mode auto \"$CLAUDE_PROMPT\" 2>&1 | tee \"$LOG_FILE\"; echo ''; echo 'Overnight run complete. Press Enter to close.'; read"
 }
 
 # ── Mode: nohup ─────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ run_nohup() {
   echo "Monitor with:  tail -f $LOG_FILE"
   echo "Stop with:     kill \$(cat $LOG_DIR/overnight.pid)"
 
-  nohup bash -c "cd \"$PROJECT_DIR\" && claude -p \"$CLAUDE_PROMPT\" > \"$LOG_FILE\" 2>&1" &
+  nohup bash -c "cd \"$PROJECT_DIR\" && claude -p --permission-mode auto \"$CLAUDE_PROMPT\" > \"$LOG_FILE\" 2>&1" &
   echo $! > "$LOG_DIR/overnight.pid"
   echo "PID: $!"
 }
@@ -125,7 +125,7 @@ run_devcontainer() {
   echo "This provides filesystem isolation — safest mode."
 
   devcontainer exec --workspace-folder "$PROJECT_DIR" \
-    bash -c "claude -p \"$CLAUDE_PROMPT\" 2>&1 | tee \"$LOG_FILE\""
+    bash -c "claude -p --permission-mode auto \"$CLAUDE_PROMPT\" 2>&1 | tee \"$LOG_FILE\""
 }
 
 # ── Main ────────────────────────────────────────────────────────────

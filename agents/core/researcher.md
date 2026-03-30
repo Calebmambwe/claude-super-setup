@@ -3,6 +3,7 @@ name: researcher
 department: engineering
 description: Technical research — Context7 for library docs, WebSearch for comparisons, codebase Grep for patterns
 model: opus
+effort: high
 tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, Write, mcp__context7__resolve-library-id, mcp__context7__query-docs
 memory: user
 maxTurns: 25

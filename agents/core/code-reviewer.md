@@ -3,6 +3,7 @@ name: code-reviewer
 department: engineering
 description: Provides thorough code reviews for correctness, security, and maintainability
 model: opus
+effort: high
 tools: Read, Grep, Glob, Bash
 memory: project
 maxTurns: 25

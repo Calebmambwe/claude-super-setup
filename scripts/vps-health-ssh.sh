@@ -95,7 +95,7 @@ eval "$SSH_CMD '
 
   # Start fresh
   CLAUDE_BIN=\"/home/claude/.nvm/versions/node/v22.22.2/bin/claude\"
-  su - claude -s /bin/bash -c \"export PATH=/home/claude/.nvm/versions/node/v22.22.2/bin:/home/claude/.bun/bin:\\\$PATH && cd /home/claude && tmux new-session -d -s claude-telegram \\\"\$CLAUDE_BIN --dangerously-skip-permissions --channels plugin:telegram@claude-plugins-official\\\"\"
+  su - claude -s /bin/bash -c \"export PATH=/home/claude/.nvm/versions/node/v22.22.2/bin:/home/claude/.bun/bin:\\\$PATH && cd /home/claude && tmux new-session -d -s claude-telegram \\\"\$CLAUDE_BIN --permission-mode auto --channels plugin:telegram@claude-plugins-official\\\"\"
   sleep 5
 
   # Auto-approve trust prompt (send Enter)

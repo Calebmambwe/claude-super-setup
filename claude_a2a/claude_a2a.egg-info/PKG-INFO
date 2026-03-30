@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: claude-a2a
+Version: 0.1.0
+Summary: A2A protocol server for Claude Code VPS agent
+Requires-Python: >=3.12
+Requires-Dist: a2a-sdk>=0.2.0
+Requires-Dist: httpx>=0.27.0
+Requires-Dist: uvicorn>=0.34.0
+Requires-Dist: starlette>=0.45.0
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"

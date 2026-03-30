@@ -3,6 +3,7 @@ name: architect
 department: engineering
 description: Plans architecture for multi-file changes. Use before any task spanning 3+ files.
 model: opus
+effort: high
 tools: Read, Grep, Glob
 memory: user
 skills: [backend-architecture]

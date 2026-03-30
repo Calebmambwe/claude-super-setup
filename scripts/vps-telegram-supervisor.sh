@@ -48,7 +48,7 @@ start_tmux_session() {
   sleep 2
 
   # Launch Claude in tmux (provides the TTY it needs)
-  tmux new-session -d -s "$SESSION_NAME" "$CLAUDE_BIN --dangerously-skip-permissions --channels plugin:telegram@claude-plugins-official"
+  tmux new-session -d -s "$SESSION_NAME" "$CLAUDE_BIN --permission-mode auto --channels plugin:telegram@claude-plugins-official"
   sleep 5
 
   # Auto-approve trust prompt

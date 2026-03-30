@@ -3,6 +3,7 @@ name: orchestrator
 department: engineering
 description: Meta-orchestrator that oversees multi-agent workflows, validates outputs, and tracks quality metrics
 model: opus
+effort: high
 tools: Read, Write, Edit, Grep, Glob, Bash, Agent
 memory: project
 maxTurns: 30

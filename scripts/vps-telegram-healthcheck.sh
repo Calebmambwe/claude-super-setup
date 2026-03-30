@@ -121,7 +121,7 @@ if [ -f "$STARTUP_SCRIPT" ]; then
   tmux new-session -d -s claude-telegram "bash $STARTUP_SCRIPT"
 else
   # Fallback: start directly
-  tmux new-session -d -s claude-telegram "$CLAUDE_BIN --dangerously-skip-permissions --channels plugin:telegram@claude-plugins-official"
+  tmux new-session -d -s claude-telegram "$CLAUDE_BIN --permission-mode auto --channels plugin:telegram@claude-plugins-official"
 fi
 
 sleep 5
