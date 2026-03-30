@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import uuid
 from typing import AsyncIterator
 
 import httpx
@@ -16,6 +17,7 @@ from a2a.types import (
 )
 
 from .config import PEER_AGENTS, A2A_API_KEY
+from .notify import send_cc, send_cc_result
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +42,14 @@ async def send_task(agent_url: str, prompt: str, timeout: float = 600) -> str:
         client = A2AClient(httpx_client=http, agent_card=card)
 
         request = SendMessageRequest(
+            id=str(uuid.uuid4()),
             params=MessageSendParams(
                 message=Message(
+                    messageId=str(uuid.uuid4()),
                     role=Role.user,
                     parts=[TextPart(text=prompt)],
                 ),
-            )
+            ),
         )
 
         result_parts = []
@@ -78,8 +82,22 @@ async def send_to_peer(peer_name: str, prompt: str) -> str:
     url = PEER_AGENTS[peer_name]
     logger.info("Sending to peer %s at %s: %s", peer_name, url, prompt[:80])
 
+    # CC notification — outbound task to peer
+    await send_cc(
+        direction="OUTGOING",
+        peer=peer_name,
+        message=prompt,
+    )
+
     try:
-        return await send_task(url, prompt)
+        result = await send_task(url, prompt)
+        # CC notification — result received from peer
+        await send_cc_result(
+            direction="OUTGOING",
+            peer=peer_name,
+            result=result,
+        )
+        return result
     except Exception as e:
         return f"Failed to reach {peer_name} at {url}: {e}"
 

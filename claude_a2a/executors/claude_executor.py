@@ -1,3 +1,4 @@
+import uuid
 """Claude CLI executor — delegates A2A tasks to the local Claude Code CLI."""
 
 import asyncio
@@ -54,7 +55,7 @@ class ClaudeExecutor(AgentExecutor):
                 final=False,
                 status=TaskStatus(
                     state=TaskState.working,
-                    message=Message(
+                    message=Message(messageId=str(uuid.uuid4()), 
                         role=Role.agent,
                         parts=[TextPart(text=f"Delegating to Claude CLI: {prompt[:80]}...")],
                     ),
@@ -134,7 +135,7 @@ class ClaudeExecutor(AgentExecutor):
                 final=True,
                 status=TaskStatus(
                     state=TaskState.completed,
-                    message=Message(
+                    message=Message(messageId=str(uuid.uuid4()), 
                         role=Role.agent,
                         parts=[TextPart(text="Task completed.")],
                     ),
@@ -150,7 +151,7 @@ class ClaudeExecutor(AgentExecutor):
                 final=True,
                 status=TaskStatus(
                     state=TaskState.canceled,
-                    message=Message(
+                    message=Message(messageId=str(uuid.uuid4()), 
                         role=Role.agent,
                         parts=[TextPart(text="Task canceled.")],
                     ),

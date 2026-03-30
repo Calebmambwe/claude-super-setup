@@ -1,3 +1,4 @@
+import uuid
 """Gemini executor — wraps Google Gemini API for image and video generation."""
 
 import asyncio
@@ -61,7 +62,7 @@ class GeminiExecutor(AgentExecutor):
                 final=False,
                 status=TaskStatus(
                     state=TaskState.working,
-                    message=Message(
+                    message=Message(messageId=str(uuid.uuid4()), 
                         role=Role.agent,
                         parts=[TextPart(text=f"Generating {self.mode} with Gemini...")],
                     ),
@@ -151,7 +152,7 @@ class GeminiExecutor(AgentExecutor):
                 final=True,
                 status=TaskStatus(
                     state=TaskState.completed,
-                    message=Message(role=Role.agent, parts=[TextPart(text=status_msg)]),
+                    message=Message(messageId=str(uuid.uuid4()), role=Role.agent, parts=[TextPart(text=status_msg)]),
                 ),
             )
         )
@@ -220,7 +221,7 @@ class GeminiExecutor(AgentExecutor):
                             final=True,
                             status=TaskStatus(
                                 state=TaskState.completed,
-                                message=Message(
+                                message=Message(messageId=str(uuid.uuid4()), 
                                     role=Role.agent,
                                     parts=[TextPart(text="Video generated.")],
                                 ),
@@ -238,7 +239,7 @@ class GeminiExecutor(AgentExecutor):
                             final=False,
                             status=TaskStatus(
                                 state=TaskState.working,
-                                message=Message(
+                                message=Message(messageId=str(uuid.uuid4()), 
                                     role=Role.agent,
                                     parts=[TextPart(text=f"Video rendering... ({i * 5}s)")],
                                 ),
@@ -259,7 +260,7 @@ class GeminiExecutor(AgentExecutor):
                 final=True,
                 status=TaskStatus(
                     state=TaskState.failed,
-                    message=Message(role=Role.agent, parts=[TextPart(text=reason)]),
+                    message=Message(messageId=str(uuid.uuid4()), role=Role.agent, parts=[TextPart(text=reason)]),
                 ),
             )
         )

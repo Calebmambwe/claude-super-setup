@@ -1,3 +1,4 @@
+import uuid
 """Manus.ai executor — wraps the Manus REST API behind an A2A interface."""
 
 import asyncio
@@ -58,7 +59,7 @@ class ManusExecutor(AgentExecutor):
                 final=False,
                 status=TaskStatus(
                     state=TaskState.working,
-                    message=Message(
+                    message=Message(messageId=str(uuid.uuid4()), 
                         role=Role.agent,
                         parts=[TextPart(text=f"Sending to Manus.ai ({self.profile})...")],
                     ),
@@ -134,7 +135,7 @@ class ManusExecutor(AgentExecutor):
                                 final=True,
                                 status=TaskStatus(
                                     state=TaskState.completed,
-                                    message=Message(
+                                    message=Message(messageId=str(uuid.uuid4()), 
                                         role=Role.agent,
                                         parts=[TextPart(text=f"Manus task {manus_task_id} completed.")],
                                     ),
@@ -159,7 +160,7 @@ class ManusExecutor(AgentExecutor):
                                 final=False,
                                 status=TaskStatus(
                                     state=TaskState.working,
-                                    message=Message(
+                                    message=Message(messageId=str(uuid.uuid4()), 
                                         role=Role.agent,
                                         parts=[TextPart(text=msg)],
                                     ),
@@ -186,7 +187,7 @@ class ManusExecutor(AgentExecutor):
                 final=True,
                 status=TaskStatus(
                     state=TaskState.failed,
-                    message=Message(
+                    message=Message(messageId=str(uuid.uuid4()), 
                         role=Role.agent,
                         parts=[TextPart(text=reason)],
                     ),

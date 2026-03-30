@@ -10,6 +10,7 @@ from a2a.types import TextPart
 from .claude_executor import ClaudeExecutor
 from .manus_executor import ManusExecutor
 from .gemini_executor import GeminiExecutor
+from ..notify import send_cc, send_cc_result
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,14 @@ class RouterExecutor(AgentExecutor):
         executor = self._classify(text)
         executor_name = type(executor).__name__
         logger.info("Router: dispatching to %s for task %s", executor_name, context.task_id)
+
+        # CC notification — inbound task received from a peer
+        await send_cc(
+            direction="INCOMING",
+            peer=executor_name,
+            message=text,
+            task_id=str(context.task_id) if context.task_id else "",
+        )
 
         await executor.execute(context, event_queue)
 
