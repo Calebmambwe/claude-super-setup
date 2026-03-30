@@ -68,7 +68,7 @@ export function App() {
       return;
     }
 
-    // API TTS (Gemini or OpenAI)
+    // API TTS (Gemini or OpenAI) — returns MP3, works on all browsers
     try {
       if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
       setIsSpeaking(true);
@@ -80,7 +80,7 @@ export function App() {
       audioRef.current = audio;
       audio.onended = () => { URL.revokeObjectURL(url); setIsSpeaking(false); if (liveMode) startListening(); };
       audio.onerror = () => { setIsSpeaking(false); if (liveMode) startListening(); };
-      audio.play();
+      await audio.play();
     } catch { setIsSpeaking(false); if (liveMode) startListening(); }
   }, [voiceOn, liveMode, ttsProvider]);
 

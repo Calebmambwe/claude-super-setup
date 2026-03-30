@@ -1,8 +1,12 @@
 import express from "express";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer } from "http";
-import { writeFileSync, mkdirSync, readFileSync, readdirSync } from "fs";
+import { writeFileSync, mkdirSync, readFileSync, readdirSync, unlinkSync } from "fs";
 import { join } from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
 
 const PORT = 3011;
 const HOME = process.env.HOME || "/home/claude";
@@ -157,22 +161,26 @@ app.post("/api/tts", async (req, res) => {
           }),
         }
       );
-      if (!ttsResp.ok) { res.status(ttsResp.status).json({ error: "Gemini TTS error" }); return; }
+      if (!ttsResp.ok) { const errBody = await ttsResp.text(); console.error("Gemini TTS error:", ttsResp.status, errBody.slice(0, 300)); res.status(ttsResp.status).json({ error: "Gemini TTS error", detail: errBody.slice(0, 200) }); return; }
       const data = await ttsResp.json();
       const audioPart = data.candidates?.[0]?.content?.parts?.find((p: Record<string, unknown>) => p.inlineData);
       if (!audioPart) { res.status(500).json({ error: "No audio in response" }); return; }
 
       const pcmBuffer = Buffer.from(audioPart.inlineData.data, "base64");
-      // Gemini returns L16 big-endian PCM — swap to little-endian for WAV
-      for (let i = 0; i < pcmBuffer.length - 1; i += 2) {
-        const tmp = pcmBuffer[i];
-        pcmBuffer[i] = pcmBuffer[i + 1];
-        pcmBuffer[i + 1] = tmp;
+      // Convert Gemini L16 big-endian PCM -> MP3 via ffmpeg (works on all browsers)
+      const ts = Date.now();
+      const tmpPcm = join(SESSIONS_DIR, `tts-${ts}.raw`);
+      const tmpMp3 = join(SESSIONS_DIR, `tts-${ts}.mp3`);
+      writeFileSync(tmpPcm, pcmBuffer);
+      try {
+        await execFileAsync("ffmpeg", ["-y", "-f", "s16be", "-ar", "24000", "-ac", "1", "-i", tmpPcm, "-codec:a", "libmp3lame", "-b:a", "64k", tmpMp3], { timeout: 10000 });
+        const mp3Data = readFileSync(tmpMp3);
+        res.set({ "Content-Type": "audio/mpeg", "Cache-Control": "no-cache" });
+        res.send(mp3Data);
+      } finally {
+        try { unlinkSync(tmpPcm); } catch {}
+        try { unlinkSync(tmpMp3); } catch {}
       }
-      const wavHeader = createWavHeader(pcmBuffer.length, 24000, 16, 1);
-      const wavBuffer = Buffer.concat([wavHeader, pcmBuffer]);
-      res.set({ "Content-Type": "audio/wav", "Cache-Control": "no-cache" });
-      res.send(wavBuffer);
 
     } else if (provider === "openai" && OPENAI_API_KEY) {
       // OpenAI TTS
