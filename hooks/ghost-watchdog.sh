@@ -253,7 +253,7 @@ while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
 
   # Feed prompt via stdin from file — avoids all shell quoting issues
   # Use array to prevent word-splitting issues with argument values
-  CLAUDE_ARGS=("--dangerously-skip-permissions" "--output-format" "text" "--max-budget-usd" "$BUDGET")
+  CLAUDE_ARGS=("--permission-mode auto" "--output-format" "text" "--max-budget-usd" "$BUDGET")
   if [[ -n "$CHANNELS_FLAG" ]]; then
     CLAUDE_ARGS+=("--channels" "plugin:telegram@claude-plugins-official")
   fi

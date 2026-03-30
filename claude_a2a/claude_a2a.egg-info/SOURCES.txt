@@ -1,0 +1,6 @@
+pyproject.toml
+claude_a2a.egg-info/PKG-INFO
+claude_a2a.egg-info/SOURCES.txt
+claude_a2a.egg-info/dependency_links.txt
+claude_a2a.egg-info/requires.txt
+claude_a2a.egg-info/top_level.txt

@@ -206,7 +206,7 @@ if [[ "${6:-}" == "--inner" ]]; then
 
   EXIT_CODE=0
   claude -p \
-    --dangerously-skip-permissions \
+    --permission-mode auto \
     "/$COMMAND $ARGS" \
     >> "$LOG_FILE" 2>&1 || EXIT_CODE=$?
 
