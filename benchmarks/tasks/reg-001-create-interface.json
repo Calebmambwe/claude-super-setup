@@ -2,12 +2,22 @@
   "id": "reg-001",
   "tier": 1,
   "category": "code-generation",
-  "description": "Create a TypeScript interface for User with id (string), email (string), name (string), role ('admin' | 'user' | 'viewer'), createdAt (Date)",
+  "description": "Create a TypeScript interface for User with id (string), email (string), name (string), role ('admin' | 'user' | 'viewer'), createdAt (Date)\n\nOutput ONLY the raw code. No explanations, no markdown formatting, no commentary. Just the code.",
   "expected_output": {
     "type": "code",
     "language": "typescript",
-    "contains": ["interface User", "id:", "email:", "name:", "role:", "createdAt:"],
-    "not_contains": ["any"]
+    "contains": [
+      "interface User",
+      "id:",
+      "email:",
+      "name:",
+      "role:",
+      "createdAt:"
+    ],
+    "not_contains": [
+      "any"
+    ]
   },
-  "time_limit_seconds": 60
+  "time_limit_seconds": 60,
+  "output_format": "code"
 }

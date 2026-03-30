@@ -2,12 +2,21 @@
   "id": "reg-011",
   "tier": 1,
   "category": "accessibility",
-  "description": "Create an accessible React button component with proper ARIA attributes. The button should: accept children, an onClick handler, a disabled state, and a loading state. When loading, show a spinner and set aria-busy='true'. When disabled, set aria-disabled='true'. Always include focus-visible styles.",
+  "description": "Create an accessible React button component with proper ARIA attributes. The button should: accept children, an onClick handler, a disabled state, and a loading state. When loading, show a spinner and set aria-busy='true'. When disabled, set aria-disabled='true'. Always include focus-visible styles.\n\nOutput ONLY the raw code. No explanations, no markdown formatting, no commentary. Just the code.",
   "time_limit_seconds": 60,
   "expected_output": {
-    "contains": ["aria-busy", "aria-disabled", "focus-visible", "role", "button"],
-    "not_contains": ["any"],
+    "contains": [
+      "aria-busy",
+      "aria-disabled",
+      "focus-visible",
+      "role",
+      "button"
+    ],
+    "not_contains": [
+      "any"
+    ],
     "validate_syntax": true,
     "language": "typescript"
-  }
+  },
+  "output_format": "code"
 }

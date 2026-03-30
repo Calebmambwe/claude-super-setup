@@ -171,8 +171,8 @@ pipeline_is_done() {
   # Check if checkpoint shows phase 4+ (ship complete)
   local phase
   phase=$(jq -r '.phase // 0' "$checkpoint" 2>/dev/null || echo "0")
-  # Use integer comparison — phase 4 = ship, 5 = post-ship
-  if [[ "$phase" =~ ^[0-9]+$ ]] && (( phase >= 4 )); then
+  # Float-safe comparison — phase 4+ = ship complete
+  if [[ "$phase" =~ ^[0-9]+(\.[0-9]+)?$ ]] && awk "BEGIN{exit(!($phase >= 4))}"; then
     return 0
   fi
 
@@ -181,7 +181,7 @@ pipeline_is_done() {
 
 # ─── Restart loop ─────────────────────────────────────────────────────────────
 
-MAX_ATTEMPTS=3
+MAX_ATTEMPTS=5
 ATTEMPT=0
 BACKOFF=15
 
@@ -240,12 +240,18 @@ while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
   # Build the prompt and write to temp file to avoid shell quoting issues
   # with special characters (em-dashes, parentheses, etc.)
   PROMPT_FILE="$(mktemp)"
+  # Checkpoint-aware restart: if pipeline checkpoint exists, resume with /auto-ship
+  CHECKPOINT="$PROJECT_DIR/.claude/pipeline-checkpoint.json"
   if [[ $ATTEMPT -eq 1 ]] && [[ -z "$SESSION_ID" || "$SESSION_ID" == "null" ]]; then
     printf '%s' "/ghost-run ${FEATURE}" > "$PROMPT_FILE"
+  elif [[ -f "$CHECKPOINT" ]]; then
+    # Pipeline was in progress — resume from checkpoint
+    printf '%s' "/auto-ship ${FEATURE}" > "$PROMPT_FILE"
   elif [[ -n "$SESSION_ID" && "$SESSION_ID" != "null" ]]; then
     printf '%s' "/auto-ship" > "$PROMPT_FILE"
   else
-    printf '%s' "/auto-ship ${FEATURE}" > "$PROMPT_FILE"
+    # No checkpoint, no session — restart from scratch
+    printf '%s' "/ghost-run ${FEATURE}" > "$PROMPT_FILE"
   fi
 
   echo "[$(date)] Running claude -p with prompt from $PROMPT_FILE" >> "$LOG_FILE"
@@ -253,6 +259,9 @@ while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
 
   # Feed prompt via stdin from file — avoids all shell quoting issues
   # Use array to prevent word-splitting issues with argument values
+  # Set headless flag so hooks auto-allow in autonomous mode
+  export CLAUDE_CODE_HEADLESS=1
+  export OTEL_METRICS_EXPORTER=none
   CLAUDE_ARGS=("--dangerously-skip-permissions" "--output-format" "text" "--max-budget-usd" "$BUDGET")
   if [[ -n "$CHANNELS_FLAG" ]]; then
     CLAUDE_ARGS+=("--channels" "plugin:telegram@claude-plugins-official")
@@ -296,17 +305,19 @@ while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
     exit 1
   fi
 
-  # Check for budget exhaustion
-  if grep -qi "budget" "$LOG_FILE" 2>/dev/null && [[ $DURATION -lt 120 ]]; then
+  # Check for budget exhaustion (specific patterns only — avoid false positives from OTEL noise)
+  if grep -qi "budget.*exhausted\|max.*budget.*reached\|spending limit" "$LOG_FILE" 2>/dev/null && [[ $DURATION -lt 120 ]]; then
     $NOTIFY failure "Budget likely exhausted. Pipeline stopped."
     update_config_field "status" "budget_exhausted"
     exit 1
   fi
 
   # Rate limit detection: if Claude exited in < 60s, likely a 429 storm
+  # Do NOT increment ATTEMPT on rapid exits — only apply backoff
   if [[ $DURATION -lt 60 ]]; then
+    ATTEMPT=$((ATTEMPT - 1))  # undo the increment at top of loop
     BACKOFF=300
-    $NOTIFY warning "Rapid exit detected (${DURATION}s). Backing off 5 minutes before retry."
+    $NOTIFY warning "Rapid exit detected (${DURATION}s). Backing off 5 minutes before retry (not counted as attempt)."
     sleep $BACKOFF
   else
     # Normal backoff between restarts

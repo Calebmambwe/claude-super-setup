@@ -11,3 +11,4 @@
 | [browser-error-monitor](browser-error-monitor/brief.md) | 📝 Brief | [brief.md](browser-error-monitor/brief.md) | — | Playwright CDP daemon + PostToolUse hook for automatic browser runtime error detection and agent feedback |
 | [voice-conversation-system](voice-conversation-system/brief.md) | ⚙️ Built | [brief.md](voice-conversation-system/brief.md) | [design-doc.md](voice-conversation-system/design-doc.md) | Two-approach voice brainstorming (Telegram + LiveKit web app) with auto SDLC pipeline |
 | [regression-gate](regression-gate/brief.md) | 📝 Brief | [brief.md](regression-gate/brief.md) | — | 3-tier mandatory quality gate (smoke/full/exhaustive) — blocks shipping broken apps |
+| [autonomous-overnight-agent](autonomous-overnight-agent/brief.md) | 📝 Brief | [brief.md](autonomous-overnight-agent/brief.md) | — | Manus-inspired patterns + critical fixes to make Ghost Mode produce PRs overnight |
