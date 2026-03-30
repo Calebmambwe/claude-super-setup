@@ -1,448 +1,178 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useVoiceRecognition } from "./hooks/useVoiceRecognition";
-import { useTextToSpeech } from "./hooks/useTextToSpeech";
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: string;
-}
-
-type ConnectionStatus = "connecting" | "connected" | "disconnected";
+interface ChatMessage { role: "user" | "assistant"; content: string; }
 
 export function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState("");
-  const [isThinking, setIsThinking] = useState(false);
-  const [status, setStatus] = useState<ConnectionStatus>("connecting");
-  const [sessionId, setSessionId] = useState("");
-  const [exchangeCount, setExchangeCount] = useState(0);
+  const [streaming, setStreaming] = useState("");
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [exchanges, setExchanges] = useState(0);
+  const [hasTTS, setHasTTS] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const [briefPath, setBriefPath] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
+  const endRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const voice = useVoiceRecognition();
-  const tts = useTextToSpeech();
 
-  // WebSocket connection
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-
-    ws.onopen = () => setStatus("connected");
-    ws.onclose = () => setStatus("disconnected");
-    ws.onerror = () => setStatus("disconnected");
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.type === "session") {
-        setSessionId(data.sessionId);
+    const ws = new WebSocket(`${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws`);
+    ws.onopen = () => setConnected(true);
+    ws.onclose = () => setConnected(false);
+    ws.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+      if (d.type === "session") setHasTTS(d.hasTTS);
+      if (d.type === "stream_start") { setBusy(true); setStreaming(""); }
+      if (d.type === "stream_chunk") setStreaming((p) => p + d.text);
+      if (d.type === "stream_end") {
+        setBusy(false); setStreaming("");
+        setMessages((p) => [...p, { role: "assistant", content: d.fullText }]);
+        setExchanges(d.exchangeCount);
+        if (voiceOn) speakTTS(d.fullText);
       }
-
-      if (data.type === "thinking") {
-        setIsThinking(true);
-      }
-
-      if (data.type === "response") {
-        setIsThinking(false);
-        setExchangeCount(data.exchangeCount);
-        const msg: ChatMessage = {
-          role: "assistant",
-          content: data.text,
-          timestamp: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, msg]);
-        tts.speak(data.text);
-      }
-
-      if (data.type === "exported") {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `Session exported to ${data.path}${data.telegramSent ? " and sent to Telegram" : ""}. You can now run /voice-brief to process this into a feature spec.`,
-            timestamp: new Date().toISOString(),
-          },
-        ]);
-      }
-
-      if (data.type === "error") {
-        setIsThinking(false);
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `Error: ${data.message}`,
-            timestamp: new Date().toISOString(),
-          },
-        ]);
-      }
+      if (d.type === "brief_saved") setBriefPath(d.path);
+      if (d.type === "exported") setMessages((p) => [...p, { role: "assistant", content: "Session exported" + (d.telegramSent ? " and sent to Telegram" : "") + ". Ready for SDLC." }]);
+      if (d.type === "error") { setBusy(false); setStreaming(""); setMessages((p) => [...p, { role: "assistant", content: "Error: " + d.message }]); }
     };
-
     wsRef.current = ws;
     return () => ws.close();
   }, []);
 
-  // Auto-scroll
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isThinking]);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streaming]);
 
-  // Send message
-  const sendMessage = useCallback(
-    (text: string) => {
-      if (!text.trim() || !wsRef.current) return;
+  const speakTTS = useCallback(async (text: string) => {
+    if (!hasTTS || !voiceOn) return;
+    try {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      const clean = text.replace(/#{1,6}\s/g, "").replace(/\*{1,2}/g, "").replace(/`[^`]*`/g, "").slice(0, 2000);
+      const resp = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: clean }) });
+      if (!resp.ok) return;
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.play();
+      audio.onended = () => URL.revokeObjectURL(url);
+    } catch { /* silent */ }
+  }, [hasTTS, voiceOn]);
 
-      const msg: ChatMessage = {
-        role: "user",
-        content: text.trim(),
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, msg]);
-      wsRef.current.send(JSON.stringify({ type: "message", text: text.trim() }));
-      setInputText("");
-    },
-    []
-  );
+  const send = useCallback((text: string) => {
+    if (!text.trim() || !wsRef.current) return;
+    setMessages((p) => [...p, { role: "user", content: text.trim() }]);
+    wsRef.current.send(JSON.stringify({ type: "message", text: text.trim() }));
+    setInput("");
+  }, []);
 
-  // Handle voice stop → send transcript
-  const handleMicClick = useCallback(() => {
-    if (voice.isListening) {
-      voice.stopListening();
-      if (voice.transcript.trim()) {
-        sendMessage(voice.transcript.trim());
-      }
-    } else {
-      tts.stop();
-      voice.startListening();
-    }
-  }, [voice, tts, sendMessage]);
-
-  // Handle text submit
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputText.trim()) {
-      sendMessage(inputText);
-    }
-  };
-
-  // Export session
-  const handleExport = () => {
-    wsRef.current?.send(JSON.stringify({ type: "export" }));
-  };
-
-  // New session
-  const handleNewSession = () => {
-    setMessages([]);
-    setExchangeCount(0);
-    wsRef.current?.close();
-    // Reconnect
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    ws.onopen = () => setStatus("connected");
-    ws.onclose = () => setStatus("disconnected");
-    ws.onmessage = wsRef.current!.onmessage;
-    wsRef.current = ws;
-  };
+  const handleMic = useCallback(() => {
+    if (voice.isListening) { voice.stopListening(); if (voice.transcript.trim()) send(voice.transcript.trim()); }
+    else { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } voice.startListening(); }
+  }, [voice, send]);
 
   return (
-    <div style={styles.container}>
-      {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <span style={styles.logo}>BrainChat</span>
-          <span style={styles.badge}>
-            {status === "connected" ? "Live" : status === "connecting" ? "..." : "Offline"}
-          </span>
+    <div style={S.root}>
+      <header style={S.hdr}>
+        <div style={S.hdrL}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><path d="M10 21h4"/><path d="M12 17v4"/></svg>
+          <span style={S.brand}>BrainChat</span>
+          <span style={{...S.dot, background: connected ? "#22c55e" : "#ef4444"}} />
         </div>
-        <div style={styles.headerRight}>
-          <span style={styles.exchangeCounter}>{exchangeCount} exchanges</span>
-          <button onClick={tts.toggleVoice} style={styles.iconBtn} title={tts.voiceEnabled ? "Mute voice" : "Unmute voice"}>
-            {tts.voiceEnabled ? "🔊" : "🔇"}
-          </button>
-          <button onClick={handleNewSession} style={styles.iconBtn} title="New session">
-            ✨
-          </button>
-          <button onClick={handleExport} style={{ ...styles.iconBtn, ...styles.exportBtn }} title="Export & send to Telegram" disabled={messages.length === 0}>
-            📤 Export
-          </button>
+        <div style={S.hdrR}>
+          {exchanges > 0 && <span style={S.xCount}>{exchanges}</span>}
+          <button onClick={() => { setVoiceOn(!voiceOn); if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } }} style={S.hBtn}>{voiceOn ? "\u{1F50A}" : "\u{1F507}"}</button>
+          <button onClick={() => { setMessages([]); setExchanges(0); setBriefPath(""); }} style={S.hBtn}>New</button>
+          <button onClick={() => wsRef.current?.send(JSON.stringify({ type: "export" }))} style={{...S.hBtn, background: messages.length ? "#1e1b4b" : "transparent", color: messages.length ? "#a78bfa" : "#444"}} disabled={!messages.length}>Export</button>
         </div>
       </header>
 
-      {/* Messages */}
-      <main style={styles.messages}>
-        {messages.length === 0 && (
-          <div style={styles.empty}>
-            <div style={styles.emptyIcon}>🧠</div>
-            <h2 style={styles.emptyTitle}>Start Brainstorming</h2>
-            <p style={styles.emptyText}>
-              Tap the mic to speak or type your idea below.
-              <br />
-              Claude will ask questions to help shape your concept.
-            </p>
+      <main style={S.chat}>
+        {!messages.length && !busy && (
+          <div style={S.hero}>
+            <div style={S.heroGlow} />
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" style={{position:"relative",zIndex:1}}><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><path d="M10 21h4"/><path d="M12 17v4"/></svg>
+            <h1 style={S.heroTitle}>What are you building?</h1>
+            <p style={S.heroSub}>Speak or type your idea. I will shape it into a feature brief for your SDLC pipeline.</p>
           </div>
         )}
-
-        {messages.map((msg, i) => (
-          <div key={i} style={{ ...styles.messageBubble, ...(msg.role === "user" ? styles.userBubble : styles.assistantBubble) }}>
-            <div style={styles.messageLabel}>{msg.role === "user" ? "You" : "Claude"}</div>
-            <div style={styles.messageText}>{msg.content}</div>
+        {messages.map((m, i) => (
+          <div key={i} style={m.role === "user" ? S.uMsg : S.aMsg}>
+            {m.role === "assistant" && <div style={S.avatar}>C</div>}
+            <div style={m.role === "user" ? S.uBub : S.aBub}>
+              {m.content.split("\n").map((line, j) => {
+                if (line.startsWith("# ")) return <h2 key={j} style={S.mdH1}>{line.slice(2)}</h2>;
+                if (line.startsWith("## ")) return <h3 key={j} style={S.mdH2}>{line.slice(3)}</h3>;
+                if (line.startsWith("- ")) return <div key={j} style={S.mdLi}>{line}</div>;
+                if (line.match(/^\d+\./)) return <div key={j} style={S.mdLi}>{line}</div>;
+                return <span key={j}>{line}{"\n"}</span>;
+              })}
+            </div>
+            {m.role === "user" && <div style={{...S.avatar, background:"#2563eb"}}>Y</div>}
           </div>
         ))}
-
-        {isThinking && (
-          <div style={{ ...styles.messageBubble, ...styles.assistantBubble }}>
-            <div style={styles.messageLabel}>Claude</div>
-            <div style={styles.thinking}>
-              <span style={styles.dot}>●</span>
-              <span style={{ ...styles.dot, animationDelay: "0.2s" }}>●</span>
-              <span style={{ ...styles.dot, animationDelay: "0.4s" }}>●</span>
-            </div>
-          </div>
-        )}
-
-        {voice.isListening && voice.transcript && (
-          <div style={{ ...styles.messageBubble, ...styles.userBubble, opacity: 0.7 }}>
-            <div style={styles.messageLabel}>Listening...</div>
-            <div style={styles.messageText}>{voice.transcript}</div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
+        {busy && (<div style={S.aMsg}><div style={S.avatar}>C</div><div style={S.aBub}>{streaming || <span style={{color:"#555"}}>Thinking</span>}<span style={S.caret} /></div></div>)}
+        {voice.isListening && voice.transcript && (<div style={{...S.uMsg, opacity:0.6}}><div style={S.uBub}>{voice.transcript}</div><div style={{...S.avatar, background:"#dc2626"}}>...</div></div>)}
+        {briefPath && (<div style={S.briefBar}><span>Brief saved for SDLC</span><span style={S.briefPath}>{briefPath.split("/").pop()}</span></div>)}
+        <div ref={endRef} />
       </main>
 
-      {/* Input Area */}
-      <footer style={styles.footer}>
-        {/* Voice indicator */}
-        {voice.isListening && (
-          <div style={styles.listeningBar}>
-            <div style={styles.waveform}>
-              {[...Array(12)].map((_, i) => (
-                <div key={i} style={{ ...styles.waveBar, animationDelay: `${i * 0.05}s` }} />
-              ))}
-            </div>
-            <span style={styles.listeningText}>Listening...</span>
-          </div>
-        )}
+      {voice.isListening && (<div style={S.listenStrip}><div style={S.waves}>{Array.from({length:20}).map((_,i) => <div key={i} style={{...S.wBar, animationDelay: i*0.03+"s"}} />)}</div><span style={{color:"#f87171", fontWeight:500, fontSize:13}}>Listening...</span></div>)}
 
-        <div style={styles.inputRow}>
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder={voice.isListening ? "Listening..." : "Type your idea or tap mic..."}
-              style={styles.input}
-              disabled={voice.isListening || isThinking}
-            />
-            {inputText.trim() ? (
-              <button type="submit" style={styles.sendBtn} disabled={isThinking}>
-                ↑
-              </button>
-            ) : null}
-          </form>
-
-          <button
-            onClick={handleMicClick}
-            style={{
-              ...styles.micBtn,
-              ...(voice.isListening ? styles.micBtnActive : {}),
-            }}
-            disabled={!voice.isSupported || isThinking}
-            title={voice.isSupported ? (voice.isListening ? "Stop & send" : "Start speaking") : "Voice not supported in this browser"}
-          >
-            {voice.isListening ? "◼" : "🎤"}
-          </button>
-        </div>
+      <footer style={S.ftr}>
+        <form onSubmit={(e) => { e.preventDefault(); if (input.trim()) send(input); }} style={S.form}>
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={voice.isListening ? "Listening..." : "Describe your idea..."} style={S.inp} disabled={voice.isListening || busy} />
+          {input.trim() && <button type="submit" style={S.sndBtn} disabled={busy}>{"\u2191"}</button>}
+        </form>
+        <button onClick={handleMic} style={voice.isListening ? S.micAct : S.mic} disabled={!voice.isSupported || busy}>
+          {voice.isListening ? "\u25A0" : (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 18v4"/><path d="M8 22h8"/></svg>)}
+        </button>
       </footer>
 
-      <style>{keyframes}</style>
+      <style>{`
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        @keyframes wave{0%,100%{height:3px}50%{height:20px}}
+        *{box-sizing:border-box;margin:0}
+        body{background:#09090b;overflow:hidden}
+        ::-webkit-scrollbar{width:4px}
+        ::-webkit-scrollbar-thumb{background:#222;border-radius:4px}
+        input:focus{border-color:#a78bfa!important;outline:none}
+      `}</style>
     </div>
   );
 }
 
-const keyframes = `
-  @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-  @keyframes wave {
-    0%, 100% { height: 4px; }
-    50% { height: 20px; }
-  }
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-`;
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    height: "100dvh",
-    background: "#0a0a0a",
-    color: "#e5e5e5",
-    fontFamily: "'Inter', -apple-system, sans-serif",
-    maxWidth: 640,
-    margin: "0 auto",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "12px 16px",
-    borderBottom: "1px solid #1a1a1a",
-    background: "#0a0a0a",
-    position: "sticky" as const,
-    top: 0,
-    zIndex: 10,
-  },
-  headerLeft: { display: "flex", alignItems: "center", gap: 8 },
-  headerRight: { display: "flex", alignItems: "center", gap: 8 },
-  logo: { fontSize: 18, fontWeight: 600, color: "#fff" },
-  badge: {
-    fontSize: 11,
-    padding: "2px 8px",
-    borderRadius: 12,
-    background: "#1a3a1a",
-    color: "#4ade80",
-    fontWeight: 500,
-  },
-  exchangeCounter: { fontSize: 12, color: "#666" },
-  iconBtn: {
-    background: "none",
-    border: "1px solid #333",
-    borderRadius: 8,
-    padding: "6px 10px",
-    cursor: "pointer",
-    fontSize: 14,
-    color: "#999",
-  },
-  exportBtn: {
-    background: "#1a1a2e",
-    borderColor: "#333366",
-    color: "#8b8bff",
-  },
-  messages: {
-    flex: 1,
-    overflowY: "auto" as const,
-    padding: "16px",
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-  },
-  empty: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-    textAlign: "center" as const,
-    padding: 32,
-  },
-  emptyIcon: { fontSize: 64, marginBottom: 16 },
-  emptyTitle: { fontSize: 24, fontWeight: 600, color: "#fff", margin: "0 0 8px" },
-  emptyText: { fontSize: 14, color: "#666", lineHeight: 1.6, margin: 0 },
-  messageBubble: {
-    maxWidth: "85%",
-    padding: "10px 14px",
-    borderRadius: 16,
-    fontSize: 15,
-    lineHeight: 1.5,
-  },
-  userBubble: {
-    alignSelf: "flex-end",
-    background: "#2563eb",
-    color: "#fff",
-    borderBottomRightRadius: 4,
-  },
-  assistantBubble: {
-    alignSelf: "flex-start",
-    background: "#1a1a1a",
-    color: "#e5e5e5",
-    borderBottomLeftRadius: 4,
-  },
-  messageLabel: {
-    fontSize: 11,
-    fontWeight: 600,
-    marginBottom: 4,
-    opacity: 0.6,
-    textTransform: "uppercase" as const,
-    letterSpacing: 0.5,
-  },
-  messageText: { whiteSpace: "pre-wrap" as const },
-  thinking: { display: "flex", gap: 4, padding: "4px 0" },
-  dot: {
-    fontSize: 12,
-    animation: "pulse 1s infinite",
-    color: "#666",
-  },
-  footer: {
-    borderTop: "1px solid #1a1a1a",
-    background: "#0a0a0a",
-    padding: "12px 16px",
-    paddingBottom: "max(12px, env(safe-area-inset-bottom))",
-  },
-  listeningBar: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 12,
-    padding: "8px 12px",
-    background: "#1a0a0a",
-    borderRadius: 12,
-    border: "1px solid #3a1a1a",
-  },
-  waveform: { display: "flex", alignItems: "center", gap: 2, height: 24 },
-  waveBar: {
-    width: 3,
-    height: 4,
-    background: "#ef4444",
-    borderRadius: 2,
-    animation: "wave 0.8s ease-in-out infinite",
-  },
-  listeningText: { fontSize: 13, color: "#ef4444", fontWeight: 500 },
-  inputRow: { display: "flex", gap: 10, alignItems: "center" },
-  form: { flex: 1, display: "flex", gap: 8 },
-  input: {
-    flex: 1,
-    padding: "12px 16px",
-    background: "#141414",
-    border: "1px solid #333",
-    borderRadius: 24,
-    color: "#fff",
-    fontSize: 15,
-    outline: "none",
-  },
-  sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    fontSize: 18,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  micBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    background: "#1a1a1a",
-    border: "2px solid #333",
-    fontSize: 22,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    transition: "all 0.2s",
-  },
-  micBtnActive: {
-    background: "#dc2626",
-    borderColor: "#ef4444",
-    color: "#fff",
-    boxShadow: "0 0 20px rgba(220,38,38,0.4)",
-  },
+const S: Record<string, React.CSSProperties> = {
+  root:{display:"flex",flexDirection:"column",height:"100dvh",background:"#09090b",color:"#e4e4e7",fontFamily:"-apple-system,Inter,system-ui,sans-serif",maxWidth:640,margin:"0 auto"},
+  hdr:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid #18181b"},
+  hdrL:{display:"flex",alignItems:"center",gap:8},hdrR:{display:"flex",alignItems:"center",gap:6},
+  brand:{fontWeight:600,fontSize:16,color:"#fafafa",letterSpacing:"-0.02em"},
+  dot:{width:7,height:7,borderRadius:"50%"},
+  xCount:{fontSize:11,color:"#71717a",background:"#18181b",padding:"2px 7px",borderRadius:10,fontWeight:600},
+  hBtn:{background:"transparent",border:"1px solid #27272a",borderRadius:8,padding:"5px 10px",color:"#a1a1aa",cursor:"pointer",fontSize:13,fontWeight:500},
+  chat:{flex:1,overflowY:"auto" as const,padding:"16px 12px",display:"flex",flexDirection:"column",gap:16},
+  hero:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:1,textAlign:"center" as const,position:"relative" as const},
+  heroGlow:{position:"absolute" as const,width:120,height:120,borderRadius:"50%",background:"radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)",top:"50%",left:"50%",transform:"translate(-50%, -70%)"},
+  heroTitle:{fontSize:22,fontWeight:600,color:"#fafafa",marginTop:16,letterSpacing:"-0.02em"},
+  heroSub:{fontSize:14,color:"#71717a",marginTop:8,maxWidth:320,lineHeight:1.5},
+  uMsg:{display:"flex",gap:8,justifyContent:"flex-end",alignItems:"flex-end"},
+  aMsg:{display:"flex",gap:8,alignItems:"flex-start"},
+  avatar:{width:28,height:28,borderRadius:14,background:"#a78bfa",color:"#000",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0},
+  uBub:{background:"#2563eb",color:"#fff",padding:"10px 14px",borderRadius:"18px 18px 4px 18px",maxWidth:"78%",fontSize:15,lineHeight:1.45,whiteSpace:"pre-wrap" as const},
+  aBub:{background:"#18181b",color:"#e4e4e7",padding:"10px 14px",borderRadius:"18px 18px 18px 4px",maxWidth:"78%",fontSize:15,lineHeight:1.5,whiteSpace:"pre-wrap" as const,border:"1px solid #27272a"},
+  caret:{display:"inline-block",width:2,height:16,background:"#a78bfa",marginLeft:2,animation:"blink 0.7s infinite",verticalAlign:"text-bottom"},
+  mdH1:{fontSize:17,fontWeight:700,color:"#fafafa",margin:"8px 0 4px"},
+  mdH2:{fontSize:15,fontWeight:600,color:"#a78bfa",margin:"8px 0 2px"},
+  mdLi:{paddingLeft:8},
+  briefBar:{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#1a1625",border:"1px solid #2e1065",borderRadius:10,padding:"8px 14px",fontSize:13,color:"#c4b5fd"},
+  briefPath:{fontFamily:"monospace",fontSize:11,color:"#8b5cf6"},
+  listenStrip:{display:"flex",alignItems:"center",gap:10,margin:"0 12px",padding:"6px 12px",background:"#1c0a0a",borderRadius:10,border:"1px solid #3f1111"},
+  waves:{display:"flex",alignItems:"center",gap:1.5,height:22},
+  wBar:{width:2.5,height:3,background:"#ef4444",borderRadius:2,animation:"wave 0.5s ease-in-out infinite"},
+  ftr:{display:"flex",gap:8,padding:"10px 12px",paddingBottom:"max(10px, env(safe-area-inset-bottom))",borderTop:"1px solid #18181b",background:"#09090b"},
+  form:{flex:1,display:"flex",gap:8},
+  inp:{flex:1,padding:"11px 16px",background:"#18181b",border:"1px solid #27272a",borderRadius:22,color:"#fafafa",fontSize:15,transition:"border-color 0.2s"},
+  sndBtn:{width:38,height:38,borderRadius:19,background:"#7c3aed",color:"#fff",border:"none",fontSize:17,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"},
+  mic:{width:46,height:46,borderRadius:23,background:"#18181b",border:"2px solid #27272a",color:"#a1a1aa",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s"},
+  micAct:{width:46,height:46,borderRadius:23,background:"#dc2626",border:"2px solid #ef4444",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 20px #dc26264d",fontSize:16},
 };

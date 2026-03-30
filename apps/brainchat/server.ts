@@ -1,135 +1,212 @@
 import express from "express";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer } from "http";
-import Anthropic from "@anthropic-ai/sdk";
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
+import { writeFileSync, mkdirSync, readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
 const PORT = 3011;
-const SESSIONS_DIR = join(
-  process.env.HOME || "~",
-  ".claude",
-  "brainchat-sessions"
-);
+const HOME = process.env.HOME || "/home/claude";
+const SESSIONS_DIR = join(HOME, ".claude", "brainchat-sessions");
+const BRIEFS_DIR = join(HOME, ".claude-super-setup", "docs", "briefs");
 mkdirSync(SESSIONS_DIR, { recursive: true });
+mkdirSync(BRIEFS_DIR, { recursive: true });
 
-// Load Telegram config for export
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "8328233140";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+
+function getApiKey(): string {
+  try {
+    const creds = JSON.parse(readFileSync(join(HOME, ".claude", ".credentials.json"), "utf-8"));
+    return creds?.claudeAiOauth?.accessToken || "";
+  } catch {
+    return process.env.ANTHROPIC_API_KEY || "";
+  }
+}
 
 const app = express();
 app.use(express.json());
-
 const server = createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 
-// Session storage
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: string;
-}
-
-interface Session {
-  id: string;
-  messages: Message[];
-  createdAt: string;
-  title: string;
-}
+interface ChatMessage { role: "user" | "assistant"; content: string; timestamp: string; }
+interface Session { id: string; messages: ChatMessage[]; createdAt: string; title: string; }
 
 const activeSessions = new Map<string, Session>();
 
-// Claude client
-const anthropic = new Anthropic();
+const SYSTEM_PROMPT = `You are a creative brainstorming partner in a real-time voice conversation. Rules:
+- Keep responses to 2-3 sentences MAX. This is voice — be concise.
+- Ask ONE focused question per response to keep the conversation moving.
+- Be enthusiastic but not verbose.
+- After 4+ exchanges, proactively offer: "Want me to wrap this into a brief?"
+- When user says "done", "wrap up", "finish", "brief", or "summarize":
+  Produce a structured brief in this EXACT format:
 
-const SYSTEM_PROMPT = `You are a creative brainstorming partner. Your role is to help the user develop their ideas through conversation.
+# Feature Brief: [Name]
 
-Guidelines:
-- Ask probing questions to clarify and expand ideas
-- Suggest creative alternatives and improvements
-- Challenge assumptions constructively
-- Keep responses concise (2-4 sentences) so the conversation flows naturally like a voice chat
-- After 5+ exchanges, offer to summarize the idea into a structured brief
-- Be enthusiastic and encouraging
+## Problem
+[1-2 sentences: what problem this solves]
 
-When the user says "done", "finish", "wrap up", or similar:
-1. Produce a structured feature brief in markdown
-2. Include: Problem, Solution, Key Features, Target Users, Success Metrics
-3. Mark it with --- BRIEF START --- and --- BRIEF END --- markers`;
+## Solution
+[2-3 sentences: the proposed approach]
+
+## Key Features
+- [Feature 1]
+- [Feature 2]
+- [Feature 3]
+
+## Target Users
+[Who benefits]
+
+## Success Metrics
+- [Metric 1]
+- [Metric 2]
+
+## Technical Notes
+- [Stack/architecture hints from the conversation]
+
+## Next Steps
+1. Run /design-doc to create detailed design
+2. Run /milestone-prompts to break into implementation phases
+3. Run /auto-dev to build it`;
+
+async function streamClaude(
+  messages: Array<{ role: string; content: string }>,
+  onChunk: (text: string) => void,
+  onDone: (fullText: string) => void,
+  onError: (err: string) => void
+): Promise<void> {
+  const apiKey = getApiKey();
+  if (!apiKey) { onError("No API key"); return; }
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-3-haiku-20240307",
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
+        stream: true,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      }),
+    });
+
+    if (!resp.ok) {
+      onError(`API ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
+      return;
+    }
+
+    const reader = resp.body?.getReader();
+    if (!reader) { onError("No stream"); return; }
+
+    const decoder = new TextDecoder();
+    let fullText = "";
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") continue;
+        try {
+          const event = JSON.parse(data);
+          if (event.type === "content_block_delta" && event.delta?.text) {
+            fullText += event.delta.text;
+            onChunk(event.delta.text);
+          }
+        } catch { /* skip */ }
+      }
+    }
+    onDone(fullText);
+  } catch (err) {
+    onError(err instanceof Error ? err.message : "Stream failed");
+  }
+}
+
+// OpenAI TTS endpoint
+app.post("/api/tts", async (req, res) => {
+  if (!OPENAI_API_KEY) {
+    res.status(503).json({ error: "No OpenAI key for TTS" });
+    return;
+  }
+  const { text } = req.body;
+  if (!text) { res.status(400).json({ error: "No text" }); return; }
+
+  try {
+    const ttsResp = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "tts-1",
+        input: text.slice(0, 4096),
+        voice: "nova",
+        response_format: "mp3",
+        speed: 1.05,
+      }),
+    });
+
+    if (!ttsResp.ok) {
+      res.status(ttsResp.status).json({ error: "TTS API error" });
+      return;
+    }
+
+    res.set({ "Content-Type": "audio/mpeg", "Cache-Control": "no-cache" });
+    const arrayBuf = await ttsResp.arrayBuffer();
+    res.send(Buffer.from(arrayBuf));
+  } catch (err) {
+    res.status(500).json({ error: "TTS failed" });
+  }
+});
 
 wss.on("connection", (ws: WebSocket) => {
   const sessionId = `bc-${Date.now()}`;
-  const session: Session = {
-    id: sessionId,
-    messages: [],
-    createdAt: new Date().toISOString(),
-    title: "New Brainstorm",
-  };
+  const session: Session = { id: sessionId, messages: [], createdAt: new Date().toISOString(), title: "New Brainstorm" };
   activeSessions.set(sessionId, session);
-
-  ws.send(
-    JSON.stringify({
-      type: "session",
-      sessionId,
-      message: "Connected. Start speaking or typing your idea.",
-    })
-  );
+  ws.send(JSON.stringify({ type: "session", sessionId, hasTTS: !!OPENAI_API_KEY }));
 
   ws.on("message", async (data: Buffer) => {
     try {
       const msg = JSON.parse(data.toString());
 
       if (msg.type === "message") {
-        const userMessage: Message = {
-          role: "user",
-          content: msg.text,
-          timestamp: new Date().toISOString(),
-        };
-        session.messages.push(userMessage);
+        session.messages.push({ role: "user", content: msg.text, timestamp: new Date().toISOString() });
+        if (session.messages.length === 1) session.title = msg.text.slice(0, 60);
 
-        // Set title from first message
-        if (session.messages.length === 1) {
-          session.title = msg.text.slice(0, 60);
-        }
+        ws.send(JSON.stringify({ type: "stream_start" }));
 
-        // Send to Claude
-        ws.send(JSON.stringify({ type: "thinking" }));
+        await streamClaude(
+          session.messages.map((m) => ({ role: m.role, content: m.content })),
+          (chunk) => ws.send(JSON.stringify({ type: "stream_chunk", text: chunk })),
+          (fullText) => {
+            session.messages.push({ role: "assistant", content: fullText, timestamp: new Date().toISOString() });
+            const hasBrief = /^#\s+Feature Brief/m.test(fullText) || /^##\s+Problem/m.test(fullText);
+            ws.send(JSON.stringify({
+              type: "stream_end", fullText, hasBrief,
+              exchangeCount: Math.floor(session.messages.length / 2),
+            }));
 
-        const apiMessages = session.messages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        }));
-
-        const response = await anthropic.messages.create({
-          model: "claude-sonnet-4-6-20250514",
-          max_tokens: 1024,
-          system: SYSTEM_PROMPT,
-          messages: apiMessages,
-        });
-
-        const assistantText =
-          response.content[0].type === "text" ? response.content[0].text : "";
-
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: assistantText,
-          timestamp: new Date().toISOString(),
-        };
-        session.messages.push(assistantMessage);
-
-        // Check for brief markers
-        const hasBrief =
-          assistantText.includes("--- BRIEF START ---") ||
-          assistantText.includes("## Problem") ||
-          assistantText.includes("# Feature Brief");
-
-        ws.send(
-          JSON.stringify({
-            type: "response",
-            text: assistantText,
-            hasBrief,
-            exchangeCount: Math.floor(session.messages.length / 2),
-          })
+            // Auto-save brief if detected
+            if (hasBrief) {
+              const slug = session.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
+              const briefPath = join(BRIEFS_DIR, `${slug}.md`);
+              writeFileSync(briefPath, fullText);
+              ws.send(JSON.stringify({ type: "brief_saved", path: briefPath }));
+            }
+          },
+          (err) => ws.send(JSON.stringify({ type: "error", message: err })),
         );
       }
 
@@ -137,110 +214,38 @@ wss.on("connection", (ws: WebSocket) => {
         const transcript = formatTranscript(session);
         const filePath = join(SESSIONS_DIR, `${sessionId}.md`);
         writeFileSync(filePath, transcript);
-
-        // Send to Telegram if configured
-        if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-          await sendToTelegram(session);
-        }
-
-        ws.send(
-          JSON.stringify({
-            type: "exported",
-            path: filePath,
-            telegramSent: !!TELEGRAM_BOT_TOKEN,
-          })
-        );
-      }
-
-      if (msg.type === "history") {
-        ws.send(
-          JSON.stringify({
-            type: "history",
-            sessions: listSessions(),
-          })
-        );
+        if (TELEGRAM_BOT_TOKEN) await sendToTelegram(session);
+        ws.send(JSON.stringify({ type: "exported", path: filePath, telegramSent: !!TELEGRAM_BOT_TOKEN }));
       }
     } catch (err) {
-      ws.send(
-        JSON.stringify({
-          type: "error",
-          message: err instanceof Error ? err.message : "Unknown error",
-        })
-      );
+      ws.send(JSON.stringify({ type: "error", message: err instanceof Error ? err.message : "Error" }));
     }
   });
 
   ws.on("close", () => {
-    // Auto-save session on disconnect
     if (session.messages.length > 0) {
-      const filePath = join(SESSIONS_DIR, `${sessionId}.md`);
-      writeFileSync(filePath, formatTranscript(session));
+      writeFileSync(join(SESSIONS_DIR, `${sessionId}.md`), formatTranscript(session));
     }
   });
 });
 
-function formatTranscript(session: Session): string {
-  let md = `# Brainstorm: ${session.title}\n`;
-  md += `**Date:** ${session.createdAt}\n`;
-  md += `**Session:** ${session.id}\n`;
-  md += `**Exchanges:** ${Math.floor(session.messages.length / 2)}\n\n---\n\n`;
-
-  for (const msg of session.messages) {
-    const label = msg.role === "user" ? "You" : "Claude";
-    md += `**${label}** *(${new Date(msg.timestamp).toLocaleTimeString()})*\n`;
-    md += `${msg.content}\n\n`;
-  }
-
+function formatTranscript(s: Session): string {
+  let md = `# Brainstorm: ${s.title}\n**Date:** ${s.createdAt}\n**Exchanges:** ${Math.floor(s.messages.length / 2)}\n\n---\n\n`;
+  for (const m of s.messages) md += `**${m.role === "user" ? "You" : "Claude"}**\n${m.content}\n\n`;
   return md;
 }
 
-function listSessions(): Array<{ id: string; title: string; date: string }> {
-  if (!existsSync(SESSIONS_DIR)) return [];
-  const { readdirSync } = require("fs");
-  return readdirSync(SESSIONS_DIR)
-    .filter((f: string) => f.endsWith(".md"))
-    .map((f: string) => {
-      const content = readFileSync(join(SESSIONS_DIR, f), "utf-8");
-      const titleMatch = content.match(/^# Brainstorm: (.+)/m);
-      const dateMatch = content.match(/\*\*Date:\*\* (.+)/m);
-      return {
-        id: f.replace(".md", ""),
-        title: titleMatch?.[1] || "Untitled",
-        date: dateMatch?.[1] || "",
-      };
-    })
-    .reverse();
-}
-
-async function sendToTelegram(session: Session): Promise<void> {
-  const summary = `🧠 BrainChat Session Complete\n\n${session.title}\n\nExchanges: ${Math.floor(session.messages.length / 2)}\nSession: ${session.id}\n\nTranscript saved. Run /voice-brief to process into a feature spec.`;
-
+async function sendToTelegram(s: Session): Promise<void> {
   try {
-    await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: summary,
-        }),
-      }
-    );
-  } catch {
-    // Telegram send is best-effort
-  }
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: `BrainChat Complete\n\n${s.title}\n${Math.floor(s.messages.length / 2)} exchanges\n\nRun /voice-brief to process into SDLC pipeline.` }),
+    });
+  } catch { /* best-effort */ }
 }
 
-// REST endpoints
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", sessions: activeSessions.size });
-});
-
-app.get("/api/sessions", (_req, res) => {
-  res.json(listSessions());
-});
+app.get("/api/health", (_req, res) => res.json({ status: "ok", sessions: activeSessions.size, hasKey: !!getApiKey(), hasTTS: !!OPENAI_API_KEY }));
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`BrainChat server running on port ${PORT}`);
+  console.log(`BrainChat on :${PORT} | API: ${getApiKey() ? "ok" : "MISSING"} | TTS: ${OPENAI_API_KEY ? "OpenAI Nova" : "browser"}`);
 });
