@@ -16,6 +16,7 @@ export function App() {
   const [liveTranscript, setLiveTranscript] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [ttsProvider, setTtsProvider] = useState<"gemini"|"openai"|"browser">("gemini");
+  const audioUnlockedRef = useRef(false);
   const wsRef = useRef<WebSocket | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const recRef = useRef<SpeechRecognition | null>(null);
@@ -144,8 +145,23 @@ export function App() {
     setInput("");
   }, []);
 
+  // Unlock iOS audio on first interaction
+  const unlockAudio = useCallback(() => {
+    if (audioUnlockedRef.current) return;
+    try {
+      const AC = window.AudioContext || (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext;
+      if (AC) { const ctx = new AC(); const b = ctx.createBuffer(1,1,22050); const s = ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); s.start(0); }
+      // Also play a silent Audio element to unlock HTMLAudioElement
+      const a = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+      a.volume = 0.01;
+      a.play().catch(() => {});
+    } catch {}
+    audioUnlockedRef.current = true;
+  }, []);
+
   // --- Live mode toggle ---
   const toggleLive = useCallback(() => {
+    unlockAudio();
     if (liveMode) {
       setLiveMode(false);
       stopListening();
@@ -155,10 +171,11 @@ export function App() {
       setLiveMode(true);
       startListening();
     }
-  }, [liveMode, stopListening, startListening]);
+  }, [liveMode, stopListening, startListening, unlockAudio]);
 
   // --- Manual mic (non-live) ---
   const handleMic = useCallback(() => {
+    unlockAudio();
     if (isListening) { stopListening(); }
     else { window.speechSynthesis?.cancel(); setIsSpeaking(false); startListening(); }
   }, [isListening, stopListening, startListening]);

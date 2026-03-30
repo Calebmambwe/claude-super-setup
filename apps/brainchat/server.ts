@@ -163,7 +163,12 @@ app.post("/api/tts", async (req, res) => {
       if (!audioPart) { res.status(500).json({ error: "No audio in response" }); return; }
 
       const pcmBuffer = Buffer.from(audioPart.inlineData.data, "base64");
-      // Convert raw PCM to WAV for browser playback
+      // Gemini returns L16 big-endian PCM — swap to little-endian for WAV
+      for (let i = 0; i < pcmBuffer.length - 1; i += 2) {
+        const tmp = pcmBuffer[i];
+        pcmBuffer[i] = pcmBuffer[i + 1];
+        pcmBuffer[i + 1] = tmp;
+      }
       const wavHeader = createWavHeader(pcmBuffer.length, 24000, 16, 1);
       const wavBuffer = Buffer.concat([wavHeader, pcmBuffer]);
       res.set({ "Content-Type": "audio/wav", "Cache-Control": "no-cache" });
